@@ -2,6 +2,7 @@ let express = require('express');
 let app = express();
 let http = require('http').Server(app);
 let io = require('socket.io')(http);
+let port = process.env.PORT || 3000;
 
 // Client
 // Serve contents of "client" folder on localhost
@@ -21,6 +22,6 @@ io.on('connection', (socket) => {
     });
 });
 
-http.listen(80, () => {
-    console.log('listening');
+http.listen(port, () => {
+    console.log('listening on *: ' + port);
 });
