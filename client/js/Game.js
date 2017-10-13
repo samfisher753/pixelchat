@@ -26,11 +26,15 @@ class Game {
         let app = document.getElementById('app');
         let chatC = document.createElement('div');
         chatC.className = 'game-chat';
+        let chatMessagesC = document.createElement('div');
+        chatMessagesC.className = 'game-chatMessagesContainer';
         let chatInputC = document.createElement('div');
         chatInputC.className = 'game-chatInput';
         this.chatInput = document.createElement('input');
+        this.chatInput.type = 'text';
 
         chatInputC.appendChild(this.chatInput);
+        chatC.appendChild(chatMessagesC);
         chatC.appendChild(chatInputC);
         app.appendChild(chatC);
     }
@@ -57,8 +61,9 @@ class Game {
         msgSpan.innerHTML = '<strong>' + player + '</strong>: ' + msg;
 
         msgC.appendChild(msgSpan);
-        let chat = document.getElementsByClassName('game-chat')[0];
+        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
+        chat.scrollTop = chat.scrollHeight;
     }
 
     getPlayerName(){
@@ -81,6 +86,7 @@ class Game {
         nickInputContainer.className = 'game-horizontalLayout';
 
         let nickInput = document.createElement('input');
+        nickInput.type = 'text';
 
         let buttonC = document.createElement('div');
         buttonC.className = 'game-horizontalLayout';
@@ -108,6 +114,8 @@ class Game {
         menu.appendChild(nickContainer);
         menu.appendChild(buttonC);
         app.appendChild(menu);
+
+        nickInput.focus();
     }
 
 }

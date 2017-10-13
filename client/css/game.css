@@ -17,13 +17,20 @@
     background-color: #bbbbbb;
 }
 
+.game-chatMessagesContainer {
+    position: relative;
+    width: 100%;
+    height: calc(100% - 30px);
+    overflow-y: auto;
+}
+
 .game-chatMessage {
     position: relative;
     left: 2.5%;
     width: 95%;
     border-radius: 10px;
     background-color: #ffffff;
-    margin-bottom: 5px;
+    margin: 5px 0;
     padding: 5px 0;
 }
 
@@ -81,4 +88,5 @@
 .game-chatInput input {
     text-align: left;
     height: 30px;
+    background-color: #eeeeee;
 }
