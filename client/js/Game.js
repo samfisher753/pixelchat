@@ -41,10 +41,11 @@ class Game {
 
     bindChatEvents() {
         this.chatInput.onkeypress = (e) => {
-            if (e.keyCode === 13){
+            let input = this.chatInput.value.trim();
+            if (e.keyCode === 13 && input !== ''){
                 let chatMsg = {
                     player: this.player.getName(),
-                    msg: this.chatInput.value
+                    msg: input
                 };
                 this.chatInput.value = '';
                 this.socket.emit('chat message', chatMsg);
@@ -57,9 +58,14 @@ class Game {
         let msgC = document.createElement('div');
         msgC.className = 'game-chatMessage';
 
-        let msgSpan = document.createElement('span');
-        msgSpan.innerHTML = '<strong>' + player + '</strong>: ' + msg;
+        let nameSpan = document.createElement('span');
+        nameSpan.className = 'game-boldText';
+        nameSpan.textContent = player + ': ';
 
+        let msgSpan = document.createElement('span');
+        msgSpan.textContent = msg;
+
+        msgC.appendChild(nameSpan);
         msgC.appendChild(msgSpan);
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
@@ -95,9 +101,12 @@ class Game {
         button.className = 'game-horizontalCentered';
         button.innerHTML = 'Play';
         button.onclick = () => {
-            this.player = new Player(nickInput.value);
-            app.innerHTML = '';
-            this.start();
+            let nick = nickInput.value.trim();
+            if (nick !== '') {
+                this.player = new Player(nick);
+                app.innerHTML = '';
+                this.start();
+            }
         };
 
         menu.onkeydown = (e) => {

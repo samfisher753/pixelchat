@@ -40,6 +40,10 @@
     right: 2.5%;
 }
 
+.game-boldText {
+    font-weight: bold;
+}
+
 .game-chatInput {
     position: absolute;
     width: 100%;
