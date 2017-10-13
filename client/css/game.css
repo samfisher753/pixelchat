@@ -53,7 +53,7 @@
     position: relative;
     top: 30%;
     left: 40%;
-    width: 20%;
+    width: calc(20% - 10px);
     background-color: #bbbbbb;
     padding: 5px;
     border-radius: 5px;
