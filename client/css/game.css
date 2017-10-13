@@ -27,17 +27,16 @@
 .game-chatMessage {
     position: relative;
     left: 2.5%;
-    width: 95%;
+    width: calc(95% - 16px);
     border-radius: 10px;
     background-color: #ffffff;
     margin: 5px 0;
-    padding: 5px 0;
+    padding: 5px 8px;
 }
 
 .game-chatMessage span {
     position: relative;
-    left: 2.5%;
-    right: 2.5%;
+    word-wrap: break-word;
 }
 
 .game-boldText {
@@ -79,18 +78,20 @@
 }
 
 #app input {
-    width: 100%;
-    padding: 0;
     border: 0;
     font-size: 16px;
 }
 
 .game-horizontalLayout input {
     text-align: center;
+    width: 100%;
+    padding: 0;
 }
 
 .game-chatInput input {
     text-align: left;
+    width: calc(100% - 20px);
+    padding: 0 10px;
     height: 30px;
     background-color: #eeeeee;
 }

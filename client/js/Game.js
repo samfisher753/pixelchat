@@ -58,14 +58,14 @@ class Game {
         let msgC = document.createElement('div');
         msgC.className = 'game-chatMessage';
 
+        let msgSpan = document.createElement('span');
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
         nameSpan.textContent = player + ': ';
+        let msgNode = document.createTextNode(msg);
 
-        let msgSpan = document.createElement('span');
-        msgSpan.textContent = msg;
-
-        msgC.appendChild(nameSpan);
+        msgSpan.appendChild(nameSpan);
+        msgSpan.appendChild(msgNode);
         msgC.appendChild(msgSpan);
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
