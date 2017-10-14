@@ -2,31 +2,181 @@ class Game {
 
     constructor() {
         console.log("Initializing Game...");
+        // Vars
         this.socket = null;
-        this.player = null;
+        this.playerName = null;
+        this.room = null;
+        this.canvasCtx = null;
+
+        // Engine
+        this.loaded = false;
+        this.assets = null;
+        this.fps = 20;
+        this.timestep = 1000 / this.fps;
+        this.lastFrameTimeMs = 0;
+        this.delta = 0;
+        // ------
+        this.d = { x:0, y:0 };
+        this.initialPos = { x:0, y:0 };
+        this.mouse = null;
+        this.mousedown = false;
         
         this.getPlayerName();
-        
     }
 
     start() {
+        this.assets = new Assets(this);
         this.createChatPanel();
         this.socket = io();
         this.configureSocket();
         this.bindChatEvents();
         this.createCanvas();
+        this.bindEvents()
+        
+        requestAnimationFrame(this.gameLoop.bind(this));
+    }
+
+    gameLoop(timestamp) {
+        if (!this.loaded){
+            this.lastFrameTimeMs = 0;
+        }
+
+        if (timestamp < this.lastFrameTimeMs + (1000 / this.fps)){
+            requestAnimationFrame(this.gameLoop.bind(this));
+            return;
+        }
+
+        this.delta += timestamp - this.lastFrameTimeMs;
+        let fps = (1000 / (timestamp - this.lastFrameTimeMs));
+        this.fpsSpan.innerHTML = 'fps: ' + Math.ceil(fps);
+        this.lastFrameTimeMs = timestamp;
+        this.d = {x:0, y:0};
+
+        let i = 0;
+        while (this.delta >= this.timestep) {
+            this.update();
+            this.delta -= this.timestep;
+            if (i++ > 150){
+                this.panic();
+                break;
+            }
+        }
+        this.draw();
+        
+        requestAnimationFrame(this.gameLoop.bind(this));
+    }
+
+    update() {
+        // Use timestep to avoid physics problems
+
+        // If canvas has been dragged
+        if (this.mouse !== null) {
+            this.d.x += this.mouse.clientX - this.initialPos.x;
+            this.d.y += this.mouse.clientY - this.initialPos.y;
+            this.initialPos.x = this.mouse.clientX;
+            this.initialPos.y = this.mouse.clientY;
+            this.mouse = null;
+        }
+    }
+
+    panic() {
+        this.delta = 0;
+        // ...
+    }
+
+    draw() {
+        let ctx = this.canvasCtx;
+        
+        /*
+        // Clear canvas
+        ctx.clearRect(0, 0, 
+            ctx.canvas.width, ctx.canvas.height);
+        */
+
+        // Draw background
+        ctx.fillStyle = '#010101';
+        ctx.fillRect(0, 0, 
+            ctx.canvas.width, ctx.canvas.height);
+
+        // Draw room
+        if (this.room !== null) {
+            this.room.draw(ctx, this.d, this.assets.getFloor('grass'));
+        }
+
+    }
+
+    bindEvents() {
+        let canvas = document.getElementsByClassName('game-canvas')[0];
+        let body = document.getElementsByTagName('body')[0];
+        body.onresize = () => {
+            canvas.height = canvas.clientHeight;
+            canvas.width = canvas.clientWidth;
+        };
+        
+        canvas.onmousedown = (e) => {
+            this.mousedown = true;
+            this.initialPos.x = e.clientX;
+            this.initialPos.y = e.clientY;
+        };
+        
+        document.onmousemove = (e) => {
+            if (this.mousedown){
+                this.mouse = e;
+            }
+        };
+
+        document.onmouseup = (e) => {
+            this.mousedown = false;
+        };
     }
 
     createCanvas() {
         let app = document.getElementById('app');
         let canvas = document.createElement('canvas');
         canvas.className = 'game-canvas';
+        this.canvasCtx = canvas.getContext('2d');
         app.appendChild(canvas);
+        canvas.height = canvas.clientHeight;
+        canvas.width = canvas.clientWidth;
+
+        this.fpsSpan = document.createElement('span');
+        this.fpsSpan.style = 'position: absolute; right: 0; color: #ffffff;';
+        this.fpsSpan.innerHTML = 'XX';
+        app.appendChild(this.fpsSpan);
+
+        this.playersSpan = document.createElement('span');
+        this.playersSpan.style = 'position: absolute; right: 0; color: #ffffff;' +
+             ' top: ' + this.fpsSpan.clientHeight + 'px;';
+        this.playersSpan.innerHTML = 'YY';
+        app.appendChild(this.playersSpan);
     }
 
     configureSocket() {
+        // Send player name
+        this.socket.emit('new player', this.playerName);
+
+        // Event: Receive chat message
         this.socket.on('chat message', (chatMsg) => {
             this.addChatMessage(chatMsg.player, chatMsg.msg);
+        });
+
+        // Event: Receive rooms list
+        this.socket.on('rooms list', (rooms) => {
+            // Join room
+            this.socket.emit('join room', rooms[0]);
+        });
+
+        // Event: Receive room info
+        this.socket.on('room info', (room) => {
+            room = { ...room, initPos: {
+                x: (this.canvasCtx.canvas.clientWidth/2) - (65/2),
+                y: 0
+            }};
+            this.room = new Room(room);
+        });
+
+        this.socket.on('online players', (num_players) => {
+            this.playersSpan.innerHTML = 'online: ' + num_players;
         });
     }
 
@@ -49,15 +199,11 @@ class Game {
 
     bindChatEvents() {
         this.chatInput.onkeypress = (e) => {
-            let input = this.chatInput.value.trim();
-            if (e.keyCode === 13 && input !== ''){
-                let chatMsg = {
-                    player: this.player.getName(),
-                    msg: input
-                };
+            let msg = this.chatInput.value.trim();
+            if (e.keyCode === 13 && msg !== ''){
                 this.chatInput.value = '';
-                this.socket.emit('chat message', chatMsg);
-                this.addChatMessage(chatMsg.player,chatMsg.msg);
+                this.socket.emit('chat message', msg);
+                this.addChatMessage(this.playerName,msg);
             }
         };
     }
@@ -111,7 +257,7 @@ class Game {
         button.onclick = () => {
             let nick = nickInput.value.trim();
             if (nick !== '') {
-                this.player = new Player(nick);
+                this.playerName = nick;
                 app.innerHTML = '';
                 this.start();
             }
