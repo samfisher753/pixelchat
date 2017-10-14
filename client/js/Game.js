@@ -14,6 +14,14 @@ class Game {
         this.socket = io();
         this.configureSocket();
         this.bindChatEvents();
+        this.createCanvas();
+    }
+
+    createCanvas() {
+        let app = document.getElementById('app');
+        let canvas = document.createElement('canvas');
+        canvas.className = 'game-canvas';
+        app.appendChild(canvas);
     }
 
     configureSocket() {
