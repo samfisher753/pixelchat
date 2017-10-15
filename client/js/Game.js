@@ -10,7 +10,6 @@ class Game {
 
         // Engine
         this.loaded = false;
-        this.assets = null;
         this.fps = 20;
         this.timestep = 1000 / this.fps;
         this.lastFrameTimeMs = 0;
@@ -25,15 +24,22 @@ class Game {
     }
 
     start() {
-        this.assets = new Assets(this);
+        Assets.load();
         this.createChatPanel();
         this.socket = io();
         this.configureSocket();
         this.bindChatEvents();
         this.createCanvas();
-        this.bindEvents()
+        this.bindEvents();
+        this.configGrid();
         
         requestAnimationFrame(this.gameLoop.bind(this));
+    }
+
+    configGrid() {
+        let c = this.canvasCtx.canvas;
+        Grid.setOrigin(c.width/2, 0);
+        Grid.createDrawOrder();
     }
 
     gameLoop(timestamp) {
@@ -73,6 +79,8 @@ class Game {
         if (this.mouse !== null) {
             this.d.x += this.mouse.clientX - this.initialPos.x;
             this.d.y += this.mouse.clientY - this.initialPos.y;
+            Grid.move(this.d);
+            Grid.createDrawOrder();
             this.initialPos.x = this.mouse.clientX;
             this.initialPos.y = this.mouse.clientY;
             this.mouse = null;
@@ -86,12 +94,6 @@ class Game {
 
     draw() {
         let ctx = this.canvasCtx;
-        
-        /*
-        // Clear canvas
-        ctx.clearRect(0, 0, 
-            ctx.canvas.width, ctx.canvas.height);
-        */
 
         // Draw background
         ctx.fillStyle = '#010101';
@@ -100,7 +102,7 @@ class Game {
 
         // Draw room
         if (this.room !== null) {
-            this.room.draw(ctx, this.d, this.assets.getFloor('grass'));
+            this.room.draw(ctx);
         }
 
     }
@@ -168,13 +170,15 @@ class Game {
 
         // Event: Receive room info
         this.socket.on('room info', (room) => {
-            room = { ...room, initPos: {
-                x: (this.canvasCtx.canvas.clientWidth/2) - (65/2),
-                y: 0
-            }};
             this.room = new Room(room);
+            this.room.createPlayers();
+            this.room.adaptGrid();
+            // WIP Need to know if room is received cause I entered or cause
+            // there have been changes
+            // Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
         });
 
+        // Event: Receive number of players
         this.socket.on('online players', (num_players) => {
             this.playersSpan.innerHTML = 'online: ' + num_players;
         });

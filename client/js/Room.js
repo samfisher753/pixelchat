@@ -2,36 +2,41 @@ class Room {
 
     constructor(room) {
         this.name = room.name;
-        this.width = room.width;
-        this.length = room.length;
-        this.spawn = room.spawn || [0, 0];
+        this.size = room.size;
+        this.array = room.array;
+        this.spawn = room.spawn || {x:0, y:0};
         this.players = room.players || {};
-        this.initPos = room.initPos;
     }
 
     setName(name) {
         this.name = name;
     }
 
-    setWidth(width) {
-        this.width = width;
-    }
-
-    setLength(length) {
-        this.length = length;
+    setSize(size) {
+        this.size = size;
     }
 
     setSpawn(x, y) {
-        this.spawn = [x, y];
+        this.spawn = {x: x,y: y};
     }
 
     join(player) {
         this.players[player.getName()] = player;
         player.setRoom(this.name);
         player.setPos(this.spawn);
+        // Add to this.array.players
+        let tile = this.array[this.spawn.y][this.spawn.x];
+        tile.players.push(player.getName());
+        this.array[this.spawn.y][this.spawn.x] = tile;
     }
 
     leave(playerName) {
+        // Delete from this.array.players
+        let p = this.players[playerName];
+        let tile = this.array[p.getPos().y][p.getPos().x];
+        let i = tile.players.indexOf(playerName);
+        tile.players.splice(i, 1);
+        this.array[p.getPos().y][p.getPos().x] = tile;
         this.players[playerName].setRoom(null);
         this.players[playerName].setPos(null);
         delete this.players[playerName];
@@ -47,12 +52,8 @@ class Room {
         return this.name;
     }
 
-    getWidth() {
-        return this.width;
-    }
-
-    getLength() {
-        return this.length;
+    getSize() {
+        return this.size;
     }
 
     getSpawn() {
@@ -63,40 +64,37 @@ class Room {
         return this.players;
     }
 
-    draw(ctx, d, tile) {
-        let w = 65;
-        let l = 39;
-        // Horizontal increment. X axis.
-        let xdx = 0;
-        let xdy = 0;
-        // Vertical increment. Y axis.
-        let ydx = 32;
-        let ydy = 16;
-        // Coord
-        this.initPos.x += d.x;
-        this.initPos.y += d.y;
-        let x0 = this.initPos.x;
-        let y0 = this.initPos.y;
+    createPlayers() {
+        for (let p in this.players){
+            this.players[p] = new Player(this.players[p]);
+        }
+    }
 
-        for (let i=0; i<this.width; ++i){
-            let x = x0 - i*ydx;
-            let y = y0 + i*ydy;
-            for(let j=0; j<=i; ++j){
-                ctx.drawImage(tile, x, y, w, l);
-                x += w;
+    adaptGrid() {
+        Grid.setSize(this.size);
+        Grid.createDrawOrder();
+    }
+
+    draw(ctx) {
+        // Draw room
+        let drawO = Grid.getDrawOrdered();
+        for (let tile of drawO){
+            let cell = this.array[tile.y][tile.x];
+            if (cell !== null){
+                let img = Assets.getFloor(cell.material);
+                ctx.drawImage(img, tile.drawPos.x, tile.drawPos.y);
             }
         }
-        let nx = x0 - 8*ydx;
-        let ny = y0 + 10*ydy;
-        for (let i=0; i<this.width-1; ++i){
-            let x = nx + i*ydx;
-            let y = ny + i*ydy;
-            for(let j=0; j<this.width-1-i; ++j){
-                ctx.drawImage(tile, x, y, w, l);
-                x += w;
-            }
-        }  
         
+        // Draw players of the room
+        for (let tile of drawO){
+            let cell = this.array[tile.y][tile.x];
+            if (cell !== null && Array.isArray(cell.players) ){
+                for (let player of cell.players){
+                    this.players[player].draw(ctx, tile.drawPos);
+                }
+            }
+        }
     }
 
 }

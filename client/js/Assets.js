@@ -1,24 +1,39 @@
-class Assets {
+let Assets = {
 
-    constructor(game) {
-        this.game = game;
-        this.floors = {};
+    floors: {},
+    characters: {},
 
+    load() {
         this.loadFloors();
-    }
+        this.loadCharacters();
+    },
 
     loadFloors() {
         let tile = new Image();
         tile.src = './textures/floor/grass.png';
-        let loaded = false;
         tile.onload = () => {
             this.floors['grass'] = tile;
-            this.game.loaded = true;
         };
-    }
+    },
+
+    loadCharacters() {
+        let a = new Image();
+        a.src = './textures/character/sam4stand.png';
+        let b = new Image();
+        b.src = './textures/character/sam4stand-blink.png';
+        b.onload = () => {
+            this.characters['sam4stand'] = a;
+            this.characters['sam4stand-blink'] = b;
+            game.loaded = true;
+        };
+    },
 
     getFloor(floor){
         return this.floors[floor];
+    },
+
+    getCharacter(c){
+        return this.characters[c];
     }
 
 }

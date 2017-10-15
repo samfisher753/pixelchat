@@ -13,7 +13,29 @@ let server = {
 
     createMockRooms() {
         let name = 'DefaultRoom';
-        this.rooms[name] = new Room({ name: name, width: 10, length: 10});
+        let size = 11;
+        let array = [];
+        for (let i=0; i<size; ++i){
+            array.push([]);
+            for (let j=0; j<size; ++j){
+                array[i].push({ material: 'grass', players: [] });
+            }
+        }
+        for (let i=0; i<4; ++i){
+            for (let j=6; j<size; ++j){
+                array[i][j] = null;
+            }
+        }
+        for (let i=0; i<size; ++i){
+            array[i][10] = null;
+        }
+
+        let room = {
+            name: name,
+            size: size,
+            array: array,
+        };
+        this.rooms[name] = new Room(room);
     },
 
     bindEvents(io) {
@@ -48,6 +70,11 @@ let server = {
                 // Avoid problems in the extreme case a player connected but 
                 // disconnected immediately without sending his name.
                 if (playerName !== null) {
+                    let room = this.players[playerName].getRoom();
+                    if (room !== null){
+                        this.rooms[room].leave(playerName);
+                        io.emit('room info', this.rooms[room]);
+                    }
                     delete this.players[playerName];
                     console.log(playerName + ' left.');
                 }
@@ -58,7 +85,7 @@ let server = {
 
             socket.on('join room', (roomName) => {
                 this.rooms[roomName].join(this.players[playerName]);
-                socket.emit('room info', this.rooms[roomName]);
+                io.emit('room info', this.rooms[roomName]);
             });
         });
 
