@@ -9,7 +9,6 @@ class Game {
         this.canvasCtx = null;
 
         // Engine
-        this.loaded = false;
         this.fps = 20;
         this.timestep = 1000 / this.fps;
         this.lastFrameTimeMs = 0;
@@ -24,7 +23,6 @@ class Game {
     }
 
     start() {
-        Assets.load();
         this.createChatPanel();
         this.socket = io();
         this.configureSocket();
@@ -32,8 +30,7 @@ class Game {
         this.createCanvas();
         this.bindEvents();
         this.configGrid();
-        
-        requestAnimationFrame(this.gameLoop.bind(this));
+        Assets.load();
     }
 
     configGrid() {
@@ -43,10 +40,6 @@ class Game {
     }
 
     gameLoop(timestamp) {
-        if (!this.loaded){
-            this.lastFrameTimeMs = 0;
-        }
-
         if (timestamp < this.lastFrameTimeMs + (1000 / this.fps)){
             requestAnimationFrame(this.gameLoop.bind(this));
             return;

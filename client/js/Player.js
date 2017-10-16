@@ -32,9 +32,9 @@ class Player {
     }
 
     draw(ctx, drawPos) {
-        let floorHeight = Assets.getFloor('grass').height;
-        let stand = Assets.getCharacter('sam4stand');
-        let blink = Assets.getCharacter('sam4stand-blink');
+        let floorHeight = Assets.getImage('grass').height;
+        let stand = Assets.getImage('sam4stand-1');
+        let blink = Assets.getImage('sam4stand-2');
 
         let newY = drawPos.y - stand.height + floorHeight - this.adjustY;
 

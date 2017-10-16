@@ -81,7 +81,7 @@ class Room {
         for (let tile of drawO){
             let cell = this.array[tile.y][tile.x];
             if (cell !== null){
-                let img = Assets.getFloor(cell.material);
+                let img = Assets.getImage(cell.material);
                 ctx.drawImage(img, tile.drawPos.x, tile.drawPos.y);
             }
         }

@@ -1,39 +1,69 @@
 let Assets = {
 
-    floors: {},
-    characters: {},
+    images: {},
+    imgLoaded: 0,
+    imgFiles: [],
 
     load() {
-        this.loadFloors();
-        this.loadCharacters();
+        this.fillFileArrays();
+        this.loadImages();
     },
 
-    loadFloors() {
+    loadImages() {
         let tile = new Image();
-        tile.src = './textures/floor/grass.png';
+        tile.src = this.imgFiles[this.imgLoaded];
         tile.onload = () => {
-            this.floors['grass'] = tile;
+            let s = tile.src.split('/');
+            let name = s[s.length-1].split('.')[0];
+            this.images[name] = tile;
+            ++this.imgLoaded;
+
+            if (this.imgLoaded < this.imgFiles.length){
+                this.loadImages();
+            }
+            else {
+                // Start render
+                requestAnimationFrame(game.gameLoop.bind(game));
+            }
         };
     },
 
-    loadCharacters() {
-        let a = new Image();
-        a.src = './textures/character/sam4stand.png';
-        let b = new Image();
-        b.src = './textures/character/sam4stand-blink.png';
-        b.onload = () => {
-            this.characters['sam4stand'] = a;
-            this.characters['sam4stand-blink'] = b;
-            game.loaded = true;
-        };
+    getImage(img){
+        return this.images[img];
     },
 
-    getFloor(floor){
-        return this.floors[floor];
-    },
+    fillFileArrays(){
+        // Floors
+        let path = './textures/floor/';
+        this.imgFiles.push(path+'grass.png');
 
-    getCharacter(c){
-        return this.characters[c];
+        // Characters
+        path = './textures/character/';
+        this.imgFiles.push(path+'sam1stand.png');
+        this.imgFiles.push(path+'sam1walk-1.png');
+        this.imgFiles.push(path+'sam1walk-2.png');
+        this.imgFiles.push(path+'sam2stand.png');
+        this.imgFiles.push(path+'sam2walk-1.png');
+        this.imgFiles.push(path+'sam2walk-2.png');
+        this.imgFiles.push(path+'sam2walk-3.png');
+        this.imgFiles.push(path+'sam2walk-4.png');
+        this.imgFiles.push(path+'sam3stand-1.png');
+        this.imgFiles.push(path+'sam3stand-2.png');
+        this.imgFiles.push(path+'sam3walk-1.png');
+        this.imgFiles.push(path+'sam3walk-2.png');
+        this.imgFiles.push(path+'sam3walk-3.png');
+        this.imgFiles.push(path+'sam3walk-4.png');
+        this.imgFiles.push(path+'sam4stand-1.png');
+        this.imgFiles.push(path+'sam4stand-2.png');
+        this.imgFiles.push(path+'sam4walk-1.png');
+        this.imgFiles.push(path+'sam4walk-2.png');
+        this.imgFiles.push(path+'sam4walk-3.png');
+        this.imgFiles.push(path+'sam4walk-4.png');
+        this.imgFiles.push(path+'sam5stand-1.png');
+        this.imgFiles.push(path+'sam5stand-2.png');
+        this.imgFiles.push(path+'sam5walk-1.png');
+        this.imgFiles.push(path+'sam5walk-3.png');
+        this.imgFiles.push(path+'shadow.png');
     }
 
 }
