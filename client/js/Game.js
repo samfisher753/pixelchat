@@ -165,6 +165,7 @@ class Game {
         this.socket.on('room info', (room) => {
             this.room = new Room(room);
             this.room.createPlayers();
+            //this.room.getPlayers()[this.playerName].setStatus('walk');
             this.room.adaptGrid();
             // WIP Need to know if room is received cause I entered or cause
             // there have been changes
