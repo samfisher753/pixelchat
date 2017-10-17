@@ -77,6 +77,7 @@ class Room {
     createPlayers() {
         for (let p in this.players){
             this.players[p] = new Player(this.players[p]);
+            this.players[p].fetchImages();
         }
     }
 
