@@ -79,7 +79,6 @@ class Game {
             let target = Grid.cellAt(this.click.clientX, this.click.clientY);
             // If there is a grid cell there
             if (target !== null){
-                console.log(target);
                 let cell = this.room.cell(target.x,target.y);
                 // If there is a room cell there
                 if (cell !== null){

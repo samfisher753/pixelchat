@@ -148,18 +148,12 @@ class Player {
         }
 
         if (posBefore[tgt.y][tgt.x].x !== -1){
-            console.log('target reachable');
-            console.log(posBefore[tgt.y][tgt.x]);
-
             let b = posBefore[tgt.y][tgt.x];
             let next = tgt;
             while (b.x !== ini.x || b.y !== ini.y){
                 next = posBefore[next.y][next.x];
                 b = posBefore[b.y][b.x];
             }
-
-            console.log('next step:');
-            console.log(next);
 
             let d = this.getPosDirection(ini,next);
             let player = {
@@ -168,7 +162,7 @@ class Player {
                 nextPos: next,
                 direction: d
             };
-            console.log('direction: '+d);
+            
             this.socket.emit('move', player);
         }
 
