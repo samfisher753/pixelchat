@@ -204,7 +204,7 @@ class Player {
                 let X = [ -2,  0,  2, 1, 2, 0, -2, -1 ];               
                 let Y = [ -1, -1, -1, 0, 1, 1,  1,  0 ];
 
-                let dirV = [ 0.5, 2, 0.5, 2, 0.5, 2, 0.5, 2 ];
+                let dirV = [ 0.5, 1, 0.5, 2, 0.5, 1, 0.5, 2 ];
 
                 this.walkd.x += dirV[this.direction]*X[this.direction];
                 this.walkd.y += dirV[this.direction]*Y[this.direction];
