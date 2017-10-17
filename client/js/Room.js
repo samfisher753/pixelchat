@@ -1,11 +1,35 @@
 class Room {
 
     constructor(room) {
+        this.name = room.name || 'New Room';
+        this.size = room.size || 10;
+        this.array = room.array || [];
+        this.spawn = room.spawn || {x:0, y:0};
+        this.spawnDirection = room.spawnDirection || 4;
+        this.players = room.players || {};
+    }
+
+    update(room) {
+        let players = {};
+        for (let p in room.players){
+            let q;
+            if (typeof this.players[p] === 'undefined') {
+                q = new Player(room.players[p]);
+            }
+            else {
+                q = this.players[p];
+            }
+            q.update(room.players[p]);
+            players[p] = q;
+        }
+        this.players = players;
+
         this.name = room.name;
         this.size = room.size;
         this.array = room.array;
-        this.spawn = room.spawn || {x:0, y:0};
-        this.players = room.players || {};
+        this.spawn = room.spawn;
+
+        // this.adaptGrid(); // Commented right now, we never change room size
     }
 
     cell(x, y){
@@ -15,7 +39,9 @@ class Room {
     cellAt(x, y){
         let c = Grid.cellAt(x,y);
         if (c === null) return c;
-        return this.array[c.y][c.x];
+        let cp = this.array[c.y][c.x];
+        if (cp !== null) cp.pos = c;
+        return cp;
     }
 
     setName(name) {
@@ -34,6 +60,8 @@ class Room {
         this.players[player.getName()] = player;
         player.setRoom(this.name);
         player.setPos(this.spawn);
+        player.setStatus('stand');
+        player.setDirection(this.spawnDirection);
         // Add to this.array.players
         let tile = this.array[this.spawn.y][this.spawn.x];
         tile.players.push(player.getName());
@@ -69,11 +97,16 @@ class Room {
     getSpawn() {
         return this.spawn;
     }
+
+    getPlayer(name) {
+        return this.players[name];
+    }
     
     getPlayers() {
         return this.players;
     }
 
+    /*
     createPlayers() {
         for (let p in this.players){
             this.players[p] = new Player(this.players[p]);
@@ -84,6 +117,12 @@ class Room {
     adaptGrid() {
         Grid.setSize(this.size);
         Grid.createDrawOrder();
+    }
+*/
+
+    updateLogic(){
+        for (let p in this.players)
+            this.players[p].updateLogic(this);
     }
 
     draw(ctx) {
@@ -100,7 +139,7 @@ class Room {
         // Draw players of the room
         for (let tile of drawO){
             let cell = this.array[tile.y][tile.x];
-            if (cell !== null && Array.isArray(cell.players) ){
+            if (cell !== null && cell.players.length > 0){
                 for (let player of cell.players){
                     this.players[player].draw(ctx, tile.drawPos);
                 }

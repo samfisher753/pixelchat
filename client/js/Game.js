@@ -5,16 +5,12 @@ class Game {
         // Vars
         this.socket = null;
         this.playerName = null;
+        this.player = null;
         this.room = null;
         this.canvasCtx = null;
 
-        // Engine
-        this.fps = 20;
-        this.timestep = 1000 / this.fps;
-        this.lastFrameTimeMs = 0;
-        this.delta = 0;
-
         // Misc
+        this.lastFrameTimeMs = 0;
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
         this.mouse = null;
@@ -37,9 +33,11 @@ class Game {
     }
 
     configGrid() {
+        /*
         let c = this.canvasCtx.canvas;
         Grid.setOrigin(c.width/2, 0);
         Grid.createDrawOrder();
+        */
     }
 
     startGame(){
@@ -48,34 +46,22 @@ class Game {
         requestAnimationFrame(this.gameLoop.bind(this));
     }
 
-    gameLoop(timestamp) {
-        if (timestamp < this.lastFrameTimeMs + (1000 / this.fps)){
-            requestAnimationFrame(this.gameLoop.bind(this));
-            return;
-        }
-
-        this.delta += timestamp - this.lastFrameTimeMs;
-        let fps = (1000 / (timestamp - this.lastFrameTimeMs));
+    gameLoop(timeStamp) {
+        let fps = (1000 / (timeStamp - this.lastFrameTimeMs));
         this.fpsSpan.innerHTML = 'fps: ' + Math.ceil(fps);
-        this.lastFrameTimeMs = timestamp;
-        this.d = {x:0, y:0};
-
-        let i = 0;
-        while (this.delta >= this.timestep) {
-            this.update();
-            this.delta -= this.timestep;
-            if (i++ > 150){
-                this.panic();
-                break;
-            }
-        }
+        this.lastFrameTimeMs = timeStamp;
+        this.update();
         this.draw();
         
         requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     update() {
-        // Use timestep to avoid physics problems
+        if (this.room !== null){
+            this.room.updateLogic();
+        }
+
+        this.d = {x:0, y:0};
 
         // If canvas has been dragged
         if (this.mouse !== null) {
@@ -89,19 +75,27 @@ class Game {
         }
 
         // If canvas has been clicked
-        if (this.click !== null) {
-            let target = this.room.cellAt(this.click.clientX, this.click.clientY);
+        if (this.room !== null && this.click !== null) {
+            let target = Grid.cellAt(this.click.clientX, this.click.clientY);
+            // If there is a grid cell there
             if (target !== null){
                 console.log(target);
-                // Ask server to move to that cell
+                let cell = this.room.cell(target.x,target.y);
+                // If there is a room cell there
+                if (cell !== null){
+                    // If player on the cell, change direction
+                    if (cell.players.length > 0) {
+                        this.player.changeDirection(target);
+                    }
+                    // If not, move to cell
+                    else {
+                        this.player.move(target, this.room);
+                    }
+                }
+                
             }
             this.click = null;
         }
-    }
-
-    panic() {
-        this.delta = 0;
-        // ...
     }
 
     draw() {
@@ -125,6 +119,8 @@ class Game {
         body.onresize = () => {
             canvas.height = canvas.clientHeight;
             canvas.width = canvas.clientWidth;
+            Grid.center(canvas.width,canvas.height);
+            Grid.createDrawOrder();
         };
         
         canvas.onmousedown = (e) => {
@@ -188,12 +184,17 @@ class Game {
 
         // Event: Receive room info
         this.socket.on('room info', (room) => {
-            this.room = new Room(room);
-            this.room.createPlayers();
-            this.room.adaptGrid();
-            // WIP Need to know if room is received cause I entered or cause
-            // there have been changes
-            // Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
+            if (this.room===null) {
+                this.room = new Room({a: 0});
+                this.room.update(room);
+                this.player = this.room.getPlayer(this.playerName);
+                this.player.setSocket(this.socket);
+                // Update Grid
+                Grid.setSize(this.room.getSize());
+                Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
+                Grid.createDrawOrder();
+            }
+            else this.room.update(room);
         });
 
         // Event: Receive number of players

@@ -41,6 +41,7 @@ let server = {
     bindEvents(io) {
         io.on('connection', (socket) => {
             let playerName = null;
+            let room = null;
         
             // For coherence I add the player once he sends his name, not before.
             // Client will send player name immediately after connect.
@@ -85,8 +86,61 @@ let server = {
 
             socket.on('join room', (roomName) => {
                 this.rooms[roomName].join(this.players[playerName]);
+                room = this.rooms[roomName];
                 io.emit('room info', this.rooms[roomName]);
             });
+
+            socket.on('move', (player) => {
+                let ct = room.cell(player.target.x, player.target.y);
+                let cnp = room.cell(player.nextPos.x, player.nextPos.y);
+                let p = room.getPlayer(playerName);
+                p.direction = player.direction; 
+                // Check target is empty 
+                if (ct.players.length === 0){
+                    // Start or keep moving
+                    p.target = player.target;
+                    p.nextPos = player.nextPos;
+                    p.status = 'walk';
+                }
+                else {
+                    // Stop
+                    p.target = null;
+                    p.nextPos = null;
+                    p.status = 'stand';
+                }
+
+                // In case player changed of cell
+                let c = room.cell(p.pos.x, p.pos.y);
+                let i = c.players.indexOf(p.name);
+                c.players.splice(i, 1);
+                p.pos = player.pos;
+                c = room.cell(p.pos.x, p.pos.y);
+                c.players.push(p.name);
+
+                io.emit('room info', room);
+            });
+
+            socket.on('end-move', () => {
+                let p = room.getPlayer(playerName);
+                let ct = room.cell(p.target.x, p.target.y);
+                if (ct.players.length === 0){
+                    let c = room.cell(p.pos.x, p.pos.y);
+                    let i = c.players.indexOf(p.name);
+                    c.players.splice(i, 1);
+                    p.pos = p.target;
+                    ct.players.push(p.name);
+                }
+                p.target = null;
+                p.nextPos = null;
+                p.status = 'stand';
+                io.emit('room info', room);
+            });
+
+            socket.on('change direction', (d) => {
+                let p = room.getPlayer(playerName);
+                p.direction = d;
+                io.emit('room info', room);
+            })
         });
 
     },
