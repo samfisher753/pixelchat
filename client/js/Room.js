@@ -8,6 +8,16 @@ class Room {
         this.players = room.players || {};
     }
 
+    cell(x, y){
+        return this.array[y][x];
+    }
+
+    cellAt(x, y){
+        let c = Grid.cellAt(x,y);
+        if (c === null) return c;
+        return this.array[c.y][c.x];
+    }
+
     setName(name) {
         this.name = name;
     }

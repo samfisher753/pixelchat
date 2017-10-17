@@ -13,16 +13,19 @@ class Game {
         this.timestep = 1000 / this.fps;
         this.lastFrameTimeMs = 0;
         this.delta = 0;
-        // ------
+
+        // Misc
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
         this.mouse = null;
         this.mousedown = false;
+        this.click = null;
+        this.disableClick = false; 
         
         this.getPlayerName();
     }
 
-    start() {
+    init() {
         this.createChatPanel();
         this.socket = io();
         this.configureSocket();
@@ -37,6 +40,12 @@ class Game {
         let c = this.canvasCtx.canvas;
         Grid.setOrigin(c.width/2, 0);
         Grid.createDrawOrder();
+    }
+
+    startGame(){
+        // Join room
+        this.socket.emit('join room', this.roomsList[0]);
+        requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     gameLoop(timestamp) {
@@ -78,6 +87,16 @@ class Game {
             this.initialPos.y = this.mouse.clientY;
             this.mouse = null;
         }
+
+        // If canvas has been clicked
+        if (this.click !== null) {
+            let target = this.room.cellAt(this.click.clientX, this.click.clientY);
+            if (target !== null){
+                console.log(target);
+                // Ask server to move to that cell
+            }
+            this.click = null;
+        }
     }
 
     panic() {
@@ -117,12 +136,19 @@ class Game {
         document.onmousemove = (e) => {
             if (this.mousedown){
                 this.mouse = e;
+                // Disable click event after dragging
+                this.disableClick = true;  
             }
         };
 
         document.onmouseup = (e) => {
             this.mousedown = false;
         };
+
+        canvas.onclick = (e) => {
+            if (!this.disableClick) this.click = e;
+            this.disableClick = false;
+        }
     }
 
     createCanvas() {
@@ -157,15 +183,13 @@ class Game {
 
         // Event: Receive rooms list
         this.socket.on('rooms list', (rooms) => {
-            // Join room
-            this.socket.emit('join room', rooms[0]);
+            this.roomsList = rooms;
         });
 
         // Event: Receive room info
         this.socket.on('room info', (room) => {
             this.room = new Room(room);
             this.room.createPlayers();
-            //this.room.getPlayers()[this.playerName].setStatus('walk');
             this.room.adaptGrid();
             // WIP Need to know if room is received cause I entered or cause
             // there have been changes
@@ -257,7 +281,7 @@ class Game {
             if (nick !== '') {
                 this.playerName = nick;
                 app.innerHTML = '';
-                this.start();
+                this.init();
             }
         };
 

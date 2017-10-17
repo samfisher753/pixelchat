@@ -11,6 +11,8 @@ class Player {
         this.direction = 4;
         this.animFrame = 0;
         this.images = [];
+
+        this.fetchImages();
     }
 
     setRoom(room) {

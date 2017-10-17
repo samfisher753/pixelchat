@@ -22,9 +22,7 @@ let Assets = {
                 this.loadImages();
             }
             else {
-                // Start render
-                game.room.getPlayers()[game.playerName].setDirAndStatus(4, 'walk');
-                requestAnimationFrame(game.gameLoop.bind(game));
+                game.startGame();
             }
         };
     },

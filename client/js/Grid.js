@@ -27,6 +27,18 @@ let Grid = {
         return this.drawOrdered;
     },
 
+    cellAt(x, y) {
+        for(let cell of this.drawOrdered){
+            let qx = cell.drawPos.x + this.dx;
+            let qy = cell.drawPos.y + this.dy;
+            let px = x - qx;
+            let py = y - qy;
+            let r = (Math.abs(px)/this.dx) + (Math.abs(py)/this.dy);
+            if (r <= 1) return {x: cell.x, y: cell.y};
+        }
+        return null;
+    },
+
     createDrawOrder() {
         // Holy fucking awesome loop of the galaxy
         this.drawOrdered = [];
