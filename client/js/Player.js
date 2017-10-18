@@ -108,8 +108,7 @@ class Player {
     }
 
     move(tgt, room) {
-        // if (room.cell(tgt.x,tgt.y).players.length > 0) return;
-
+        
         let X = Grid.X;                 
         let Y = Grid.Y;
 
@@ -169,7 +168,7 @@ class Player {
 
     }
 
-    updateLogic(room) {
+    updateLogic(room, mouse, localPlayer) {
         let w = 64;
         let h = 32;
 
@@ -187,35 +186,34 @@ class Player {
                 c.players.push(this.name);
                 
                 // If local player clicked somewhere
-                if (game.click !== null && this.name === game.playerName) {
-                    let target = Grid.cellAt(game.click.clientX, game.click.clientY);
+                if (mouse.cType === 'clicked' && this.name === localPlayer) {
+                    let target = Grid.cellAt(mouse.clientX, mouse.clientY);
                     // If there is a grid cell there
                     if (target !== null){
                         let cell = room.cell(target.x,target.y);
                         // If it's a valid room cell without players
                         if (cell !== null && cell.players.length === 0){
                             this.move(target, room);
-                            game.click = null;
-                            return;
+                            mouse.cType = 'checked';
+                            return mouse;
                         }
                     }
-                    game.click = null;
+                    mouse.cType = 'checked';
                 }
 
+                // If invalid or unavailable pos clicked
                 // If next cell is the target
-                if (this.nextPos.x === this.target.x 
-                    && this.nextPos.y === this.target.y){
+                if (this.nextPos.x === this.target.x && this.nextPos.y === this.target.y){
+                    // Stop player
                     this.target = null;
                     this.nextPos = null;
                     this.setDirAndStatus(this.direction,'stand');
-                    if (this.name === game.playerName)
-                        this.socket.emit('end-move');
+                    if (this.name === localPlayer) this.socket.emit('end-move');
                 }
-                // If not
                 else {
-                    if (this.name === game.playerName)
+                    if (this.name === localPlayer)
                         this.move(this.target, room);
-                }
+                }   
             }
             // If still at same cell
             else {
@@ -229,8 +227,8 @@ class Player {
             }
         }
         else if (this.status === 'stand'){
-            if (game.click !== null && this.name === game.playerName) {
-                let target = Grid.cellAt(game.click.clientX, game.click.clientY);
+            if (mouse.cType === 'clicked' && this.name === localPlayer) {
+                let target = Grid.cellAt(mouse.clientX, mouse.clientY);
                 // If there is a grid cell there
                 if (target !== null){
                     let cell = room.cell(target.x,target.y);
@@ -246,9 +244,11 @@ class Player {
                         }
                     }
                 }
-                game.click = null;
+                mouse.cType = 'checked';
             }
         }
+
+        return mouse;
     }
 
     draw(ctx, drawPos) {

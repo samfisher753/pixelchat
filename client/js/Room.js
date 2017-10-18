@@ -28,8 +28,6 @@ class Room {
         this.size = room.size;
         this.array = room.array;
         this.spawn = room.spawn;
-
-        // this.adaptGrid(); // Commented right now, we never change room size
     }
 
     cell(x, y){
@@ -106,23 +104,10 @@ class Room {
         return this.players;
     }
 
-    /*
-    createPlayers() {
-        for (let p in this.players){
-            this.players[p] = new Player(this.players[p]);
-            this.players[p].fetchImages();
-        }
-    }
-
-    adaptGrid() {
-        Grid.setSize(this.size);
-        Grid.createDrawOrder();
-    }
-*/
-
-    updateLogic(){
+    updateLogic(mouse, localPlayer){
         for (let p in this.players)
-            this.players[p].updateLogic(this);
+            mouse = this.players[p].updateLogic(this, mouse, localPlayer);
+        return mouse;
     }
 
     draw(ctx) {

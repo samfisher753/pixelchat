@@ -20,6 +20,8 @@ httpServer.listen(port, () => {
 });
 
 // Avoid heroku server idling
-setInterval(() => {
-    http.get('http://game753.herokuapp.com/');
-}, 1800000)
+if (typeof process.env.DIST !== 'undefined'){
+    setInterval(() => {
+        http.get('http://game753.herokuapp.com/');
+    }, 1800000);
+}

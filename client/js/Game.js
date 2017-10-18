@@ -13,9 +13,8 @@ class Game {
         this.lastFrameTimeMs = 0;
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
-        this.mouse = null;
+        this.mouse = {cType: 'checked'};
         this.mousedown = false;
-        this.click = null;
         this.disableClick = false; 
         
         this.getPlayerName();
@@ -28,16 +27,7 @@ class Game {
         this.bindChatEvents();
         this.createCanvas();
         this.bindEvents();
-        this.configGrid();
         Assets.load();
-    }
-
-    configGrid() {
-        /*
-        let c = this.canvasCtx.canvas;
-        Grid.setOrigin(c.width/2, 0);
-        Grid.createDrawOrder();
-        */
     }
 
     startGame(){
@@ -58,45 +48,21 @@ class Game {
 
     update() {
         if (this.room !== null){
-            this.room.updateLogic();
+            this.mouse = this.room.updateLogic(this.mouse, this.playerName);
         }
 
         this.d = {x:0, y:0};
 
         // If canvas has been dragged
-        if (this.mouse !== null) {
+        if (this.mouse.cType === 'dragged') {
             this.d.x += this.mouse.clientX - this.initialPos.x;
             this.d.y += this.mouse.clientY - this.initialPos.y;
             Grid.move(this.d);
             Grid.createDrawOrder();
             this.initialPos.x = this.mouse.clientX;
             this.initialPos.y = this.mouse.clientY;
-            this.mouse = null;
+            this.mouse.cType = 'checked';
         }
-
-        // If canvas has been clicked
-        /*
-        if (this.room !== null && this.click !== null) {
-            let target = Grid.cellAt(this.click.clientX, this.click.clientY);
-            // If there is a grid cell there
-            if (target !== null){
-                let cell = this.room.cell(target.x,target.y);
-                // If there is a room cell there
-                if (cell !== null){
-                    // If player on the cell, change direction
-                    if (cell.players.length > 0) {
-                        this.player.changeDirection(target);
-                    }
-                    // If not, move to cell
-                    else {
-                        this.player.move(target, this.room);
-                    }
-                }
-                
-            }
-            this.click = null;
-        }
-        */
     }
 
     draw() {
@@ -111,7 +77,6 @@ class Game {
         if (this.room !== null) {
             this.room.draw(ctx);
         }
-
     }
 
     bindEvents() {
@@ -133,6 +98,7 @@ class Game {
         document.onmousemove = (e) => {
             if (this.mousedown){
                 this.mouse = e;
+                this.mouse.cType = 'dragged';
                 // Disable click event after dragging
                 this.disableClick = true;  
             }
@@ -143,9 +109,12 @@ class Game {
         };
 
         canvas.onclick = (e) => {
-            if (!this.disableClick) this.click = e;
+            if (!this.disableClick){
+                this.mouse = e;
+                this.mouse.cType = 'clicked';
+            }
             this.disableClick = false;
-        }
+        };
     }
 
     createCanvas() {
