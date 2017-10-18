@@ -74,14 +74,14 @@ let server = {
                     let room = this.players[playerName].getRoom();
                     if (room !== null){
                         this.rooms[room].leave(playerName);
-                        io.emit('room info', this.rooms[room]);
+                        socket.broadcast.emit('room info', this.rooms[room]);
                     }
                     delete this.players[playerName];
                     console.log(playerName + ' left.');
                 }
                 this.printOnlinePlayers();
                 // Send online players
-                io.emit('online players', Object.keys(this.players).length);
+                socket.broadcast.emit('online players', Object.keys(this.players).length);
             });
 
             socket.on('join room', (roomName) => {

@@ -57,6 +57,7 @@ class Player {
         this.direction = dir;
         this.status = status;
         this.animFrame = 0;
+        this.walkd = {x:0, y:0};
         this.fetchImages();
     }
 
@@ -185,6 +186,22 @@ class Player {
                 c = room.cell(this.pos.x, this.pos.y);
                 c.players.push(this.name);
                 
+                // If local player clicked somewhere
+                if (game.click !== null && this.name === game.playerName) {
+                    let target = Grid.cellAt(game.click.clientX, game.click.clientY);
+                    // If there is a grid cell there
+                    if (target !== null){
+                        let cell = room.cell(target.x,target.y);
+                        // If it's a valid room cell without players
+                        if (cell !== null && cell.players.length === 0){
+                            this.move(target, room);
+                            game.click = null;
+                            return;
+                        }
+                    }
+                    game.click = null;
+                }
+
                 // If next cell is the target
                 if (this.nextPos.x === this.target.x 
                     && this.nextPos.y === this.target.y){
@@ -194,6 +211,7 @@ class Player {
                     if (this.name === game.playerName)
                         this.socket.emit('end-move');
                 }
+                // If not
                 else {
                     if (this.name === game.playerName)
                         this.move(this.target, room);
@@ -208,6 +226,27 @@ class Player {
 
                 this.walkd.x += dirV[this.direction]*X[this.direction];
                 this.walkd.y += dirV[this.direction]*Y[this.direction];
+            }
+        }
+        else if (this.status === 'stand'){
+            if (game.click !== null && this.name === game.playerName) {
+                let target = Grid.cellAt(game.click.clientX, game.click.clientY);
+                // If there is a grid cell there
+                if (target !== null){
+                    let cell = room.cell(target.x,target.y);
+                    // If there is a room cell there
+                    if (cell !== null){
+                        // If player on the cell, change direction
+                        if (cell.players.length > 0) {
+                            this.changeDirection(target);
+                        }
+                        // If not, move to cell
+                        else {
+                            this.move(target, room);
+                        }
+                    }
+                }
+                game.click = null;
             }
         }
     }

@@ -75,6 +75,7 @@ class Game {
         }
 
         // If canvas has been clicked
+        /*
         if (this.room !== null && this.click !== null) {
             let target = Grid.cellAt(this.click.clientX, this.click.clientY);
             // If there is a grid cell there
@@ -95,6 +96,7 @@ class Game {
             }
             this.click = null;
         }
+        */
     }
 
     draw() {
