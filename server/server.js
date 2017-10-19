@@ -91,31 +91,18 @@ let server = {
             });
 
             socket.on('move', (player) => {
-                let ct = room.cell(player.target.x, player.target.y);
-                let cnp = room.cell(player.nextPos.x, player.nextPos.y);
-                let p = room.getPlayer(playerName);
-                p.direction = player.direction; 
-                // Check target is empty 
-                if (ct.players.length === 0){
-                    // Start or keep moving
-                    p.target = player.target;
-                    p.nextPos = player.nextPos;
-                    p.status = 'walk';
+                // Emit only if player must stop
+                if (!this.move(player, room, playerName)) 
+                    io.emit('room info', room);
+            });
+
+            socket.on('start-move', (player) => {
+                if (this.move(player, room, playerName)){
+                    socket.broadcast.emit('room info', room);
                 }
                 else {
-                    // Stop
-                    p.target = null;
-                    p.nextPos = null;
-                    p.status = 'stand';
+                    io.emit('room info', room);
                 }
-
-                // In case player changed of cell
-                room.updatePlayerCell(p.pos,player.pos,p.name);
-                p.pos = player.pos;
-
-                // Notify player only if he must stop
-                if (p.status === 'stand') io.emit('room info', room);
-                else socket.broadcast.emit('room info', room);
             });
 
             socket.on('end-move', () => {
@@ -128,7 +115,7 @@ let server = {
                 p.target = null;
                 p.nextPos = null;
                 p.status = 'stand';
-                io.emit('room info', room);
+                socket.broadcast.emit('room info', room);
             });
 
             socket.on('change direction', (d) => {
@@ -138,6 +125,32 @@ let server = {
             })
         });
 
+    },
+
+    move(player, room, playerName) {
+        let ct = room.cell(player.target.x, player.target.y);
+        let cnp = room.cell(player.nextPos.x, player.nextPos.y);
+        let p = room.getPlayer(playerName);
+        p.direction = player.direction; 
+        // Check target is empty 
+        if (ct.players.length === 0){
+            // Start or keep moving
+            p.target = player.target;
+            p.nextPos = player.nextPos;
+            p.status = 'walk';
+        }
+        else {
+            // Stop
+            p.target = null;
+            p.nextPos = null;
+            p.status = 'stand';
+        }
+
+        // In case player changed of cell
+        room.updatePlayerCell(p.pos,player.pos,p.name);
+        p.pos = player.pos;
+
+        return (p.status === 'walk');
     },
 
     printOnlinePlayers() {

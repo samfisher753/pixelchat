@@ -88,6 +88,7 @@ class Player {
 
     getPosDirection(a, b) {
         let u = {x: a.x-b.x, y: a.y-b.y};
+        if (u.x === 0 && u.y === 0) return this.direction;
         if (u.x === 0 && u.y > 0) return 0;
         if (u.x < 0 && u.y > 0) return 1;
         if (u.x < 0 && u.y === 0) return 2;
@@ -107,7 +108,7 @@ class Player {
         }
     }
 
-    move(tgt, room) {
+    move(tgt, room, localPlayer) {
         
         let X = Grid.X;                 
         let Y = Grid.Y;
@@ -164,9 +165,17 @@ class Player {
                 status: 'walk'
             };
 
+            let statusBefore = this.status;
             this.update(player);
-
-            this.socket.emit('move', player);
+            // Emit only if it's the local player
+            if (this.name === localPlayer) {
+                if (statusBefore === 'stand'){
+                    this.socket.emit('start-move', player);
+                }
+                else {
+                    this.socket.emit('move', player);
+                }
+            }
         }
 
     }
@@ -179,78 +188,77 @@ class Player {
     }
 
     updateLogic(room, mouse, localPlayer) {
-        let w = 64;
-        let h = 32;
-
-        if (this.status === 'walk'){
-            // Update pos offset
-            let X = [ -2,  0,  2, 1, 2, 0, -2, -1 ];               
-            let Y = [ -1, -1, -1, 0, 1, 1,  1,  0 ];
-
-            let dirV = [ 0.5, 1, 0.5, 2, 0.5, 1, 0.5, 2 ];
-
-            this.walkd.x += dirV[this.direction]*X[this.direction];
-            this.walkd.y += dirV[this.direction]*Y[this.direction];
-
-            let r = Math.abs(this.walkd.x/w) + Math.abs(this.walkd.y/h);
-            // If arrived to next cell
-            if (r > 1) {
-                this.walkd.x = 0;
-                this.walkd.y = 0;
-                room.updatePlayerCell(this.pos,this.nextPos,this.name);
-                this.pos = this.nextPos;
-                
-                // If local player clicked somewhere
-                if (mouse.cType === 'clicked' && this.name === localPlayer) {
-                    let target = Grid.cellAt(mouse.clientX, mouse.clientY);
-                    // If there is a grid cell there
-                    if (target !== null){
-                        let cell = room.cell(target.x,target.y);
-                        // If it's a valid room cell without players
-                        if (cell !== null && cell.players.length === 0){
-                            this.move(target, room);
-                            mouse.cType = 'checked';
-                            return mouse;
-                        }
-                    }
-                    mouse.cType = 'checked';
-                }
-
-                // If invalid or unavailable pos clicked
-                // If next cell is the target or there is a player on the target cell
-                if ((this.nextPos.x === this.target.x && this.nextPos.y === this.target.y)
-                    || room.cell(this.target.x,this.target.y).players.length > 0) {
-                    this.stop(localPlayer);
-                }
-                else {
-                    if (this.name === localPlayer)
-                        this.move(this.target, room);
-                }   
-            }
+        if (this.status === 'stand'){
+            this.updateLogicStand(room, mouse, localPlayer);
         }
-        else if (this.status === 'stand'){
-            if (mouse.cType === 'clicked' && this.name === localPlayer) {
-                let target = Grid.cellAt(mouse.clientX, mouse.clientY);
-                // If there is a grid cell there
-                if (target !== null){
-                    let cell = room.cell(target.x,target.y);
-                    // If there is a room cell there
-                    if (cell !== null){
-                        // If player on the cell, change direction
-                        if (cell.players.length > 0) {
-                            this.changeDirection(target);
-                        }
-                        // If not, move to cell
-                        else {
-                            this.move(target, room);
-                        }
-                    }
-                }
-                mouse.cType = 'checked';
-            }
+        else if (this.status === 'walk'){
+            this.updateLogicWalk(room, mouse, localPlayer);
         }
 
         return mouse;
+    }
+
+    updateLogicStand(room, mouse, localPlayer) {
+        if (mouse.cType === 'clicked' && this.name === localPlayer) {
+            let c = room.cellAt(mouse.clientX, mouse.clientY);
+            // If there is a room cell there
+            if (c !== null){
+                // If player on the cell, change direction
+                if (c.players.length > 0) {
+                    this.changeDirection(c.pos);
+                }
+                // If not, move to cell
+                else {
+                    this.move(c.pos, room, localPlayer);
+                }
+            }
+            mouse.cType = 'checked';
+        }
+    }
+
+    updateLogicWalk(room, mouse, localPlayer) {
+        let w = 64;
+        let h = 32;
+
+        // Update pos offset
+        let X = [ -2,  0,  2, 1, 2, 0, -2, -1 ];               
+        let Y = [ -1, -1, -1, 0, 1, 1,  1,  0 ];
+
+        let dirV = [ 0.5, 1, 0.5, 2, 0.5, 1, 0.5, 2 ];
+
+        this.walkd.x += dirV[this.direction]*X[this.direction];
+        this.walkd.y += dirV[this.direction]*Y[this.direction];
+
+        let r = Math.abs(this.walkd.x/w) + Math.abs(this.walkd.y/h);
+        // If arrived to next cell
+        if (r > 1) {
+            this.walkd.x = 0;
+            this.walkd.y = 0;
+            room.updatePlayerCell(this.pos,this.nextPos,this.name);
+            this.pos = this.nextPos;
+
+            // If local player clicked somewhere
+            if (mouse.cType === 'clicked' && this.name === localPlayer) {
+                let c = room.cellAt(mouse.clientX, mouse.clientY);
+                // If it's a valid room cell without players
+                if (c !== null && c.players.length === 0){
+                    this.move(c.pos, room, localPlayer);
+                    mouse.cType = 'checked';
+                    return mouse;
+                }
+                mouse.cType = 'checked';
+            }
+
+            // If invalid or unavailable pos clicked
+            // If next cell is the target or there is a player on the target cell
+            if ((this.nextPos.x === this.target.x && this.nextPos.y === this.target.y)
+                || room.cell(this.target.x,this.target.y).players.length > 0) {
+                this.stop(localPlayer);
+            }
+            else {
+                this.move(this.target, room, localPlayer);
+            }   
+        }
     }
 
     draw(ctx, drawPos) {
