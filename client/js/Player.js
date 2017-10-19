@@ -173,6 +173,15 @@ class Player {
         let h = 32;
 
         if (this.status === 'walk'){
+            // Update pos offset
+            let X = [ -2,  0,  2, 1, 2, 0, -2, -1 ];               
+            let Y = [ -1, -1, -1, 0, 1, 1,  1,  0 ];
+
+            let dirV = [ 0.5, 1, 0.5, 2, 0.5, 1, 0.5, 2 ];
+
+            this.walkd.x += dirV[this.direction]*X[this.direction];
+            this.walkd.y += dirV[this.direction]*Y[this.direction];
+
             let r = Math.abs(this.walkd.x/w) + Math.abs(this.walkd.y/h);
             // If arrived to next cell
             if (r > 1) {
@@ -214,16 +223,6 @@ class Player {
                     if (this.name === localPlayer)
                         this.move(this.target, room);
                 }   
-            }
-            // If still at same cell
-            else {
-                let X = [ -2,  0,  2, 1, 2, 0, -2, -1 ];               
-                let Y = [ -1, -1, -1, 0, 1, 1,  1,  0 ];
-
-                let dirV = [ 0.5, 1, 0.5, 2, 0.5, 1, 0.5, 2 ];
-
-                this.walkd.x += dirV[this.direction]*X[this.direction];
-                this.walkd.y += dirV[this.direction]*Y[this.direction];
             }
         }
         else if (this.status === 'stand'){
