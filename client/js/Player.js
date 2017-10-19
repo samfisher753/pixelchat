@@ -160,12 +160,22 @@ class Player {
                 pos: this.pos,
                 target: tgt,
                 nextPos: next,
-                direction: d
+                direction: d,
+                status: 'walk'
             };
-            
+
+            this.update(player);
+
             this.socket.emit('move', player);
         }
 
+    }
+
+    stop(localPlayer) {
+        this.target = null;
+        this.nextPos = null;
+        this.setDirAndStatus(this.direction,'stand');
+        if (this.name === localPlayer) this.socket.emit('end-move');
     }
 
     updateLogic(room, mouse, localPlayer) {
@@ -187,12 +197,8 @@ class Player {
             if (r > 1) {
                 this.walkd.x = 0;
                 this.walkd.y = 0;
-                let c = room.cell(this.pos.x, this.pos.y);
-                let i = c.players.indexOf(this.name);
-                c.players.splice(i, 1);
+                room.updatePlayerCell(this.pos,this.nextPos,this.name);
                 this.pos = this.nextPos;
-                c = room.cell(this.pos.x, this.pos.y);
-                c.players.push(this.name);
                 
                 // If local player clicked somewhere
                 if (mouse.cType === 'clicked' && this.name === localPlayer) {
@@ -211,13 +217,10 @@ class Player {
                 }
 
                 // If invalid or unavailable pos clicked
-                // If next cell is the target
-                if (this.nextPos.x === this.target.x && this.nextPos.y === this.target.y){
-                    // Stop player
-                    this.target = null;
-                    this.nextPos = null;
-                    this.setDirAndStatus(this.direction,'stand');
-                    if (this.name === localPlayer) this.socket.emit('end-move');
+                // If next cell is the target or there is a player on the target cell
+                if ((this.nextPos.x === this.target.x && this.nextPos.y === this.target.y)
+                    || room.cell(this.target.x,this.target.y).players.length > 0) {
+                    this.stop(localPlayer);
                 }
                 else {
                     if (this.name === localPlayer)

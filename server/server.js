@@ -110,25 +110,20 @@ let server = {
                 }
 
                 // In case player changed of cell
-                let c = room.cell(p.pos.x, p.pos.y);
-                let i = c.players.indexOf(p.name);
-                c.players.splice(i, 1);
+                room.updatePlayerCell(p.pos,player.pos,p.name);
                 p.pos = player.pos;
-                c = room.cell(p.pos.x, p.pos.y);
-                c.players.push(p.name);
 
-                io.emit('room info', room);
+                // Notify player only if he must stop
+                if (p.status === 'stand') io.emit('room info', room);
+                else socket.broadcast.emit('room info', room);
             });
 
             socket.on('end-move', () => {
                 let p = room.getPlayer(playerName);
                 let ct = room.cell(p.target.x, p.target.y);
                 if (ct.players.length === 0){
-                    let c = room.cell(p.pos.x, p.pos.y);
-                    let i = c.players.indexOf(p.name);
-                    c.players.splice(i, 1);
+                    room.updatePlayerCell(p.pos,p.target,p.name);
                     p.pos = p.target;
-                    ct.players.push(p.name);
                 }
                 p.target = null;
                 p.nextPos = null;

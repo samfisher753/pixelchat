@@ -104,6 +104,14 @@ class Room {
         return this.players;
     }
 
+    updatePlayerCell(a, b, name) {
+        let cell = this.array[a.y][a.x];
+        let i = cell.players.indexOf(name);
+        cell.players.splice(i, 1);
+        cell = this.array[b.y][b.x];
+        cell.players.push(name);
+    }
+
     updateLogic(mouse, localPlayer){
         for (let p in this.players)
             mouse = this.players[p].updateLogic(this, mouse, localPlayer);
