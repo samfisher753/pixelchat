@@ -28,6 +28,11 @@ class Player {
             this.setDirAndStatus(player.direction, player.status);
         }
 
+        if (this.pos.x !== player.pos.x || this.pos.y !== player.pos.y){
+            this.room.updatePlayerCell(this.pos, player.pos, this.name);
+            this.walkd = {x:0, y:0};
+        }
+
         this.pos = player.pos;
         this.target = player.target;
         this.nextPos = player.nextPos;
@@ -108,14 +113,14 @@ class Player {
         }
     }
 
-    move(tgt, room, localPlayer) {
+    move(tgt, localPlayer) {
         
         let X = Grid.X;                 
         let Y = Grid.Y;
 
         // BFS 
         let ini = this.pos;
-        let n = room.getSize();
+        let n = this.room.getSize();
         let posBefore = [];
         for (let i=0; i<n; ++i){
             posBefore.push([]);
@@ -138,7 +143,7 @@ class Player {
                 // If pos already visited
                 if (posBefore[q.y][q.x].x >= 0) continue;
                 // If void/out/dark/unused cell
-                let c = room.cell(q.x,q.y);
+                let c = this.room.cell(q.x,q.y);
                 if (c === null) continue;
                 // If cell not empty
                 if (c.players.length > 0) continue;
@@ -182,26 +187,27 @@ class Player {
     }
 
     stop(localPlayer) {
+        console.log('stopping '+this.name);
         this.target = null;
         this.nextPos = null;
         this.setDirAndStatus(this.direction,'stand');
         if (this.name === localPlayer) this.socket.emit('end-move');
     }
 
-    updateLogic(room, mouse, localPlayer) {
+    updateLogic(mouse, localPlayer) {
         if (this.status === 'stand'){
-            this.updateLogicStand(room, mouse, localPlayer);
+            this.updateLogicStand(mouse, localPlayer);
         }
         else if (this.status === 'walk'){
-            this.updateLogicWalk(room, mouse, localPlayer);
+            this.updateLogicWalk(mouse, localPlayer);
         }
 
         return mouse;
     }
 
-    updateLogicStand(room, mouse, localPlayer) {
+    updateLogicStand(mouse, localPlayer) {
         if (mouse.cType === 'clicked' && this.name === localPlayer) {
-            let c = room.cellAt(mouse.clientX, mouse.clientY);
+            let c = this.room.cellAt(mouse.clientX, mouse.clientY);
             // If there is a room cell there
             if (c !== null){
                 // If player on the cell, change direction
@@ -210,14 +216,14 @@ class Player {
                 }
                 // If not, move to cell
                 else {
-                    this.move(c.pos, room, localPlayer);
+                    this.move(c.pos, localPlayer);
                 }
             }
             mouse.cType = 'checked';
         }
     }
 
-    updateLogicWalk(room, mouse, localPlayer) {
+    updateLogicWalk(mouse, localPlayer) {
         let w = 64;
         let h = 32;
 
@@ -235,15 +241,15 @@ class Player {
         if (r > 1) {
             this.walkd.x = 0;
             this.walkd.y = 0;
-            room.updatePlayerCell(this.pos,this.nextPos,this.name);
+            this.room.updatePlayerCell(this.pos,this.nextPos,this.name);
             this.pos = this.nextPos;
 
             // If local player clicked somewhere
             if (mouse.cType === 'clicked' && this.name === localPlayer) {
-                let c = room.cellAt(mouse.clientX, mouse.clientY);
+                let c = this.room.cellAt(mouse.clientX, mouse.clientY);
                 // If it's a valid room cell without players
                 if (c !== null && c.players.length === 0){
-                    this.move(c.pos, room, localPlayer);
+                    this.move(c.pos, localPlayer);
                     mouse.cType = 'checked';
                     return mouse;
                 }
@@ -253,11 +259,11 @@ class Player {
             // If invalid or unavailable pos clicked
             // If next cell is the target or there is a player on the target cell
             if ((this.nextPos.x === this.target.x && this.nextPos.y === this.target.y)
-                || room.cell(this.target.x,this.target.y).players.length > 0) {
+                || this.room.cell(this.target.x,this.target.y).players.length > 0) {
                 this.stop(localPlayer);
             }
             else {
-                this.move(this.target, room, localPlayer);
+                this.move(this.target, localPlayer);
             }   
         }
     }

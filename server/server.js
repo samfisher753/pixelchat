@@ -98,24 +98,28 @@ let server = {
 
             socket.on('start-move', (player) => {
                 if (this.move(player, room, playerName)){
-                    socket.broadcast.emit('room info', room);
+                    socket.broadcast.emit('player info', room.getPlayer(playerName));
                 }
                 else {
-                    io.emit('room info', room);
+                    io.emit('player info', room.getPlayer(playerName));
                 }
             });
 
             socket.on('end-move', () => {
                 let p = room.getPlayer(playerName);
+                console.log('end-move');
+                console.log(p);
                 let ct = room.cell(p.target.x, p.target.y);
-                if (ct.players.length === 0){
+                let b = (ct.players.length === 0);
+                if (b){
                     room.updatePlayerCell(p.pos,p.target,p.name);
                     p.pos = p.target;
                 }
                 p.target = null;
                 p.nextPos = null;
                 p.status = 'stand';
-                socket.broadcast.emit('room info', room);
+                if (b) socket.broadcast.emit('room info', room);
+                else io.emit('room info', room)
             });
 
             socket.on('change direction', (d) => {

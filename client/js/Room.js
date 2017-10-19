@@ -20,6 +20,7 @@ class Room {
                 q = this.players[p];
             }
             q.update(room.players[p]);
+            q.setRoom(this);
             players[p] = q;
         }
         this.players = players;
@@ -28,6 +29,11 @@ class Room {
         this.size = room.size;
         this.array = room.array;
         this.spawn = room.spawn;
+    }
+
+    setPlayersRoom() {
+        for (let p in this.players)
+            this.players[p].setRoom(this);
     }
 
     cell(x, y){
@@ -114,7 +120,7 @@ class Room {
 
     updateLogic(mouse, localPlayer){
         for (let p in this.players)
-            mouse = this.players[p].updateLogic(this, mouse, localPlayer);
+            mouse = this.players[p].updateLogic(mouse, localPlayer);
         return mouse;
     }
 

@@ -167,6 +167,11 @@ class Game {
             else this.room.update(room);
         });
 
+        this.socket.on('player info', (player) => {
+            let p = this.room.getPlayer(player.name);
+            p.update(player);
+        });
+
         // Event: Receive number of players
         this.socket.on('online players', (num_players) => {
             this.playersSpan.innerHTML = 'online: ' + num_players;
