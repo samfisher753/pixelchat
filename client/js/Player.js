@@ -165,11 +165,12 @@ class Player {
                 status: 'walk'
             };
 
-            let statusBefore = this.status;
+            let oldTgt = this.target;
             this.update(player);
             // Emit only if it's the local player
             if (this.name === localPlayer) {
-                if (statusBefore === 'stand'){
+                // If player was not moving or it was moving but changed target
+                if (oldTgt === null || (oldTgt.x !== tgt.x || oldTgt.y !== tgt.y)){
                     this.socket.emit('start-move', player);
                 }
                 else {
