@@ -187,7 +187,6 @@ class Player {
     }
 
     stop(localPlayer) {
-        console.log('stopping '+this.name);
         this.target = null;
         this.nextPos = null;
         this.setDirAndStatus(this.direction,'stand');

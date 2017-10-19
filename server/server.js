@@ -107,8 +107,6 @@ let server = {
 
             socket.on('end-move', () => {
                 let p = room.getPlayer(playerName);
-                console.log('end-move');
-                console.log(p);
                 let ct = room.cell(p.target.x, p.target.y);
                 let b = (ct.players.length === 0);
                 if (b){
