@@ -6,7 +6,7 @@
   "scripts": {
     "dist": "set DIST=1 && node index.js",
     "start": "node index.js",
-    "production": "babel client/js/*.js | uglifyjs > --compress --mangle --output dist/js/game.min.js && cp -r client/css dist && cp -r client/textures dist",
+    "production": "babel client/js/*.js | uglifyjs --compress --mangle -o dist/js/game.min.js && cp -r client/css dist && cp -r client/textures dist",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jose Ruiz",
