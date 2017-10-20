@@ -28,7 +28,7 @@ class Player {
             this.setDirAndStatus(player.direction, player.status);
         }
 
-        if (this.pos.x !== player.pos.x || this.pos.y !== player.pos.y){
+        if (this.pos !== null && (this.pos.x !== player.pos.x || this.pos.y !== player.pos.y)){
             this.room.updatePlayerCell(this.pos, player.pos, this.name);
             this.walkd = {x:0, y:0};
         }
@@ -36,6 +36,18 @@ class Player {
         this.pos = player.pos;
         this.target = player.target;
         this.nextPos = player.nextPos;
+    }
+
+    reset() {
+        this.room = null;
+        this.pos = null;
+        this.status = 'out';
+        this.direction = -1;
+        this.animFrame = 0;
+        this.images = [];
+        this.walkd = {x:0, y:0};
+        this.target = null;
+        this.nextPos = null;
     }
 
     setRoom(room) {

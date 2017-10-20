@@ -66,6 +66,7 @@ class Room {
         player.setPos(this.spawn);
         player.setStatus('stand');
         player.setDirection(this.spawnDirection);
+        player.setRoom(this);
         // Add to this.array.players
         let tile = this.array[this.spawn.y][this.spawn.x];
         tile.players.push(player.getName());
@@ -79,8 +80,7 @@ class Room {
         let i = tile.players.indexOf(playerName);
         tile.players.splice(i, 1);
         this.array[p.getPos().y][p.getPos().x] = tile;
-        this.players[playerName].setRoom(null);
-        this.players[playerName].setPos(null);
+        this.players[playerName].reset();
         delete this.players[playerName];
     }
 

@@ -167,6 +167,16 @@ class Game {
             else this.room.update(room);
         });
 
+        this.socket.on('player join', (player) => {
+            let p = new Player({name: player.name});
+            p.update(player);
+            this.room.join(p);
+        });
+
+        this.socket.on('player left', (playerName) => {
+            this.room.leave(playerName);
+        });
+
         this.socket.on('player info', (player) => {
             let p = this.room.getPlayer(player.name);
             p.update(player);

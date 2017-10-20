@@ -74,7 +74,7 @@ let server = {
                     let room = this.players[playerName].getRoom();
                     if (room !== null){
                         this.rooms[room].leave(playerName);
-                        socket.broadcast.emit('room info', this.rooms[room]);
+                        socket.broadcast.emit('player left', playerName);
                     }
                     delete this.players[playerName];
                     console.log(playerName + ' left.');
@@ -87,13 +87,14 @@ let server = {
             socket.on('join room', (roomName) => {
                 this.rooms[roomName].join(this.players[playerName]);
                 room = this.rooms[roomName];
-                io.emit('room info', this.rooms[roomName]);
+                socket.emit('room info', this.rooms[roomName]);
+                socket.broadcast.emit('player join', this.players[playerName]);
             });
 
             socket.on('move', (player) => {
                 // Emit only if player must stop
                 if (!this.move(player, room, playerName)) 
-                    io.emit('room info', room);
+                    io.emit('player info', room.getPlayer(playerName));
             });
 
             socket.on('start-move', (player) => {
@@ -116,14 +117,14 @@ let server = {
                 p.target = null;
                 p.nextPos = null;
                 p.status = 'stand';
-                if (b) socket.broadcast.emit('room info', room);
-                else io.emit('room info', room)
+                if (b) socket.broadcast.emit('player info', p);
+                else io.emit('player info', p)
             });
 
             socket.on('change direction', (d) => {
                 let p = room.getPlayer(playerName);
                 p.direction = d;
-                io.emit('room info', room);
+                socket.broadcast.emit('player info', p);
             })
         });
 
