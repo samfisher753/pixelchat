@@ -97,9 +97,10 @@ let server = {
                         socket.broadcast.emit('player left', playerName);
                     }
                     delete this.players[playerName];
-                    console.log(playerName + ' left.');
 
+                    console.log(playerName + ' left.');
                     this.printOnlinePlayers();
+
                     // Send online players
                     socket.broadcast.emit('online players', Object.keys(this.players).length);
                 }

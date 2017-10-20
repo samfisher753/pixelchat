@@ -144,6 +144,7 @@ class Game {
 
         // Event: Receive number of players
         this.socket.on('online players', (num_players) => {
+            if (this.playerName===null) return;
             this.playersSpan.innerHTML = 'online: ' + num_players;
         });
     }
@@ -193,16 +194,19 @@ class Game {
 
         // Event: Receive chat message
         this.socket.on('chat message', (chatMsg) => {
+            if (this.playerName===null) return;
             this.addChatMessage(chatMsg.player, chatMsg.msg);
         });
 
         // Event: Receive rooms list
         this.socket.on('rooms list', (rooms) => {
+            if (this.playerName===null) return;
             this.roomsList = rooms;
         });
 
         // Event: Receive room info
         this.socket.on('room info', (room) => {
+            if (this.playerName===null) return;
             if (this.room===null) {
                 this.room = new Room({a: 0});
                 this.room.update(room);
@@ -217,17 +221,22 @@ class Game {
         });
 
         this.socket.on('player join', (player) => {
+            if (this.playerName===null) return;
             let p = new Player({name: player.name});
             p.update(player);
             this.room.join(p);
             p.setRoom(this.room);
+            this.addChatInfoMessage(p.getName()+' joined the room');
         });
 
         this.socket.on('player left', (playerName) => {
+            if (this.playerName===null) return;
             this.room.leave(playerName);
+            this.addChatInfoMessage(playerName+' left the room');
         });
 
         this.socket.on('player info', (player) => {
+            if (this.playerName===null) return;
             let p = this.room.getPlayer(player.name);
             p.update(player);
         });
@@ -301,6 +310,20 @@ class Game {
 
         msgSpan.appendChild(nameSpan);
         msgSpan.appendChild(msgNode);
+        msgC.appendChild(msgSpan);
+        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
+        chat.appendChild(msgC);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    addChatInfoMessage(msg) {
+        let msgC = document.createElement('div');
+        msgC.className = 'game-chatMessage game-chatInfoMessage';
+
+        let msgSpan = document.createElement('span');
+        msgSpan.className = 'game-boldText';
+        msgSpan.textContent = msg;
+
         msgC.appendChild(msgSpan);
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
