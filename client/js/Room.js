@@ -66,7 +66,6 @@ class Room {
         player.setPos(this.spawn);
         player.setStatus('stand');
         player.setDirection(this.spawnDirection);
-        player.setRoom(this);
         // Add to this.array.players
         let tile = this.array[this.spawn.y][this.spawn.x];
         tile.players.push(player.getName());

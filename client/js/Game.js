@@ -3,7 +3,7 @@ class Game {
     constructor() {
         console.log("Initializing Game...");
         // Vars
-        this.socket = null;
+        this.socket = io();
         this.playerName = null;
         this.player = null;
         this.room = null;
@@ -17,13 +17,12 @@ class Game {
         this.mousedown = false;
         this.disableClick = false; 
         
+        this.configureSocket();
         this.getPlayerName();
     }
 
     init() {
         this.createChatPanel();
-        this.socket = io();
-        this.configureSocket();
         this.bindChatEvents();
         this.createCanvas();
         this.bindEvents();
@@ -115,6 +114,11 @@ class Game {
             }
             this.disableClick = false;
         };
+
+        // Event: Receive number of players
+        this.socket.on('online players', (num_players) => {
+            this.playersSpan.innerHTML = 'online: ' + num_players;
+        });
     }
 
     createCanvas() {
@@ -139,8 +143,21 @@ class Game {
     }
 
     configureSocket() {
-        // Send player name
-        this.socket.emit('new player', this.playerName);
+        // Check player name
+        this.socket.on('check name', (b) => {
+            if (b.res){
+                this.playerName = b.name;
+                let app = document.getElementById('app');
+                app.innerHTML = '';
+                this.init();
+                // Send player name
+                this.socket.emit('new player', this.playerName);
+            }
+            else {
+                if (b.errno === 1) alert('Name must be 4 to 15 characters long.');
+                else alert('Your name is being used by another player.');
+            }
+        });
 
         // Event: Receive chat message
         this.socket.on('chat message', (chatMsg) => {
@@ -171,6 +188,7 @@ class Game {
             let p = new Player({name: player.name});
             p.update(player);
             this.room.join(p);
+            p.setRoom(this.room);
         });
 
         this.socket.on('player left', (playerName) => {
@@ -180,11 +198,6 @@ class Game {
         this.socket.on('player info', (player) => {
             let p = this.room.getPlayer(player.name);
             p.update(player);
-        });
-
-        // Event: Receive number of players
-        this.socket.on('online players', (num_players) => {
-            this.playersSpan.innerHTML = 'online: ' + num_players;
         });
     }
 
@@ -265,9 +278,11 @@ class Game {
         button.onclick = () => {
             let nick = nickInput.value.trim();
             if (nick !== '') {
-                this.playerName = nick;
-                app.innerHTML = '';
-                this.init();
+                //this.playerName = nick;
+                //app.innerHTML = '';
+                //this.init();
+                // Check if available nick
+                this.socket.emit('check name', nick);
             }
         };
 

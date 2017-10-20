@@ -43,6 +43,19 @@ let server = {
             let playerName = null;
             let room = null;
         
+            socket.on('check name', (plName) => {
+                let b = {name: plName, res: null, errno: 0};
+                b.res = (plName.length >= 4 && plName.length <= 15);
+                if (b.res) {
+                    b.res = (typeof this.players[plName] === 'undefined');
+                    if (!b) b.errno = 2;
+                }
+                else {
+                    b.errno = 1;
+                } 
+                socket.emit('check name', b);
+            });
+
             // For coherence I add the player once he sends his name, not before.
             // Client will send player name immediately after connect.
             socket.on('new player', (plName) => {
@@ -78,10 +91,11 @@ let server = {
                     }
                     delete this.players[playerName];
                     console.log(playerName + ' left.');
+
+                    this.printOnlinePlayers();
+                    // Send online players
+                    socket.broadcast.emit('online players', Object.keys(this.players).length);
                 }
-                this.printOnlinePlayers();
-                // Send online players
-                socket.broadcast.emit('online players', Object.keys(this.players).length);
             });
 
             socket.on('join room', (roomName) => {
