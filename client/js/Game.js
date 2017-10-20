@@ -92,6 +92,7 @@ class Game {
 
         let r = document.getElementsByClassName('game-chatResize')[0];
         let c = document.getElementsByClassName('game-chat')[0];
+        let b = document.getElementsByClassName('game-hideChatButton')[0];
         r.onmousedown = (e) => {
             this.resizedown = true;
             this.xIni = e.clientX;
@@ -113,6 +114,8 @@ class Game {
                 this.disableClick = true;  
             }
             else if (this.resizedown){
+                c.style.transition = 'none';
+                b.style.transition = 'none';
                 window.getSelection().removeAllRanges();
                 let rdx = e.clientX - this.xIni;
                 let pc = c.getBoundingClientRect().width + rdx;
@@ -121,6 +124,7 @@ class Game {
                 let pr = pc - 5;
                 c.style.width = pc + 'px';
                 r.style.left = pr + 'px';
+                b.style.left = pc + 'px';
                 this.xIni = e.clientX;
             }
         };
@@ -236,12 +240,16 @@ class Game {
         this.chatInput.type = 'text';
         let chatR = document.createElement('div');
         chatR.className = 'game-chatResize';
+        let chatB = document.createElement('button');
+        chatB.className = 'game-hideChatButton';
+        chatB.innerHTML = 'Hide';
 
         chatInputC.appendChild(this.chatInput);
         chatC.appendChild(chatMessagesC);
         chatC.appendChild(chatInputC);
         app.appendChild(chatC);
         app.appendChild(chatR);
+        app.appendChild(chatB);
     }
 
     bindChatEvents() {
@@ -251,6 +259,27 @@ class Game {
                 this.chatInput.value = '';
                 this.socket.emit('chat message', msg);
                 this.addChatMessage(this.playerName,msg);
+            }
+        };
+
+        let b = document.getElementsByClassName('game-hideChatButton')[0];
+        let c = document.getElementsByClassName('game-chat')[0];
+        let r = document.getElementsByClassName('game-chatResize')[0];
+        b.onclick = () => {
+            c.style.transition = '0.5s';
+            b.style.transition = '0.5s';
+            let pc = c.getBoundingClientRect();
+            if (pc.left < 0){
+                b.innerHTML = 'Hide';
+                c.style.left = '0';
+                b.style.left = pc.width + 'px';
+                r.style.display = 'block';
+            }
+            else {
+                b.innerHTML = 'Show';
+                c.style.left = -pc.width + 'px';
+                b.style.left = '0';
+                r.style.display = 'none';
             }
         };
     }
