@@ -12,13 +12,27 @@
 
 .game-chat {
     position: absolute;
-    width: 20%;
     height: 100%;
     left: 0;
     background-color: #bbbbbb;
     display: inline-block;
     opacity: 0.7;
     z-index: 1;
+    width: 300px; /*Resizable in js*/
+    transition: 1s ease-in-out;
+}
+
+.game-chat:hover {
+    transform: translateX(-300px);
+}
+
+.game-chatResize {
+    position: absolute;
+    width: 10px;
+    height: 100%;
+    left: 295px; /*Resizable in js*/
+    z-index: 2;
+    cursor: ew-resize;
 }
 
 .game-chatMessagesContainer {

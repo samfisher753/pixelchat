@@ -8,6 +8,7 @@ class Game {
         this.player = null;
         this.room = null;
         this.canvasCtx = null;
+        this.minChatWidth = 150;
 
         // Misc
         this.lastFrameTimeMs = 0;
@@ -16,6 +17,7 @@ class Game {
         this.mouse = {cType: 'checked'};
         this.mousedown = false;
         this.disableClick = false; 
+        this.resizedown = false;
         
         this.configureSocket();
         this.getPlayerName();
@@ -87,6 +89,13 @@ class Game {
             Grid.center(canvas.width,canvas.height);
             Grid.createDrawOrder();
         };
+
+        let r = document.getElementsByClassName('game-chatResize')[0];
+        let c = document.getElementsByClassName('game-chat')[0];
+        r.onmousedown = (e) => {
+            this.resizedown = true;
+            this.xIni = e.clientX;
+        };
         
         canvas.onmousedown = (e) => {
             this.mousedown = true;
@@ -96,15 +105,29 @@ class Game {
         
         document.onmousemove = (e) => {
             if (this.mousedown){
+                // Prevent from selecting text while dragging
+                window.getSelection().removeAllRanges();
                 this.mouse = e;
                 this.mouse.cType = 'dragged';
                 // Disable click event after dragging
                 this.disableClick = true;  
             }
+            else if (this.resizedown){
+                window.getSelection().removeAllRanges();
+                let rdx = e.clientX - this.xIni;
+                let pc = c.getBoundingClientRect().width + rdx;
+                if (pc < this.minChatWidth) pc = this.minChatWidth;
+                else if (pc+5 > body.clientWidth) pc = body.clientWidth-5;
+                let pr = pc - 5;
+                c.style.width = pc + 'px';
+                r.style.left = pr + 'px';
+                this.xIni = e.clientX;
+            }
         };
 
         document.onmouseup = (e) => {
             this.mousedown = false;
+            this.resizedown = false;
         };
 
         canvas.onclick = (e) => {
@@ -211,11 +234,14 @@ class Game {
         chatInputC.className = 'game-chatInput';
         this.chatInput = document.createElement('input');
         this.chatInput.type = 'text';
+        let chatR = document.createElement('div');
+        chatR.className = 'game-chatResize';
 
         chatInputC.appendChild(this.chatInput);
         chatC.appendChild(chatMessagesC);
         chatC.appendChild(chatInputC);
         app.appendChild(chatC);
+        app.appendChild(chatR);
     }
 
     bindChatEvents() {
