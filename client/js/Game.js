@@ -18,7 +18,7 @@ class Game {
         this.mousedown = false;
         this.disableClick = false; 
         this.resizedown = false;
-        
+
         this.configureSocket();
         this.getPlayerName();
     }
@@ -181,8 +181,13 @@ class Game {
                 this.socket.emit('new player', this.playerName);
             }
             else {
-                if (b.errno === 1) alert('Name must be 4 to 15 characters long.');
-                else alert('Your name is being used by another player.');
+                if (b.errno === 1) 
+                    alert('Name must be 4 to 15 characters long.');
+                else if (b.errno === 2) 
+                    alert('Your name can only contain characters: a-Z, 0-9, '
+                        + '- , _ , : and .');
+                else if (b.errno === 3)
+                    alert('Your name is being used by another player.');
             }
         });
 

@@ -47,8 +47,15 @@ let server = {
                 let b = {name: plName, res: null, errno: 0};
                 b.res = (plName.length >= 4 && plName.length <= 15);
                 if (b.res) {
-                    b.res = (typeof this.players[plName] === 'undefined');
-                    if (!b) b.errno = 2;
+                    let reg = new RegExp('[^\\w:.-]+');
+                    b.res = !reg.test(plName);
+                    if (b.res) {
+                        b.res = (typeof this.players[plName] === 'undefined');
+                        if (!b.res) b.errno = 3;
+                    }
+                    else {
+                        b.errno = 2;
+                    }
                 }
                 else {
                     b.errno = 1;
