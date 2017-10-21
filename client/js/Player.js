@@ -5,6 +5,7 @@ class Player {
         this.room = player.room || null;
         this.pos = player.pos || null;
 
+        this.velocity = 2;
         this.adjustY = -69;
         this.character = 'sam';
         this.status = 'out';
@@ -297,17 +298,17 @@ class Player {
             ctx.drawImage(this.images[0], drawPos.x, drawPos.y+this.adjustY);
         }
         else {
-            if (this.animFrame < 240) ctx.drawImage(this.images[0], drawPos.x, drawPos.y+this.adjustY);
+            if (this.animFrame < 240/this.velocity) ctx.drawImage(this.images[0], drawPos.x, drawPos.y+this.adjustY);
             else ctx.drawImage(this.images[1], drawPos.x, drawPos.y+this.adjustY);
             ++this.animFrame;
-            if (this.animFrame === 246) this.animFrame = 0;
+            if (this.animFrame === 246/this.velocity) this.animFrame = 0;
         }
     }
 
     drawWalk(ctx, drawPos) {
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, drawPos.x+this.walkd.x, drawPos.y-6+this.walkd.y);
-        let framesPerImg = 6;
+        let framesPerImg = 6/this.velocity;
         let img = this.images[parseInt(this.animFrame/framesPerImg)];
         ctx.drawImage(img, drawPos.x+this.walkd.x, drawPos.y+this.adjustY+this.walkd.y);
         ++this.animFrame;

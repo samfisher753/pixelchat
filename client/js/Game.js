@@ -1,7 +1,6 @@
 class Game {
 
     constructor() {
-        console.log("Initializing Game...");
         // Vars
         this.socket = io();
         this.playerName = null;
@@ -10,8 +9,13 @@ class Game {
         this.canvasCtx = null;
         this.minChatWidth = 150;
 
-        // Misc
+        // Game loop
+        this.delta = 0;
+        this.fps = 60;
+        this.timestep = 1000 / this.fps;
         this.lastFrameTimeMs = 0;
+
+        // Misc
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
         this.mouse = {cType: 'checked'};
@@ -38,10 +42,21 @@ class Game {
     }
 
     gameLoop(timeStamp) {
-        let fps = (1000 / (timeStamp - this.lastFrameTimeMs));
+        if (timeStamp - this.lastFrameTimeMs < this.timestep) {
+            requestAnimationFrame(this.gameLoop.bind(this));
+            return;
+        }
+
+        let t = timeStamp - this.lastFrameTimeMs;
+        this.delta += t;
+        let fps = 1000 / t;
         this.fpsSpan.innerHTML = 'fps: ' + Math.ceil(fps);
         this.lastFrameTimeMs = timeStamp;
-        this.update();
+
+        while (this.delta >= this.timestep){
+            this.update();
+            this.delta -= this.timestep;
+        }
         this.draw();
         
         requestAnimationFrame(this.gameLoop.bind(this));
@@ -93,6 +108,7 @@ class Game {
         let r = document.getElementsByClassName('game-chatResize')[0];
         let c = document.getElementsByClassName('game-chat')[0];
         let b = document.getElementsByClassName('game-hideChatButton')[0];
+        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         r.onmousedown = (e) => {
             this.resizedown = true;
             this.xIni = e.clientX;
@@ -125,6 +141,7 @@ class Game {
                 c.style.width = pc + 'px';
                 r.style.left = pr + 'px';
                 b.style.left = pc + 'px';
+                chat.scrollTop = chat.scrollHeight;
                 this.xIni = e.clientX;
             }
         };
