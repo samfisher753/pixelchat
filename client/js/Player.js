@@ -256,28 +256,32 @@ class Player {
             this.room.updatePlayerCell(this.pos,this.nextPos,this.name);
             this.pos = this.nextPos;
 
+            let moved = false;
             // If local player clicked somewhere
             if (mouse.cType === 'clicked' && this.name === localPlayer) {
                 let c = this.room.cellAt(mouse.clientX, mouse.clientY);
                 // If it's a valid room cell without players
                 if (c !== null && c.players.length === 0){
                     this.move(c.pos, localPlayer);
-                    mouse.cType = 'checked';
-                    return mouse;
+                    moved = true;
                 }
                 mouse.cType = 'checked';
             }
 
             // If invalid or unavailable pos clicked
-            // If next cell is the target or there is a player on the target cell
-            if ((this.nextPos.x === this.target.x && this.nextPos.y === this.target.y)
-                || this.room.cell(this.target.x,this.target.y).players.length > 0) {
-                this.stop(localPlayer);
-            }
-            else {
-                this.move(this.target, localPlayer);
-            }   
+            if (!moved) {
+                // If next cell is the target or there is a player on the target cell
+                if ((this.nextPos.x === this.target.x && this.nextPos.y === this.target.y)
+                    || this.room.cell(this.target.x,this.target.y).players.length > 0) {
+                    this.stop(localPlayer);
+                }
+                else {
+                    this.move(this.target, localPlayer);
+                } 
+            } 
         }
+        
+        return mouse;
     }
 
     draw(ctx, drawPos) {
