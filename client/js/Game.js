@@ -50,7 +50,7 @@ class Game {
         let t = timeStamp - this.lastFrameTimeMs;
         this.delta += t;
         let fps = 1000 / t;
-        this.fpsSpan.innerHTML = 'fps: ' + Math.ceil(fps);
+        this.fpsSpan.innerHTML = 'fps: ' + parseInt(fps);
         this.lastFrameTimeMs = timeStamp;
 
         while (this.delta >= this.timestep){
@@ -211,7 +211,7 @@ class Game {
 
         // Event: Receive chat message
         this.socket.on('chat message', (chatMsg) => {
-            if (this.playerName===null) return;
+            if (this.room===null) return;
             this.addChatMessage(chatMsg.player, chatMsg.msg);
         });
 
@@ -238,22 +238,22 @@ class Game {
         });
 
         this.socket.on('player join', (player) => {
-            if (this.playerName===null) return;
+            if (this.room===null) return;
+            this.addChatInfoMessage(player.name+' joined the room');
             let p = new Player({name: player.name});
             p.update(player);
             this.room.join(p);
             p.setRoom(this.room);
-            this.addChatInfoMessage(p.getName()+' joined the room');
         });
 
         this.socket.on('player left', (playerName) => {
-            if (this.playerName===null) return;
-            this.room.leave(playerName);
+            if (this.room===null) return;
             this.addChatInfoMessage(playerName+' left the room');
+            this.room.leave(playerName);
         });
 
         this.socket.on('player info', (player) => {
-            if (this.playerName===null) return;
+            if (this.room===null) return;
             let p = this.room.getPlayer(player.name);
             p.update(player);
         });
