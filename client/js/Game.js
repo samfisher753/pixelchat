@@ -42,22 +42,25 @@ class Game {
     }
 
     gameLoop(timeStamp) {
+        /*
         if (timeStamp - this.lastFrameTimeMs < this.timestep) {
             requestAnimationFrame(this.gameLoop.bind(this));
             return;
-        }
+        }*/
 
         let t = timeStamp - this.lastFrameTimeMs;
         this.delta += t;
-        let fps = 1000 / t;
-        this.fpsSpan.innerHTML = 'fps: ' + parseInt(fps);
         this.lastFrameTimeMs = timeStamp;
 
-        while (this.delta >= this.timestep){
-            this.update();
-            this.delta -= this.timestep;
+        if (this.delta >= this.timestep) {
+            let fps = 1000 / t;
+            this.fpsSpan.innerHTML = 'fps: ' + parseInt(fps);
+            while (this.delta >= this.timestep){
+                this.update();
+                this.delta -= this.timestep;
+            }
+            this.draw();
         }
-        this.draw();
         
         requestAnimationFrame(this.gameLoop.bind(this));
     }

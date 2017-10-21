@@ -1,3 +1,9 @@
+// My player "constants"
+let params = {};
+params.velocity = 1;
+params.framesPerImgWalk = 6/params.velocity;
+params.adjustY = -69;
+
 class Player {
 
     constructor(player){
@@ -5,12 +11,13 @@ class Player {
         this.room = player.room || null;
         this.pos = player.pos || null;
 
-        this.velocity = 2;
-        this.adjustY = -69;
+        // this.velocity = 1;
+        // this.framesPerImgWalk = 6/this.velocity;
+        // this.adjustY = -69;
         this.character = 'sam';
         this.status = 'out';
         this.direction = player.direction || -1;
-        this.animFrame = 0;
+        this.animFrame = -1;
         this.images = [];
         this.walkd = {x:0, y:0};
 
@@ -18,7 +25,7 @@ class Player {
         this.target = player.target || null;
         this.nextPos = player.nextPos || null;
 
-        // Client only
+        // Local player only
         this.socket = null;
 
     }
@@ -44,7 +51,7 @@ class Player {
         this.pos = null;
         this.status = 'out';
         this.direction = -1;
-        this.animFrame = 0;
+        this.animFrame = -1;
         this.images = [];
         this.walkd = {x:0, y:0};
         this.target = null;
@@ -74,7 +81,7 @@ class Player {
     setDirAndStatus(dir, status) {
         this.direction = dir;
         this.status = status;
-        this.animFrame = 0;
+        this.animFrame = -1;
         this.walkd = {x:0, y:0};
         this.fetchImages();
     }
@@ -233,6 +240,10 @@ class Player {
             }
             mouse.cType = 'checked';
         }
+
+        // Update animFrame
+        ++this.animFrame;
+        if (this.animFrame === 246/params.velocity) this.animFrame = 0;
     }
 
     updateLogicWalk(mouse, localPlayer) {
@@ -280,6 +291,11 @@ class Player {
                 } 
             } 
         }
+
+        // Update animFrame
+        ++this.animFrame;
+        if (this.animFrame === this.images.length*params.framesPerImgWalk)
+            this.animFrame = 0;
         
         return mouse;
     }
@@ -299,26 +315,19 @@ class Player {
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, drawPos.x, drawPos.y-6);
         if (this.images.length === 1){
-            ctx.drawImage(this.images[0], drawPos.x, drawPos.y+this.adjustY);
+            ctx.drawImage(this.images[0], drawPos.x, drawPos.y+params.adjustY);
         }
         else {
-            if (this.animFrame < 240/this.velocity) ctx.drawImage(this.images[0], drawPos.x, drawPos.y+this.adjustY);
-            else ctx.drawImage(this.images[1], drawPos.x, drawPos.y+this.adjustY);
-            ++this.animFrame;
-            if (this.animFrame === 246/this.velocity) this.animFrame = 0;
+            if (this.animFrame < 240/params.velocity) ctx.drawImage(this.images[0], drawPos.x, drawPos.y+params.adjustY);
+            else ctx.drawImage(this.images[1], drawPos.x, drawPos.y+params.adjustY);
         }
     }
 
     drawWalk(ctx, drawPos) {
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, drawPos.x+this.walkd.x, drawPos.y-6+this.walkd.y);
-        let framesPerImg = 6/this.velocity;
-        let img = this.images[parseInt(this.animFrame/framesPerImg)];
-        ctx.drawImage(img, drawPos.x+this.walkd.x, drawPos.y+this.adjustY+this.walkd.y);
-        ++this.animFrame;
-        if (this.animFrame === this.images.length*framesPerImg){
-            this.animFrame = 0;
-        }
+        let img = this.images[parseInt(this.animFrame/params.framesPerImgWalk)];
+        ctx.drawImage(img, drawPos.x+this.walkd.x, drawPos.y+params.adjustY+this.walkd.y);
     }
 
 }
