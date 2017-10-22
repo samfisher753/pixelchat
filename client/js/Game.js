@@ -13,7 +13,7 @@ class Game {
         this.lastFrameTimeMs = 0;
 
         // Misc
-        this.socket = io();
+        this.socket = io({reconnection: false});
         this.canvasCtx = null;
         this.minChatWidth = 150;
         this.d = { x:0, y:0 };
