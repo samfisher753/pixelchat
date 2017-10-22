@@ -2,12 +2,9 @@ class Game {
 
     constructor() {
         // Vars
-        this.socket = io();
-        this.playerName = null;
         this.player = null;
         this.room = null;
-        this.canvasCtx = null;
-        this.minChatWidth = 150;
+        this.roomsList = null;
 
         // Game loop
         this.delta = 0;
@@ -16,9 +13,12 @@ class Game {
         this.lastFrameTimeMs = 0;
 
         // Misc
+        this.socket = io();
+        this.canvasCtx = null;
+        this.minChatWidth = 150;
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
-        this.mouse = {cType: 'checked'};
+        this.mouse = null;
         this.mousedown = false;
         this.disableClick = false; 
         this.resizedown = false;
@@ -27,27 +27,34 @@ class Game {
         this.getPlayerName();
     }
 
-    init() {
-        this.createChatPanel();
+    joinRoom() {
+        if (this.room !== null) this.leaveRoom();
+        
+        this.createChatPanel(); 
         this.bindChatEvents();
         this.createCanvas();
         this.bindEvents();
-        Assets.load();
-    }
 
-    startGame(){
-        // Join room
-        this.socket.emit('join room', this.roomsList[0]);
         requestAnimationFrame(this.gameLoop.bind(this));
     }
 
-    gameLoop(timeStamp) {
-        /*
-        if (timeStamp - this.lastFrameTimeMs < this.timestep) {
-            requestAnimationFrame(this.gameLoop.bind(this));
-            return;
-        }*/
+    leaveRoom() {
+        let app = document.getElementById('app');
+        let chat = document.getElementsByClassName('game-chat')[0];
+        let chatR = document.getElementsByClassName('game-chatResize')[0];
+        let hideB = document.getElementsByClassName('game-hideChatButton')[0];
+        let canvas = document.getElementsByClassName('game-canvas')[0];
+        app.removeChild(chat);
+        app.removeChild(chatR);
+        app.removeChild(hideB);
+        app.removeChild(canvas);
+    }
 
+    startGame(){
+        this.createMenu();
+    }
+
+    gameLoop(timeStamp) {
         let t = timeStamp - this.lastFrameTimeMs;
         this.delta += t;
         this.lastFrameTimeMs = timeStamp;
@@ -67,20 +74,20 @@ class Game {
 
     update() {
         if (this.room !== null){
-            this.mouse = this.room.updateLogic(this.mouse, this.playerName);
+            this.room.updateLogic();
         }
 
         this.d = {x:0, y:0};
 
         // If canvas has been dragged
-        if (this.mouse.cType === 'dragged') {
+        if (this.mouse !== null) {
             this.d.x += this.mouse.clientX - this.initialPos.x;
             this.d.y += this.mouse.clientY - this.initialPos.y;
             Grid.move(this.d);
             Grid.createDrawOrder();
             this.initialPos.x = this.mouse.clientX;
             this.initialPos.y = this.mouse.clientY;
-            this.mouse.cType = 'checked';
+            this.mouse = null;
         }
     }
 
@@ -128,7 +135,6 @@ class Game {
                 // Prevent from selecting text while dragging
                 window.getSelection().removeAllRanges();
                 this.mouse = e;
-                this.mouse.cType = 'dragged';
                 // Disable click event after dragging
                 this.disableClick = true;  
             }
@@ -156,17 +162,12 @@ class Game {
 
         canvas.onclick = (e) => {
             if (!this.disableClick){
-                this.mouse = e;
-                this.mouse.cType = 'clicked';
+                let c = Grid.cellAt(e.clientX, e.clientY);
+                if (c!==null) this.socket.emit('click', c);
             }
             this.disableClick = false;
         };
 
-        // Event: Receive number of players
-        this.socket.on('online players', (num_players) => {
-            if (this.playerName===null) return;
-            this.playersSpan.innerHTML = 'online: ' + num_players;
-        });
     }
 
     createCanvas() {
@@ -177,29 +178,19 @@ class Game {
         app.appendChild(canvas);
         canvas.height = canvas.clientHeight;
         canvas.width = canvas.clientWidth;
-
-        this.fpsSpan = document.createElement('span');
-        this.fpsSpan.style = 'position: absolute; right: 0; color: #ffffff;';
-        this.fpsSpan.innerHTML = 'XX';
-        app.appendChild(this.fpsSpan);
-
-        this.playersSpan = document.createElement('span');
-        this.playersSpan.style = 'position: absolute; right: 0; color: #ffffff;' +
-             ' top: ' + this.fpsSpan.clientHeight + 'px;';
-        this.playersSpan.innerHTML = 'YY';
-        app.appendChild(this.playersSpan);
     }
 
     configureSocket() {
         // Check player name
         this.socket.on('check name', (b) => {
             if (b.res){
-                this.playerName = b.name;
+                this.player = new Player({ name: b.name, client: true });
                 let app = document.getElementById('app');
                 app.innerHTML = '';
-                this.init();
+                this.createInfoSpans();
+                Assets.load();
                 // Send player name
-                this.socket.emit('new player', this.playerName);
+                this.socket.emit('new player', this.player.name);
             }
             else {
                 if (b.errno === 1) 
@@ -214,52 +205,101 @@ class Game {
 
         // Event: Receive chat message
         this.socket.on('chat message', (chatMsg) => {
-            if (this.room===null) return;
             this.addChatMessage(chatMsg.player, chatMsg.msg);
+        });
+
+        // Event: Receive number of players
+        this.socket.on('online players', (num_players) => {
+            this.playersSpan.innerHTML = 'online: ' + num_players;
         });
 
         // Event: Receive rooms list
         this.socket.on('rooms list', (rooms) => {
-            if (this.playerName===null) return;
             this.roomsList = rooms;
+            this.createRoomsWindow();
         });
 
         // Event: Receive room info
         this.socket.on('room info', (room) => {
-            if (this.playerName===null) return;
-            if (this.room===null) {
-                this.room = new Room({a: 0});
+            // If join room or change room
+            if (this.room===null || room.name !== this.room.name) {
+                this.room = new Room({client: true});
                 this.room.update(room);
-                this.player = this.room.getPlayer(this.playerName);
-                this.player.setSocket(this.socket);
+                this.player = this.room.players[this.player.name];
                 // Update Grid
-                Grid.setSize(this.room.getSize());
+                Grid.size = this.room.size;
                 Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
                 Grid.createDrawOrder();
             }
             else this.room.update(room);
         });
 
-        this.socket.on('player join', (player) => {
-            if (this.room===null) return;
-            this.addChatInfoMessage(player.name+' joined the room');
-            let p = new Player({name: player.name});
-            p.update(player);
-            this.room.join(p);
-            p.setRoom(this.room);
+        this.socket.on('player join', (name) => {
+            this.addChatInfoMessage(name+' joined the room');
         });
 
-        this.socket.on('player left', (playerName) => {
-            if (this.room===null) return;
-            this.addChatInfoMessage(playerName+' left the room');
-            this.room.leave(playerName);
+        this.socket.on('player left', (name) => {
+            this.addChatInfoMessage(name+' left the room');
         });
 
-        this.socket.on('player info', (player) => {
-            if (this.room===null) return;
-            let p = this.room.getPlayer(player.name);
-            p.update(player);
-        });
+    }
+
+    createRoomsWindow() {
+        let app = document.getElementById('app');
+        let rw = document.createElement('div');
+        rw.className = 'game-window';
+        let closeB = document.createElement('button');
+        closeB.className = 'game-closeButton';
+        closeB.innerHTML = 'X';
+        closeB.onclick = ()=>{app.removeChild(rw);};
+        let ul = document.createElement('ul');
+        this.roomsList.forEach((r) => {
+            let li = document.createElement('li');
+            let s = document.createElement('span');
+            s.innerHTML = r.name + ' | Players: ' + r.players;
+            let joinB = document.createElement('button');
+            joinB.innerHTML = 'Join';
+            joinB.onclick = (() => {
+                this.socket.emit('join room', r.name);
+                this.joinRoom();
+                app.removeChild(rw);
+            }).bind(r);
+            li.appendChild(s);
+            li.appendChild(joinB);
+            ul.appendChild(li);
+        })
+
+        rw.appendChild(closeB);
+        rw.appendChild(ul);
+        app.appendChild(rw);
+    }
+
+    createMenu() {
+        let app = document.getElementById('app');
+        let menuBar = document.createElement('div');
+        menuBar.className = 'game-menu';
+        let roomsB = document.createElement('button');
+        roomsB.innerHTML = 'Rooms List';
+        roomsB.onclick = () => {
+            this.socket.emit('rooms list');
+        };
+        menuBar.appendChild(roomsB);
+        app.appendChild(menuBar);
+    }
+
+    createInfoSpans() {
+        let app = document.getElementById('app');
+        this.fpsSpan = document.createElement('span');
+        this.fpsSpan.style = 'position: absolute; right: 0; color: #ffffff;' + 
+            ' z-index: 1;';
+        this.fpsSpan.innerHTML = 'fps: 0';
+        app.appendChild(this.fpsSpan);
+
+        this.playersSpan = document.createElement('span');
+        this.playersSpan.style = 'position: absolute; right: 0;'+
+            ' color: #ffffff; z-index: 1; top: ' + this.fpsSpan.clientHeight + 'px;';
+        this.playersSpan.innerHTML = 'online: 0';
+        app.appendChild(this.playersSpan);
     }
 
     createChatPanel() {
@@ -292,7 +332,7 @@ class Game {
             if (e.keyCode === 13 && msg !== ''){
                 this.chatInput.value = '';
                 this.socket.emit('chat message', msg);
-                this.addChatMessage(this.playerName,msg);
+                this.addChatMessage(this.player.name,msg);
             }
         };
 
@@ -381,10 +421,6 @@ class Game {
         button.onclick = () => {
             let nick = nickInput.value.trim();
             if (nick !== '') {
-                //this.playerName = nick;
-                //app.innerHTML = '';
-                //this.init();
-                // Check if available nick
                 this.socket.emit('check name', nick);
             }
         };

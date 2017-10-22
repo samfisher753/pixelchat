@@ -1,15 +1,82 @@
 let Player = require('../client/js/Player');
 let Room = require('../client/js/Room');
 
-let server = {
+class Server {
+    
+    constructor(io) {
+        this.rooms = {};
+        this.players = {};
+        this.sockets = {};
 
-    rooms: {},
-    players: {},
+        // Game Loop
+        this.fps = 60;
+        this.timestep = 1000/this.fps;
+        this.lastFrameTimeMs = 0;
+        this.delta = 0;
 
-    init(io) {
+        // Send Loop
+        this.fps2 = 20;
+        this.timestep2 = 1000/this.fps2;
+        this.lastFrameTimeMs2 = 0;
+        this.delta2 = 0;
+
         this.createMockRooms();
         this.bindEvents(io);
-    },
+
+        // Start server loop
+        this.lastFrameTimeMs = Date.now();
+        setImmediate(this.gameLoop.bind(this));
+        this.lastFrameTimeMs2 = Date.now();
+        setImmediate(this.sendLoop.bind(this));
+    }
+
+    gameLoop() {
+        let timestamp = Date.now();
+        let t = timestamp - this.lastFrameTimeMs;
+        this.delta += t;
+        
+        if (this.delta >= this.timestep){
+            this.update();
+            
+            // process.stdout.write('\x1Bc');
+            // console.log('fps: '+(1000/this.delta));
+            
+            this.delta -= this.timestep;
+        }
+
+        this.lastFrameTimeMs = timestamp;
+
+        setImmediate(this.gameLoop.bind(this));
+    }
+
+    update() {
+        // Update rooms
+        for (let r in this.rooms){
+            this.rooms[r].updateLogic();
+        }
+    }
+
+    sendLoop() {
+        let timestamp = Date.now();
+        let t = timestamp - this.lastFrameTimeMs2;
+        this.delta2 += t;
+
+        if (this.delta2 >= this.timestep2){
+            for (let p in this.players){
+                let q = this.players[p];
+                if (q.room !== null){
+                    let s = this.sockets[p];
+                    s.emit('room info', this.rooms[q.room]);
+                }
+            }
+            
+            this.delta2 -= this.timestep2;
+        }
+
+        this.lastFrameTimeMs2 = timestamp;
+        
+        setImmediate(this.sendLoop.bind(this));
+    }
 
     createMockRooms() {
         let name = 'DefaultRoom';
@@ -36,11 +103,28 @@ let server = {
             array: array,
         };
         this.rooms[name] = new Room(room);
-    },
+
+        name = 'Zulo';
+        size = 5;
+        array = [];
+        for (let i=0; i<size; ++i){
+            array.push([]);
+            for (let j=0; j<size; ++j){
+                array[i].push({ material: 'grass', players: [] });
+            }
+        }
+
+        room = {
+            name: name,
+            size: size,
+            array: array,
+        };
+        this.rooms[name] = new Room(room);
+    }
 
     bindEvents(io) {
         io.on('connection', (socket) => {
-            let playerName = null;
+            let player = null;
             let room = null;
         
             socket.on('check name', (plName) => {
@@ -63,125 +147,128 @@ let server = {
                 socket.emit('check name', b);
             });
 
-            // For coherence I add the player once he sends his name, not before.
-            // Client will send player name immediately after connect.
-            socket.on('new player', (plName) => {
-                playerName = plName;
-                this.players[playerName] = new Player({ name: playerName });
-                console.log(playerName + ' joined.');
+            // Add player once he sends his name.
+            // Client will send player name immediately after connect and check.
+            socket.on('new player', (playerName) => {
+                player = new Player({ name: playerName });
+                this.players[player.name] = player;
+                this.sockets[player.name] = socket;
+
+                // Server side terminal msgs
+                console.log(player.name + ' joined.');
                 this.printOnlinePlayers();
-                
-                // Send available rooms
-                socket.emit('rooms list', Object.keys(this.rooms));
 
                 // Send online players
-                io.emit('online players', Object.keys(this.players).length);
+                this.sendOnlinePlayers();
             });
 
             socket.on('chat message', (msg) => {
-                console.log(playerName + ': ' + msg);
                 let chatMsg = { 
-                    player: playerName,
+                    player: player.name,
                     msg: msg
                 };
-                socket.broadcast.emit('chat message', chatMsg);
+
+                // Server side terminal msgs
+                console.log(player.name + ': ' + msg);
+
+                // Send msg to room players
+                for (let p in room.players){
+                    let q = room.players[p];
+                    if (q.name !== player.name)
+                        this.sockets[q.name].emit('chat message', chatMsg);
+                }
             });
         
             socket.on('disconnect', () => {
-                // Avoid problems in the extreme case a player connected but 
+                // Avoid problems in the case a player connected but 
                 // disconnected immediately without sending his name.
-                if (playerName !== null) {
-                    let room = this.players[playerName].getRoom();
+                if (player !== null) {
                     if (room !== null){
-                        this.rooms[room].leave(playerName);
-                        socket.broadcast.emit('player left', playerName);
+                        this.leave(room, player.name);
+                        room = null;
                     }
-                    delete this.players[playerName];
+                    delete this.players[player.name];
+                    delete this.sockets[player.name]
 
-                    console.log(playerName + ' left.');
+                    // Server side terminal msgs
+                    console.log(player.name + ' left.');
                     this.printOnlinePlayers();
 
                     // Send online players
-                    socket.broadcast.emit('online players', Object.keys(this.players).length);
+                    this.sendOnlinePlayers();
+
+                    player = null;
                 }
+            });
+
+            socket.on('rooms list', () => {
+                let rooms = [];
+                Object.keys(this.rooms).forEach((name) => {
+                    rooms.push({
+                        name: name, 
+                        players: Object.keys(this.rooms[name].players).length,
+                    });
+                })
+                socket.emit('rooms list', rooms);
             });
 
             socket.on('join room', (roomName) => {
-                this.rooms[roomName].join(this.players[playerName]);
+                // If player already on a room
+                if (room !== null) {
+                    this.leave(room, player.name);
+                }
+
+                console.log(player.name+' joined '+roomName+'.');
+                
+                // Join room
+                this.rooms[roomName].join(this.players[player.name]);
                 room = this.rooms[roomName];
-                socket.emit('room info', this.rooms[roomName]);
-                socket.broadcast.emit('player join', this.players[playerName]);
-            });
 
-            socket.on('move', (player) => {
-                // Emit only if player must stop
-                if (!this.move(player, room, playerName)) 
-                    io.emit('player info', room.getPlayer(playerName));
-            });
-
-            socket.on('start-move', (player) => {
-                if (this.move(player, room, playerName)){
-                    socket.broadcast.emit('player info', room.getPlayer(playerName));
-                }
-                else {
-                    io.emit('player info', room.getPlayer(playerName));
+                // Notify room players
+                for (let p in room.players){
+                    let q = this.sockets[p];
+                    if (p !== player.name)
+                        q.emit('player join', player.name);
                 }
             });
 
-            socket.on('end-move', () => {
-                let p = room.getPlayer(playerName);
-                let ct = room.cell(p.target.x, p.target.y);
-                let b = (ct.players.length === 0);
-                if (b){
-                    room.updatePlayerCell(p.pos,p.target,p.name);
-                    p.pos = p.target;
-                }
-                p.target = null;
-                p.nextPos = null;
-                p.status = 'stand';
-                if (b) socket.broadcast.emit('player info', p);
-                else io.emit('player info', p)
+            socket.on('leave room', () => {
+                this.leave(room, player.name);
+                room = null;
+
+                // Send available rooms
+                socket.emit('rooms list', Object.keys(this.rooms));
             });
 
-            socket.on('change direction', (d) => {
-                let p = room.getPlayer(playerName);
-                p.direction = d;
-                socket.broadcast.emit('player info', p);
-            })
+            socket.on('click', (pos) => {
+                player.click = pos;
+            });
         });
 
-    },
-
-    move(player, room, playerName) {
-        let ct = room.cell(player.target.x, player.target.y);
-        let cnp = room.cell(player.nextPos.x, player.nextPos.y);
-        let p = room.getPlayer(playerName);
-        p.direction = player.direction; 
-        // Check target is empty 
-        if (ct.players.length === 0){
-            // Start or keep moving
-            p.target = player.target;
-            p.nextPos = player.nextPos;
-            p.status = 'walk';
-        }
-        else {
-            // Stop
-            p.target = null;
-            p.nextPos = null;
-            p.status = 'stand';
-        }
-
-        // In case player changed of cell
-        room.updatePlayerCell(p.pos,player.pos,p.name);
-        p.pos = player.pos;
-
-        return (p.status === 'walk');
-    },
+    }
 
     printOnlinePlayers() {
         console.log('Online players: ' + Object.keys(this.players).length);
     }
 
+    sendOnlinePlayers() {
+        for (let p in this.sockets){
+            let q = this.sockets[p];
+            q.emit('online players', Object.keys(this.players).length);
+        }
+    }
+
+    leave(room, playerName) {
+        console.log(playerName+' left '+room.name+'.');
+        room.leave(playerName);
+
+        // Notify room players
+        for (let p in room.players){
+            let q = this.sockets[p];
+            q.emit('player left', playerName);
+        }
+    }
+
 };
 
-module.exports = server;
+module.exports = Server;

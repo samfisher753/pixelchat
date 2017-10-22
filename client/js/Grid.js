@@ -9,15 +9,6 @@ let Grid = {
     dy: 16,
     drawOrdered: [],
 
-    // Utilities
-    X: [  0,  1, 1, 1, 0, -1, -1, -1 ],                 
-    Y: [ -1, -1, 0, 1, 1,  1,  0, -1 ],
-
-
-    setSize(size) {
-        this.size = size;
-    },
-
     setOrigin(x, y) {
         this.originX = x - this.dx;
         this.originY = y;

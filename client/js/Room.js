@@ -7,6 +7,7 @@ class Room {
         this.spawn = room.spawn || {x:0, y:0};
         this.spawnDirection = room.spawnDirection || 4;
         this.players = room.players || {};
+        this.client = room.client || false;
     }
 
     update(room) {
@@ -19,8 +20,9 @@ class Room {
             else {
                 q = this.players[p];
             }
-            q.update(room.players[p]);
-            q.setRoom(this);
+            q.client = true;
+            q.update(room.players[p], this);
+            q.room = this.name;
             players[p] = q;
         }
         this.players = players;
@@ -33,52 +35,33 @@ class Room {
 
     setPlayersRoom() {
         for (let p in this.players)
-            this.players[p].setRoom(this);
+            this.players[p].room = this.name;
     }
 
     cell(x, y){
-        return this.array[y][x];
-    }
-
-    cellAt(x, y){
-        let c = Grid.cellAt(x,y);
-        if (c === null) return c;
-        let cp = this.array[c.y][c.x];
-        if (cp !== null) cp.pos = c;
-        return cp;
-    }
-
-    setName(name) {
-        this.name = name;
-    }
-
-    setSize(size) {
-        this.size = size;
-    }
-
-    setSpawn(x, y) {
-        this.spawn = {x: x,y: y};
+        let c = this.array[y][x];
+        if (c!==null) c.pos = {x: x, y: y};
+        return c;
     }
 
     join(player) {
-        this.players[player.getName()] = player;
-        player.setRoom(this.name);
-        player.setPos(this.spawn);
-        player.setStatus('stand');
-        player.setDirection(this.spawnDirection);
+        this.players[player.name] = player;
+        player.room = this.name;
+        player.pos = this.spawn;
+        player.changeAnim(this.spawnDirection, 'stand');
         // Add to this.array.players
         let tile = this.array[this.spawn.y][this.spawn.x];
-        tile.players.push(player.getName());
+        tile.players.push(player.name);
         this.array[this.spawn.y][this.spawn.x] = tile;
     }
 
     leave(playerName) {
         // Delete from this.array.players
         let p = this.players[playerName];
-        let tile = this.array[p.getPos().y][p.getPos().x];
+        let tile = this.array[p.pos.y][p.pos.x];
         let i = tile.players.indexOf(playerName);
         tile.players.splice(i, 1);
-        this.array[p.getPos().y][p.getPos().x] = tile;
+        this.array[p.pos.y][p.pos.x] = tile;
         this.players[playerName].reset();
         delete this.players[playerName];
     }
@@ -89,26 +72,6 @@ class Room {
         }
     }
 
-    getName() {
-        return this.name;
-    }
-
-    getSize() {
-        return this.size;
-    }
-
-    getSpawn() {
-        return this.spawn;
-    }
-
-    getPlayer(name) {
-        return this.players[name];
-    }
-    
-    getPlayers() {
-        return this.players;
-    }
-
     updatePlayerCell(a, b, name) {
         let cell = this.array[a.y][a.x];
         let i = cell.players.indexOf(name);
@@ -117,10 +80,9 @@ class Room {
         cell.players.push(name);
     }
 
-    updateLogic(mouse, localPlayer){
+    updateLogic(){
         for (let p in this.players)
-            mouse = this.players[p].updateLogic(mouse, localPlayer);
-        return mouse;
+            this.players[p].updateLogic(this);
     }
 
     draw(ctx) {

@@ -3,6 +3,8 @@ let params = {};
 params.velocity = 1;
 params.framesPerImgWalk = 6/params.velocity;
 params.adjustY = -69;
+params.X = [  0,  1, 1, 1, 0, -1, -1, -1 ];               
+params.Y = [ -1, -1, 0, 1, 1,  1,  0, -1 ];
 
 class Player {
 
@@ -11,33 +13,28 @@ class Player {
         this.room = player.room || null;
         this.pos = player.pos || null;
 
-        // this.velocity = 1;
-        // this.framesPerImgWalk = 6/this.velocity;
-        // this.adjustY = -69;
-        this.character = 'sam';
         this.status = 'out';
         this.direction = player.direction || -1;
         this.animFrame = -1;
-        this.images = [];
         this.walkd = {x:0, y:0};
+        this.images = [];
+        this.client = player.client || false;
 
-        // Move
         this.target = player.target || null;
-        this.nextPos = player.nextPos || null;
+        this.nextPos = player.nextPos || null
 
-        // Local player only
-        this.socket = null;
-
+        this.click = null;
     }
 
-    update(player) {
+    update(player, room) {
         if (this.direction !== player.direction
             || this.status !== player.status) {
-            this.setDirAndStatus(player.direction, player.status);
+            this.changeAnim(player.direction, player.status);
         }
 
-        if (this.pos !== null && (this.pos.x !== player.pos.x || this.pos.y !== player.pos.y)){
-            this.room.updatePlayerCell(this.pos, player.pos, this.name);
+        if (room !== null && this.pos !== null && 
+            (this.pos.x !== player.pos.x || this.pos.y !== player.pos.y)){
+            room.updatePlayerCell(this.pos, player.pos, this.name);
             this.walkd = {x:0, y:0};
         }
 
@@ -52,62 +49,23 @@ class Player {
         this.status = 'out';
         this.direction = -1;
         this.animFrame = -1;
-        this.images = [];
         this.walkd = {x:0, y:0};
+        this.images = [];
         this.target = null;
         this.nextPos = null;
+        this.click = null;
     }
 
-    setRoom(room) {
-        this.room = room;
-    }
-
-    setPos(pos) {
-        this.pos = pos;
-    }
-    
-    setSocket(socket) {
-        this.socket = socket;
-    }
-
-    setDirection(dir) {
-        this.direction = dir;
-    }
-
-    setStatus(status) {
-        this.status = status;
-    }
-
-    setDirAndStatus(dir, status) {
+    changeAnim(dir, status) {
         this.direction = dir;
         this.status = status;
         this.animFrame = -1;
         this.walkd = {x:0, y:0};
-        this.fetchImages();
-    }
-
-    getName() {
-        return this.name;
-    }
-
-    getRoom() {
-        return this.room;
-    }
-
-    getPos() {
-        return this.pos;
-    }
-
-    getStatus() {
-        return this.status;
-    }
-
-    getDirection() {
-        return this.direction;
+        if (this.client) this.fetchImages();
     }
 
     fetchImages() {
-        let name = this.character+this.direction+this.status;
+        let name = 'sam'+this.direction+this.status;
         this.images = Assets.getImgArray(name);
     }
 
@@ -128,19 +86,18 @@ class Player {
         if (this.status === 'stand'){
             let d = this.getPosDirection(this.pos, tgt);
             this.direction = d;
-            this.fetchImages();
-            this.socket.emit('change direction', d);
+            if (this.client) this.fetchImages();
         }
     }
 
-    move(tgt, localPlayer) {
+    move(tgt, room) {
         
-        let X = Grid.X;                 
-        let Y = Grid.Y;
+        let X = params.X;                 
+        let Y = params.Y;
 
         // BFS 
         let ini = this.pos;
-        let n = this.room.getSize();
+        let n = room.size;
         let posBefore = [];
         for (let i=0; i<n; ++i){
             posBefore.push([]);
@@ -163,7 +120,7 @@ class Player {
                 // If pos already visited
                 if (posBefore[q.y][q.x].x >= 0) continue;
                 // If void/out/dark/unused cell
-                let c = this.room.cell(q.x,q.y);
+                let c = room.cell(q.x,q.y);
                 if (c === null) continue;
                 // If cell not empty
                 if (c.players.length > 0) continue;
@@ -190,43 +147,29 @@ class Player {
                 status: 'walk'
             };
 
-            let oldTgt = this.target;
-            this.update(player);
-            // Emit only if it's the local player
-            if (this.name === localPlayer) {
-                // If player was not moving or it was moving but changed target
-                if (oldTgt === null || (oldTgt.x !== tgt.x || oldTgt.y !== tgt.y)){
-                    this.socket.emit('start-move', player);
-                }
-                else {
-                    this.socket.emit('move', player);
-                }
-            }
+            this.update(player, room);
         }
 
     }
 
-    stop(localPlayer) {
+    stop() {
         this.target = null;
         this.nextPos = null;
-        this.setDirAndStatus(this.direction,'stand');
-        if (this.name === localPlayer) this.socket.emit('end-move');
+        this.changeAnim(this.direction,'stand');
     }
 
-    updateLogic(mouse, localPlayer) {
+    updateLogic(room) {
         if (this.status === 'stand'){
-            this.updateLogicStand(mouse, localPlayer);
+            this.updateLogicStand(room);
         }
         else if (this.status === 'walk'){
-            this.updateLogicWalk(mouse, localPlayer);
+            this.updateLogicWalk(room);
         }
-
-        return mouse;
     }
 
-    updateLogicStand(mouse, localPlayer) {
-        if (mouse.cType === 'clicked' && this.name === localPlayer) {
-            let c = this.room.cellAt(mouse.clientX, mouse.clientY);
+    updateLogicStand(room) {
+        if (this.click !== null) {
+            let c = room.cell(this.click.x, this.click.y);
             // If there is a room cell there
             if (c !== null){
                 // If player on the cell, change direction
@@ -235,10 +178,10 @@ class Player {
                 }
                 // If not, move to cell
                 else {
-                    this.move(c.pos, localPlayer);
+                    this.move(c.pos, room);
                 }
             }
-            mouse.cType = 'checked';
+            this.click = null;
         }
 
         // Update animFrame
@@ -246,7 +189,7 @@ class Player {
         if (this.animFrame === 246/params.velocity) this.animFrame = 0;
     }
 
-    updateLogicWalk(mouse, localPlayer) {
+    updateLogicWalk(room) {
         let w = 64;
         let h = 32;
 
@@ -264,30 +207,30 @@ class Player {
         if (r > 1) {
             this.walkd.x = 0;
             this.walkd.y = 0;
-            this.room.updatePlayerCell(this.pos,this.nextPos,this.name);
+            room.updatePlayerCell(this.pos,this.nextPos,this.name);
             this.pos = this.nextPos;
 
             let moved = false;
-            // If local player clicked somewhere
-            if (mouse.cType === 'clicked' && this.name === localPlayer) {
-                let c = this.room.cellAt(mouse.clientX, mouse.clientY);
+            // If player clicked somewhere
+            if (this.click !== null) {
+                let c = room.cell(this.click.x, this.click.y);
                 // If it's a valid room cell without players
                 if (c !== null && c.players.length === 0){
-                    this.move(c.pos, localPlayer);
+                    this.move(c.pos, room);
                     moved = true;
                 }
-                mouse.cType = 'checked';
+                this.click = null;
             }
 
             // If invalid or unavailable pos clicked
             if (!moved) {
                 // If next cell is the target or there is a player on the target cell
                 if ((this.nextPos.x === this.target.x && this.nextPos.y === this.target.y)
-                    || this.room.cell(this.target.x,this.target.y).players.length > 0) {
-                    this.stop(localPlayer);
+                    || room.cell(this.target.x,this.target.y).players.length > 0) {
+                    this.stop();
                 }
                 else {
-                    this.move(this.target, localPlayer);
+                    this.move(this.target, room);
                 } 
             } 
         }
@@ -297,7 +240,6 @@ class Player {
         if (this.animFrame === this.images.length*params.framesPerImgWalk)
             this.animFrame = 0;
         
-        return mouse;
     }
 
     draw(ctx, drawPos) {
