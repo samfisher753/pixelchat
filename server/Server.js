@@ -15,7 +15,7 @@ class Server {
         this.delta = 0;
 
         // Send Loop
-        this.fps2 = 20;
+        this.fps2 = 22;
         this.timestep2 = 1000/this.fps2;
         this.lastFrameTimeMs2 = 0;
         this.delta2 = 0;
@@ -39,7 +39,7 @@ class Server {
             this.update();
             
             // process.stdout.write('\x1Bc');
-            // console.log('fps: '+(1000/this.delta));
+            console.log('Game fps: '+(1000/this.delta));
             
             this.delta -= this.timestep;
         }
@@ -69,6 +69,7 @@ class Server {
                     s.emit('room info', this.rooms[q.room]);
                 }
             }
+            console.log('Send fps: '+(1000/this.delta2));
             
             this.delta2 -= this.timestep2;
         }
