@@ -9,7 +9,7 @@ class Server {
         this.sockets = {};
 
         // Game Loop
-        this.fps = 62;
+        this.fps = 61;
         this.timestep = 1000/this.fps;
         this.lastFrameTimeMs = 0;
         this.delta = 0;
