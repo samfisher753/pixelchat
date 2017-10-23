@@ -8,7 +8,7 @@ class Game {
 
         // Game loop
         this.delta = 0;
-        this.fps = 30;
+        this.fps = 60;
         this.timestep = 1000 / this.fps;
         this.lastFrameTimeMs = 0;
 
