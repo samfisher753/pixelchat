@@ -9,7 +9,8 @@ class Server {
         this.sockets = {};
 
         // Game Loop
-        this.fps = 61;
+        // setImmediate achieves less fps than I set it to
+        this.fps = 61; // so I set one fps more
         this.timestep = 1000/this.fps;
         this.lastFrameTimeMs = 0;
         this.delta = 0;
@@ -39,7 +40,7 @@ class Server {
             this.update();
             
             // process.stdout.write('\x1Bc');
-            console.log('Game fps: '+(1000/this.delta));
+            // console.log('Game fps: '+(1000/this.delta));
             
             this.delta -= this.timestep;
         }
