@@ -5,26 +5,39 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    background-color: #346172;
+    background-color: #10436f;
     min-width: 650px;
     min-height: 400px;
     overflow: hidden;
+    background-image: url("../textures/misc/background.jpg");
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
 }
 
 .game-menu {
     position: absolute;
     bottom: 0;
-    height: 70px;
+    height: 47px;
     width: 100%;
     padding: 0;
     margin: 0;
     z-index: 1;
-    background-color: rgb(185, 198, 206);
+    background-color: #2e2e2c;
+    border-top: 2px solid #53524f;
+    border-bottom: 1px solid #53524f;
+    padding-left: 20px;
 }
 
 .game-menu > button {
-    height: 50px;
-    margin: 10px 90px;
+    height: 30px;
+    width: 44px;
+    margin: 8px 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
 }
 
 .game-window {
@@ -56,27 +69,39 @@
 .game-chat {
     position: absolute;
     top: 0;
-    bottom: 70px;
+    bottom: 50px;
     left: 0;
-    background-color: #bbbbbb;
-    opacity: 0.7;
+    background: rgba(46,46,44,0.3);/*#bbbbbb;*/
     z-index: 1;
-    width: 300px; /*Resizable in js*/
+    width: 447px; /*Resizable in js*/
 }
 
 .game-chatResize {
     position: absolute;
     width: 10px;
     height: 100%;
-    left: 295px; /*Resizable in js*/
+    left: 442px; /*Resizable in js*/
     z-index: 2;
     cursor: ew-resize;
 }
 
 .game-hideChatButton {
     position: absolute;
-    left: 300px; /*Resizable in js*/
+    left: 447px; /*Resizable in js*/
+    top: 4px;
+    font-size: 11px;
     z-index: 3;
+    height: 63px;
+    width: 15px;
+    background-color: #3a3832;
+    border: 0;
+    padding: 0;
+    color: #9c9791;
+    user-select: none;
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+    font-weight: bold;
+    opacity: 0.8;
 }
 
 .game-chatMessagesContainer {
@@ -89,16 +114,19 @@
 .game-chatMessage {
     position: relative;
     left: 2.5%;
-    width: calc(95% - 16px);
-    border-radius: 10px;
-    background-color: #ffffff;
-    margin: 5px 0;
-    padding: 5px 8px;
+    width: calc(95% - 18px);
+    border-radius: 6px;
+    background: rgba(219,219,219,0.8);
+    margin: 0;
+    padding: 2px 8px;
+    border: 1px solid #000000;
 }
 
 .game-chatInfoMessage {
     background-color: transparent;
+    border: 0;
     text-align: center;
+    color: #dbdbdb;
 }
 
 .game-chatMessage span {
@@ -122,12 +150,48 @@
     height: 100%;
 }
 
+.game-login {
+    background-color: #0b6395;
+    color: #ffffec;
+    border: 3px solid #2685bc;
+    border-radius: 10px;   
+}
+
+.game-login span {
+    font-size: 20px;
+    font-weight: 400;
+}
+
+.game-login input {
+    text-align: center;
+    width: 100%;
+    padding: 0;
+    border-radius: 5px;
+    font-size: 18px;
+}
+
+.game-login button {
+    background-color: rgb(0, 129, 62);
+    border: 2px solid #8eda55;
+    color: #ffffec;
+    border-radius: 5px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    padding: 5px 0;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 400;
+}
+
+.game-login button:hover {
+    background-color: #00ab54;
+}
+
 .game-centered {
     position: relative;
     top: 30%;
     left: 40%;
     width: calc(20% - 10px);
-    background-color: #bbbbbb;
     padding: 5px;
     border-radius: 5px;
 }
@@ -145,26 +209,14 @@
     margin: 5px;
 }
 
-
-#app button {
-    font-size: 16px;
-}
-
 #app input {
     padding: 0;
     border: 0;
-    font-size: 16px;
-}
-
-.game-horizontalLayout input {
-    text-align: center;
-    width: 100%;
-    padding: 0;
 }
 
 .game-chatInput input {
     text-align: left;
     width: 100%;
     height: 30px;
-    background-color: #eeeeee;
+    background-color: #dbdbdb;
 }

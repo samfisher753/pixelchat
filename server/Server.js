@@ -236,9 +236,6 @@ class Server {
             socket.on('leave room', () => {
                 this.leave(room, player.name);
                 room = null;
-
-                // Send available rooms
-                socket.emit('rooms list', Object.keys(this.rooms));
             });
 
             socket.on('click', (pos) => {

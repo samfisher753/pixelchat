@@ -11,6 +11,7 @@ class Game {
         this.fps = 60;
         this.timestep = 1000 / this.fps;
         this.lastFrameTimeMs = 0;
+        this.frame = null;
 
         // Misc
         this.socket = io({reconnection: false});
@@ -27,18 +28,31 @@ class Game {
         this.getPlayerName();
     }
 
-    joinRoom() {
-        if (this.room !== null) this.leaveRoom();
-        
-        this.createChatPanel(); 
-        this.bindChatEvents();
-        this.createCanvas();
-        this.bindEvents();
+    joinRoom(name) {
+        if (this.room === null) {
+            this.createChatPanel(); 
+            this.bindChatEvents();
+            this.createCanvas();
+            this.bindEvents();
+            this.leaveB.style.display = 'inline-block';
 
-        requestAnimationFrame(this.gameLoop.bind(this));
+            this.frame = requestAnimationFrame(this.gameLoop.bind(this));
+        }
+        else {
+            this.addChatInfoMessage('You left '+this.room.name);
+        }
+
+        this.socket.emit('join room', name);
+        this.addChatInfoMessage('You joined '+name);
     }
 
     leaveRoom() {
+        this.socket.emit('leave room');
+        this.room = null;
+        this.leaveB.style.display = 'none';
+        cancelAnimationFrame(this.frame);
+        this.frame = null;
+        this.fpsSpan.innerHTML = 'fps: 0';
         let app = document.getElementById('app');
         let chat = document.getElementsByClassName('game-chat')[0];
         let chatR = document.getElementsByClassName('game-chatResize')[0];
@@ -69,7 +83,7 @@ class Game {
             this.draw();
         }
         
-        requestAnimationFrame(this.gameLoop.bind(this));
+        this.frame = requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     update() {
@@ -260,8 +274,7 @@ class Game {
             let joinB = document.createElement('button');
             joinB.innerHTML = 'Join';
             joinB.onclick = (() => {
-                this.socket.emit('join room', r.name);
-                this.joinRoom();
+                this.joinRoom(r.name);
                 app.removeChild(rw);
             }).bind(r);
             li.appendChild(s);
@@ -278,11 +291,24 @@ class Game {
         let app = document.getElementById('app');
         let menuBar = document.createElement('div');
         menuBar.className = 'game-menu';
+        this.leaveB = document.createElement('button');
+        this.leaveB.style.display = 'none';
+        let lImg = document.createElement('img');
+        lImg.src = 'textures/icons/back.png';
         let roomsB = document.createElement('button');
-        roomsB.innerHTML = 'Rooms List';
+        let rImg = document.createElement('img');
+        rImg.src = 'textures/icons/rooms.png';
+
+        this.leaveB.onclick = () => {
+            this.leaveRoom();
+        };
         roomsB.onclick = () => {
             this.socket.emit('rooms list');
         };
+
+        this.leaveB.appendChild(lImg);
+        roomsB.appendChild(rImg);
+        menuBar.appendChild(this.leaveB);
         menuBar.appendChild(roomsB);
         app.appendChild(menuBar);
     }
@@ -316,7 +342,7 @@ class Game {
         chatR.className = 'game-chatResize';
         let chatB = document.createElement('button');
         chatB.className = 'game-hideChatButton';
-        chatB.innerHTML = 'Hide';
+        chatB.innerHTML = '<';
 
         chatInputC.appendChild(this.chatInput);
         chatC.appendChild(chatMessagesC);
@@ -344,13 +370,13 @@ class Game {
             b.style.transition = '0.5s';
             let pc = c.getBoundingClientRect();
             if (pc.left < 0){
-                b.innerHTML = 'Hide';
+                b.innerHTML = '<';
                 c.style.left = '0';
                 b.style.left = pc.width + 'px';
                 r.style.display = 'block';
             }
             else {
-                b.innerHTML = 'Show';
+                b.innerHTML = '>';
                 c.style.left = -pc.width + 'px';
                 b.style.left = '0';
                 r.style.display = 'none';
@@ -394,7 +420,7 @@ class Game {
         let app = document.getElementById('app');
 
         let menu = document.createElement('div');
-        menu.className = 'game-centered';
+        menu.className = 'game-centered game-login';
 
         let nickContainer = document.createElement('div');
         nickContainer.className = 'game-horizontalLayout';
@@ -417,7 +443,7 @@ class Game {
 
         let button = document.createElement('button');
         button.className = 'game-horizontalCentered';
-        button.innerHTML = 'Play';
+        button.innerHTML = '<span>PLAY</span>';
         button.onclick = () => {
             let nick = nickInput.value.trim();
             if (nick !== '') {
