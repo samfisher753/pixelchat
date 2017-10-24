@@ -23,6 +23,7 @@ class Game {
         this.mousedown = false;
         this.disableClick = false; 
         this.resizedown = false;
+        this.receiveRoom = false;
 
         this.configureSocket();
         this.getPlayerName();
@@ -35,6 +36,7 @@ class Game {
             this.createCanvas();
             this.bindEvents();
             this.leaveB.style.display = 'inline-block';
+            this.receiveRoom = true;
 
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
@@ -48,6 +50,7 @@ class Game {
 
     leaveRoom() {
         this.socket.emit('leave room');
+        this.receiveRoom = false;
         this.room = null;
         this.leaveB.style.display = 'none';
         cancelAnimationFrame(this.frame);
@@ -235,17 +238,20 @@ class Game {
 
         // Event: Receive room info
         this.socket.on('room info', (room) => {
-            // If join room or change room
-            if (this.room===null || room.name !== this.room.name) {
-                this.room = new Room({client: true});
-                this.room.update(room);
-                this.player = this.room.players[this.player.name];
-                // Update Grid
-                Grid.size = this.room.size;
-                Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
-                Grid.createDrawOrder();
+            // If we already are in a room, joining or changing room
+            if (this.receiveRoom){
+                // If join room or change room
+                if (this.room===null || room.name !== this.room.name) {
+                    this.room = new Room({client: true});
+                    this.room.update(room);
+                    this.player = this.room.players[this.player.name];
+                    // Update Grid
+                    Grid.size = this.room.size;
+                    Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
+                    Grid.createDrawOrder();
+                }
+                else this.room.update(room);
             }
-            else this.room.update(room);
         });
 
         this.socket.on('player join', (name) => {
