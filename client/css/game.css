@@ -111,15 +111,22 @@
     overflow-y: auto;
 }
 
+.game-chatMessageC {
+    position: relative;
+    width: 100%;
+}
+
 .game-chatMessage {
     position: relative;
     left: 2.5%;
-    width: calc(95% - 18px);
+    max-width: calc(95% - 18px);
+    word-wrap: break-word;
     border-radius: 6px;
     background: rgba(219,219,219,0.8);
     margin: 0;
     padding: 2px 8px;
     border: 1px solid #000000;
+    display: inline-block;
 }
 
 .game-chatInfoMessage {
@@ -127,11 +134,7 @@
     border: 0;
     text-align: center;
     color: #dbdbdb;
-}
-
-.game-chatMessage span {
-    position: relative;
-    word-wrap: break-word;
+    display: block;
 }
 
 .game-boldText {

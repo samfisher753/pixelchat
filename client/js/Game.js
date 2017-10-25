@@ -392,17 +392,18 @@ class Game {
 
     addChatMessage(player, msg) {
         let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessage';
+        msgC.className = 'game-chatMessageC';
 
-        let msgSpan = document.createElement('span');
+        let msgD = document.createElement('div');
+        msgD.className = 'game-chatMessage';
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
         nameSpan.textContent = player + ': ';
         let msgNode = document.createTextNode(msg);
 
-        msgSpan.appendChild(nameSpan);
-        msgSpan.appendChild(msgNode);
-        msgC.appendChild(msgSpan);
+        msgD.appendChild(nameSpan);
+        msgD.appendChild(msgNode);
+        msgC.appendChild(msgD);
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
         chat.scrollTop = chat.scrollHeight;
@@ -410,13 +411,13 @@ class Game {
 
     addChatInfoMessage(msg) {
         let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessage game-chatInfoMessage';
+        msgC.className = 'game-chatMessageC';
 
-        let msgSpan = document.createElement('span');
-        msgSpan.className = 'game-boldText';
-        msgSpan.textContent = msg;
+        let msgD = document.createElement('div');
+        msgD.className = 'game-chatMessage game-chatInfoMessage game-boldText';
+        msgD.textContent = msg;
 
-        msgC.appendChild(msgSpan);
+        msgC.appendChild(msgD);
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
         chat.scrollTop = chat.scrollHeight;
