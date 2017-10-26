@@ -108,45 +108,14 @@ class CanvasChat {
     }
 
     createImg(msg) {
-        let size = this.getMsgHeight(msg);
-        msg.width = size.width;
-        msg.height = size.height;
-
-        let style = '<style>' +
-                '.game-chatMessage {' +
-                    'position: relative;' +
-                    'max-width: calc(100% - 18px);' +
-                    'word-wrap: break-word;' +
-                    'border-radius: 6px;' +
-                    'background: #ffffff;' +
-                    'margin: 0;' +
-                    'padding: 2px 8px;' +
-                    'border: 1px solid #000000;' +
-                    'display: inline-block;' +
-                    'font-family: monospace;' +
-                    'font-size: 16px;' + 
-                    'color: #000000;' +
-                '}' +
-                '.game-boldText {' +
-                    'font-weight: bold;' +
-                '}' +
-            '</style>';
+        let b = this.createBubble(msg);
+        msg.width = b.width;
+        msg.height = b.height;
         
-        let blob = '<svg xmlns="http://www.w3.org/2000/svg" width="'+msg.width+'" height="'+msg.height+'">' +
-                '<foreignObject width="100%" height="100%">' +
-                    '<div xmlns="http://www.w3.org/1999/xhtml">' + 
-                        style +
-                        '<div class="game-chatMessage">' + 
-                            '<span class="game-boldText">' + msg.player + ': </span>' + msg.text +
-                        '</div>' +
-                    '</div>' +
-                '</foreignObject>' +
-            '</svg>';
-
         let DOMURL = window.URL || window.webkitURL || window;
         this.loaded = false;
         let img = new Image();
-        let svg = new Blob([blob], {type: 'image/svg+xml;charset=utf-8'});
+        let svg = new Blob([b.blob], {type: 'image/svg+xml;charset=utf-8'});
         let url = DOMURL.createObjectURL(svg);
         img.onload = () => {
             this.loaded = true;
@@ -157,7 +126,11 @@ class CanvasChat {
         return msg;
     }
 
-    getMsgHeight(msg) {
+    createBubble(msg) {
+        // I did this function to get the real width and height of
+        // the canvas bubble cause it's a bit different, and to
+        // prepare the blob string while sanitizing the chat msg.
+
         let div = document.createElement('div');
         div.style.zIndex = -1;
         div.style.width = this.maxW + 'px';
@@ -179,7 +152,37 @@ class CanvasChat {
         app.appendChild(div);
         let pos = div2.getBoundingClientRect();
         app.removeChild(div);
-        return { width: pos.width, height: pos.height };
+
+        let style = '<style>' +
+                '.game-chatMessage {' +
+                    'position: relative;' +
+                    'max-width: calc(100% - 18px);' +
+                    'word-wrap: break-word;' +
+                    'border-radius: 6px;' +
+                    'background: #ffffff;' +
+                    'margin: 0;' +
+                    'padding: 2px 8px;' +
+                    'border: 1px solid #000000;' +
+                    'display: inline-block;' +
+                    'font-family: monospace;' +
+                    'font-size: 16px;' + 
+                    'color: #000000;' +
+                '}' +
+                '.game-boldText {' +
+                    'font-weight: bold;' +
+                '}' +
+            '</style>';
+
+        let blob = '<svg xmlns="http://www.w3.org/2000/svg" width="'+pos.width+'" height="'+pos.height+'">' +
+                '<foreignObject width="100%" height="100%">' +
+                    style +
+                    '<div xmlns="http://www.w3.org/1999/xhtml">' + 
+                        div.outerHTML + 
+                    '</div>' +
+                '</foreignObject>' +
+            '</svg>';
+        
+        return { blob: blob, width: pos.width, height: pos.height };
     }
 
 }
