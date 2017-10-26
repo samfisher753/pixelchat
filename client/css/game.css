@@ -40,6 +40,23 @@
     cursor: pointer;
 }
 
+.game-chatInput {
+    position: absolute;
+    left: 33%;
+    bottom: 10px;
+}
+
+.game-chatInput input {
+    text-align: left;
+    width: 500px;
+    height: 25px;
+    background-color: #ffffff;
+    font-family: "Arial", verdana, sans-serif;
+    font-size: 16px;
+    color: #000000;
+    border-radius: 5px;
+}
+
 .game-window {
     position: absolute;
     left: 40%;
@@ -127,6 +144,7 @@
     padding: 2px 8px;
     border: 1px solid #000000;
     display: inline-block;
+    color: #000000;
 }
 
 .game-chatInfoMessage {
@@ -141,12 +159,6 @@
     font-weight: bold;
 }
 
-.game-chatInput {
-    position: absolute;
-    width: 100%;
-    bottom: 0;
-}
-
 .game-canvas {
     position: absolute;
     width: 100%;
@@ -154,72 +166,52 @@
 }
 
 .game-login {
+    position: relative;
     background-color: #0b6395;
     color: #ffffec;
     border: 3px solid #2685bc;
     border-radius: 10px;   
-}
-
-.game-login span {
-    font-size: 20px;
-    font-weight: 400;
+    top: 30%;
+    left: 50%;
+    margin-left: -150px;
+    width: 300px;
+    padding: 5px;
 }
 
 .game-login input {
+    position: relative;
     text-align: center;
-    width: 100%;
-    padding: 0;
+    left: 50%;
+    width: 190px;
+    margin-top: 30px;
+    margin-left: -110px;
+    height: 19px;
+    padding: 5px 12px;
     border-radius: 5px;
-    font-size: 18px;
+    border: 3px solid #275d8e;
+    font-size: 16px;
+    color: #444;
+    font-weight: bold;
 }
 
 .game-login button {
+    position: relative;
     background-color: rgb(0, 129, 62);
     border: 2px solid #8eda55;
     color: #ffffec;
     border-radius: 5px;
-    margin-top: 10px;
-    margin-bottom: 5px;
+    margin-top: 25px;
+    margin-bottom: 30px;
+    height: 47px;
     padding: 5px 0;
     cursor: pointer;
     font-size: 16px;
     font-weight: 400;
+    left: 50%;
+    width: 230px;
+    margin-left: -115px;
 }
 
 .game-login button:hover {
     background-color: #00ab54;
-}
-
-.game-centered {
-    position: relative;
-    top: 30%;
-    left: 40%;
-    width: calc(20% - 10px);
-    padding: 5px;
-    border-radius: 5px;
-}
-
-.game-horizontalCentered {
-    position: relative;
-    left: 30%;
-    width: 40%;
-}
-
-.game-horizontalLayout {
-    display: flex;
-    flex-direction: row;
-    flex: 1;
-    margin: 5px;
-}
-
-#app input {
-    padding: 0;
-    border: 0;
-}
-
-.game-chatInput input {
-    text-align: left;
-    width: 100%;
-    height: 30px;
-    background-color: #dbdbdb;
 }

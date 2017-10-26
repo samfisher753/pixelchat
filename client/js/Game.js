@@ -5,6 +5,8 @@ class Game {
         this.player = null;
         this.room = null;
         this.roomsList = null;
+        this.maxMsgLength = 136;
+        this.maxNickLength = 15;
 
         // Game loop
         this.delta = 0;
@@ -35,6 +37,9 @@ class Game {
             this.bindChatEvents();
             this.createCanvas();
             this.bindEvents();
+            let app = document.getElementById('app');
+            app.style.backgroundImage = 'none';
+            app.style.backgroundColor = '#010101';
             this.leaveB.style.display = 'inline-block';
             this.receiveRoom = true;
 
@@ -51,6 +56,7 @@ class Game {
     leaveRoom() {
         this.socket.emit('leave room');
         this.receiveRoom = false;
+        this.canvasChat = null;
         this.room = null;
         this.leaveB.style.display = 'none';
         cancelAnimationFrame(this.frame);
@@ -61,10 +67,15 @@ class Game {
         let chatR = document.getElementsByClassName('game-chatResize')[0];
         let hideB = document.getElementsByClassName('game-hideChatButton')[0];
         let canvas = document.getElementsByClassName('game-canvas')[0];
+        let chatIn = document.getElementsByClassName('game-chatInput')[0];
+        let menu = document.getElementsByClassName('game-menu')[0];
         app.removeChild(chat);
         app.removeChild(chatR);
         app.removeChild(hideB);
         app.removeChild(canvas);
+        menu.removeChild(chatIn);
+        app.style.backgroundImage = 'url("../textures/misc/background.jpg")';
+        app.style.backgroundColor = '#10436f';
     }
 
     startGame(){
@@ -92,6 +103,7 @@ class Game {
     update() {
         if (this.room !== null){
             this.room.updateLogic();
+            this.canvasChat.update();
         }
 
         this.d = {x:0, y:0};
@@ -119,7 +131,9 @@ class Game {
         // Draw room
         if (this.room !== null) {
             this.room.draw(ctx);
+            this.canvasChat.draw();
         }
+    
     }
 
     bindEvents() {
@@ -130,6 +144,7 @@ class Game {
             canvas.width = canvas.clientWidth;
             Grid.center(canvas.width,canvas.height);
             Grid.createDrawOrder();
+            this.canvasChat.defaultY = canvas.height/3;
         };
 
         let r = document.getElementsByClassName('game-chatResize')[0];
@@ -249,8 +264,13 @@ class Game {
                     Grid.size = this.room.size;
                     Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
                     Grid.createDrawOrder();
+                    // Create canvasChat
+                    this.canvasChat = new CanvasChat(this.canvasCtx);
+                    this.canvasChat.defaultY = this.canvasCtx.canvas.height/3;
                 }
                 else this.room.update(room);
+                // Update canvas chat players
+                this.canvasChat.players = this.room.players;
             }
         });
 
@@ -340,29 +360,38 @@ class Game {
         chatC.className = 'game-chat';
         let chatMessagesC = document.createElement('div');
         chatMessagesC.className = 'game-chatMessagesContainer';
-        let chatInputC = document.createElement('div');
-        chatInputC.className = 'game-chatInput';
-        this.chatInput = document.createElement('input');
-        this.chatInput.type = 'text';
         let chatR = document.createElement('div');
         chatR.className = 'game-chatResize';
         let chatB = document.createElement('button');
         chatB.className = 'game-hideChatButton';
         chatB.innerHTML = '<';
 
-        chatInputC.appendChild(this.chatInput);
         chatC.appendChild(chatMessagesC);
-        chatC.appendChild(chatInputC);
         app.appendChild(chatC);
         app.appendChild(chatR);
         app.appendChild(chatB);
+
+        // Add chat input to menu bar
+        let menuBar = document.getElementsByClassName('game-menu')[0];
+        let chatInputC = document.createElement('div');
+        chatInputC.className = 'game-chatInput';
+        this.chatInput = document.createElement('input');
+        this.chatInput.type = 'text';
+        this.chatInput.maxlength = this.maxMsgLength;
+        chatInputC.appendChild(this.chatInput);
+        menuBar.appendChild(chatInputC);
     }
 
     bindChatEvents() {
         this.chatInput.onkeypress = (e) => {
             let msg = this.chatInput.value.trim();
-            if (e.keyCode === 13 && msg !== ''){
+            if (msg.length >= this.maxMsgLength &&
+                e.keyCode !== 46 && e.keyCode !== 8 && e.keyCode !== 13){
+                e.preventDefault();
+            }
+            else if (e.keyCode === 13 && msg !== ''){
                 this.chatInput.value = '';
+                msg = msg.slice(0,this.maxMsgLength);
                 this.socket.emit('chat message', msg);
                 this.addChatMessage(this.player.name,msg);
             }
@@ -407,6 +436,8 @@ class Game {
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
         chat.scrollTop = chat.scrollHeight;
+
+        this.canvasChat.add({player: player, text: msg});
     }
 
     addChatInfoMessage(msg) {
@@ -427,29 +458,22 @@ class Game {
         let app = document.getElementById('app');
 
         let menu = document.createElement('div');
-        menu.className = 'game-centered game-login';
+        menu.className = 'game-login';
 
         let nickContainer = document.createElement('div');
-        nickContainer.className = 'game-horizontalLayout';
-
-        let nickLabel = document.createElement('div');
-        nickLabel.className = 'game-horizontalLayout';
-
-        let nickSpan = document.createElement('span');
-        nickSpan.className = 'game-label';
-        nickSpan.innerHTML = 'Nickname:';
-        
-        let nickInputContainer = document.createElement('div');
-        nickInputContainer.className = 'game-horizontalLayout';
-
         let nickInput = document.createElement('input');
         nickInput.type = 'text';
+        nickInput.placeholder = 'Nickname'
+        nickInput.onkeydown = (e) => {
+            let nick = nickInput.value.trim();
+            if (nick.length >= this.maxNickLength &&
+                e.keyCode !== 46 && e.keyCode !== 8 && e.keyCode !== 13){
+                e.preventDefault();
+            }
+        };
 
         let buttonC = document.createElement('div');
-        buttonC.className = 'game-horizontalLayout';
-
         let button = document.createElement('button');
-        button.className = 'game-horizontalCentered';
         button.innerHTML = '<span>PLAY</span>';
         button.onclick = () => {
             let nick = nickInput.value.trim();
@@ -464,10 +488,7 @@ class Game {
             }
         };
 
-        nickLabel.appendChild(nickSpan);
-        nickInputContainer.appendChild(nickInput);
-        nickContainer.appendChild(nickLabel);
-        nickContainer.appendChild(nickInputContainer);
+        nickContainer.appendChild(nickInput);
         buttonC.appendChild(button);
         menu.appendChild(nickContainer);
         menu.appendChild(buttonC);

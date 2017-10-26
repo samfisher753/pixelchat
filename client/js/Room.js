@@ -92,7 +92,7 @@ class Room {
             let cell = this.array[tile.y][tile.x];
             if (cell !== null){
                 let img = Assets.getImage(cell.material);
-                ctx.drawImage(img, tile.drawPos.x, tile.drawPos.y);
+                ctx.drawImage(img, parseInt(tile.drawPos.x), parseInt(tile.drawPos.y));
             }
         }
         

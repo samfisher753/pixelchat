@@ -1,7 +1,7 @@
 // My player "constants"
 let params = {};
-params.velocity = 1;
-params.framesPerImgWalk = 6/params.velocity;
+params.velocity = 1.3;
+params.framesPerImgWalk = 6;
 params.adjustY = -69;
 params.X = [  0,  1, 1, 1, 0, -1, -1, -1 ];               
 params.Y = [ -1, -1, 0, 1, 1,  1,  0, -1 ];
@@ -186,7 +186,7 @@ class Player {
 
         // Update animFrame
         ++this.animFrame;
-        if (this.animFrame === 246/params.velocity) this.animFrame = 0;
+        if (this.animFrame === 246) this.animFrame = 0;
     }
 
     updateLogicWalk(room) {
@@ -199,8 +199,8 @@ class Player {
 
         let dirV = [ 0.5, 1, 0.5, 2, 0.5, 1, 0.5, 2 ];
 
-        this.walkd.x += dirV[this.direction]*X[this.direction];
-        this.walkd.y += dirV[this.direction]*Y[this.direction];
+        this.walkd.x += dirV[this.direction]*X[this.direction]*params.velocity;
+        this.walkd.y += dirV[this.direction]*Y[this.direction]*params.velocity;
 
         let r = Math.abs(this.walkd.x/w) + Math.abs(this.walkd.y/h);
         // If arrived to next cell
@@ -255,21 +255,21 @@ class Player {
 
     drawStand(ctx, drawPos) {
         let shadow = Assets.getImage('shadow');
-        ctx.drawImage(shadow, drawPos.x, drawPos.y-6);
+        ctx.drawImage(shadow, parseInt(drawPos.x), parseInt(drawPos.y-6));
         if (this.images.length === 1){
-            ctx.drawImage(this.images[0], drawPos.x, drawPos.y+params.adjustY);
+            ctx.drawImage(this.images[0], parseInt(drawPos.x), parseInt(drawPos.y+params.adjustY));
         }
         else {
-            if (this.animFrame < 240/params.velocity) ctx.drawImage(this.images[0], drawPos.x, drawPos.y+params.adjustY);
-            else ctx.drawImage(this.images[1], drawPos.x, drawPos.y+params.adjustY);
+            if (this.animFrame < 240) ctx.drawImage(this.images[0], parseInt(drawPos.x), parseInt(drawPos.y+params.adjustY));
+            else ctx.drawImage(this.images[1], parseInt(drawPos.x), parseInt(drawPos.y+params.adjustY));
         }
     }
 
     drawWalk(ctx, drawPos) {
         let shadow = Assets.getImage('shadow');
-        ctx.drawImage(shadow, drawPos.x+this.walkd.x, drawPos.y-6+this.walkd.y);
+        ctx.drawImage(shadow, parseInt(drawPos.x+this.walkd.x), parseInt(drawPos.y-6+this.walkd.y));
         let img = this.images[parseInt(this.animFrame/params.framesPerImgWalk)];
-        ctx.drawImage(img, drawPos.x+this.walkd.x, drawPos.y+params.adjustY+this.walkd.y);
+        ctx.drawImage(img, parseInt(drawPos.x+this.walkd.x), parseInt(drawPos.y+params.adjustY+this.walkd.y));
     }
 
 }

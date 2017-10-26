@@ -8,6 +8,7 @@ let Grid = {
     dx: 32,
     dy: 16,
     drawOrdered: [],
+    drawPos: [],
 
     setOrigin(x, y) {
         this.originX = x - this.dx;
@@ -45,6 +46,13 @@ let Grid = {
     createDrawOrder() {
         // Holy fucking awesome loop of the galaxy
         this.drawOrdered = [];
+        this.drawPos = [];
+
+        for (let i=0; i<this.size; ++i){
+            this.drawPos.push([]);
+            for (let j=0; j<this.size; ++j)
+                this.drawPos[i].push({});
+        }
 
         let x0 = this.originX;
         let y0 = this.originY;
@@ -71,6 +79,7 @@ let Grid = {
             while (i < this.size && j < this.size){
                 let pos = {x: j, y: i, drawPos: {x: drawX, y: drawY}};
                 this.drawOrdered.push(pos);
+                this.drawPos[i][j] = pos.drawPos;
                 ++i;
                 ++j;
                 drawX += this.tileW;
