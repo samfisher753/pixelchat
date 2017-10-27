@@ -25,19 +25,3 @@ if (typeof process.env.DIST !== 'undefined'){
         http.get('http://game753.herokuapp.com/');
     }, 1800000);
 }
-
-
-// Link Previews Test
-/*
-let https = require('https');
-let url = 'https://www.youtube.com/playlist?list=PLV6LfYRzz4V6n4KWOHUPE8LXNodAFEO6c';
-https.get(url, (res) => {
-    res.setEncoding("utf8");
-    let body = "";
-    res.on("data", data => {
-      body += data;
-    });
-    res.on("end", () => {
-      console.log(body);
-    });
-});*/

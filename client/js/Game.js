@@ -236,8 +236,8 @@ class Game {
         });
 
         // Event: Receive chat message
-        this.socket.on('chat message', (chatMsg) => {
-            this.addChatMessage(chatMsg.player, chatMsg.msg);
+        this.socket.on('chat message', (msg) => {
+            this.addChatMessage(msg);
         });
 
         // Event: Receive number of players
@@ -392,8 +392,10 @@ class Game {
             else if (e.keyCode === 13 && msg !== ''){
                 this.chatInput.value = '';
                 msg = msg.slice(0,this.maxMsgLength);
-                this.socket.emit('chat message', msg);
-                this.addChatMessage(this.player.name,msg);
+                let m = { type: 'text', text: msg };
+                this.socket.emit('chat message', m);
+                m.player = this.player.name;
+                this.addChatMessage(m);
             }
         };
 
@@ -419,7 +421,7 @@ class Game {
         };
     }
 
-    addChatMessage(player, msg) {
+    addChatMessage(msg) {
         let msgC = document.createElement('div');
         msgC.className = 'game-chatMessageC';
 
@@ -427,17 +429,41 @@ class Game {
         msgD.className = 'game-chatMessage';
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
-        nameSpan.textContent = player + ': ';
-        let msgNode = document.createTextNode(msg);
+        nameSpan.textContent = msg.player + ': ';
+
+        // Check for urls
+        let msgSpan = document.createElement('span');
+        let reg = new RegExp('(https?:\/\/[^<>\\s]+)', 'gi');
+        let r = reg.exec(msg.text);
+        let i = 0;
+        while (r !== null){
+            if (r.index > i){
+                let txt = document.createTextNode(msg.text.substring(i,r.index));
+                msgSpan.appendChild(txt);
+            }
+            i = reg.lastIndex;
+            let link = document.createElement('a');
+            let l = document.createTextNode(r[0]);
+            link.appendChild(l);
+            link.setAttribute('href', r[0]);
+            link.setAttribute('target', '_blank');
+            msgSpan.appendChild(link);
+            r = reg.exec(msg.text);
+        }
+        if (msg.text.length > i){
+            let txt = document.createTextNode(msg.text.substring(i,msg.text.length));
+            msgSpan.appendChild(txt);
+        }
 
         msgD.appendChild(nameSpan);
-        msgD.appendChild(msgNode);
+        msgD.appendChild(msgSpan);
         msgC.appendChild(msgD);
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
         chat.appendChild(msgC);
         chat.scrollTop = chat.scrollHeight;
 
-        this.canvasChat.createImg({player: player, text: msg});
+        msg.msgSpan = msgSpan.cloneNode(true);
+        this.canvasChat.createImg(msg);
     }
 
     addChatInfoMessage(msg) {

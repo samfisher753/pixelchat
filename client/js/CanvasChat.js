@@ -6,7 +6,7 @@ class CanvasChat {
         this.msgs = [];
 
         // Config vars
-        this.vel = 1;
+        this.vel = 1.5;
 
         // Internal vars
         this.t = -1;
@@ -139,9 +139,9 @@ class CanvasChat {
         span.className = 'game-boldText';
         span.style.fontWeight = 'bold';
         span.textContent = msg.player + ': ';
-        let textN = document.createTextNode(msg.text);
         div2.appendChild(span);
-        div2.appendChild(textN);
+        div2.appendChild(msg.msgSpan);
+        delete msg.msgSpan;
         div.appendChild(div2);
         let app = document.getElementById('app');
         app.appendChild(div);
@@ -165,6 +165,9 @@ class CanvasChat {
                 '}' +
                 '.game-boldText {' +
                     'font-weight: bold;' +
+                '}' +
+                'a {' +
+                    'color: #1884ff;' +
                 '}' +
             '</style>';
 

@@ -187,19 +187,16 @@ class Server {
             });
 
             socket.on('chat message', (msg) => {
-                let chatMsg = { 
-                    player: player.name,
-                    msg: msg
-                };
+                msg.player = player.name;
 
                 // Server side terminal msgs
-                console.log(player.name + ': ' + msg);
-
+                console.log(msg.player + ': ' + msg.text);
+                
                 // Send msg to room players
                 for (let p in room.players){
                     let q = room.players[p];
-                    if (q.name !== player.name)
-                        this.sockets[q.name].emit('chat message', chatMsg);
+                    if (q.name !== msg.player)
+                        this.sockets[q.name].emit('chat message', msg);
                 }
             });
         

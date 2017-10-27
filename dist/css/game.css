@@ -88,7 +88,7 @@
     top: 0;
     bottom: 50px;
     left: 0;
-    background: rgba(46,46,44,0.3);/*#bbbbbb;*/
+    background: rgba(46,46,44,0.85);/*#bbbbbb;*/
     z-index: 1;
     width: 447px; /*Resizable in js*/
 }
@@ -139,7 +139,7 @@
     max-width: calc(95% - 18px);
     word-wrap: break-word;
     border-radius: 6px;
-    background: rgba(219,219,219,0.8);
+    background: rgba(255,255,255,1);
     margin: 0;
     font-size: 15px;
     padding: 2px 8px;
@@ -215,4 +215,12 @@
 
 .game-login button:hover {
     background-color: #00ab54;
+}
+
+a:link {
+    color: #1884ff;
+}
+
+a:visited {
+    color: #1884ff;
 }
