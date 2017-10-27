@@ -121,6 +121,29 @@ class Server {
             array: array,
         };
         this.rooms[name] = new Room(room);
+
+        name = 'Club Habbo Garito +18';
+        size = 15;
+        array = [];
+        for (let i=0; i<size; ++i){
+            array.push([]);
+            for (let j=0; j<size; ++j){
+                array[i].push({ material: 'grass', players: [] });
+            }
+        }
+        for (let i=10; i<size; ++i){
+            for (let j=0; j<size; ++j){
+                array[i][j] = null;
+            }
+        }
+
+        room = {
+            name: name,
+            size: size,
+            array: array,
+            spawn: {x: 10, y:0},
+        };
+        this.rooms[name] = new Room(room);
     }
 
     bindEvents(io) {

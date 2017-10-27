@@ -12,15 +12,12 @@ class CanvasChat {
         this.t = -1;
         this.adjustX = 32;
         //this.overlap = 2;
-        this.moveUp = 25;
-        this.loaded = false;
+        this.moveUp = 23;
         this.maxW = 345;
-        this.maxH = 101;
         this.defaultY = null;
     }
 
     add(msg) {
-        msg = this.createImg(msg);
         msg.dy = -msg.height;
         msg.dx = this.adjustX - (msg.width/2);
         msg.pos = this.players[msg.player].pos;
@@ -33,10 +30,10 @@ class CanvasChat {
                 moved.push(false);
             
             this.move(msg, -1, moved);
+            this.clean();
         }
-        this.msgs.push(msg);
 
-        this.clean();
+        this.msgs.push(msg);
     }
 
     touch(a, b) {
@@ -87,13 +84,13 @@ class CanvasChat {
                 msg.dy -= this.moveUp;
             }
             this.t = 0;
+            this.clean();
         }
-
-        this.clean();
+        
     }
 
     draw() {
-        if (this.loaded && this.msgs.length > 0) {
+        if (this.msgs.length > 0) {
             for (let msg of this.msgs){
                 let dp = Grid.drawPos[msg.pos.y][msg.pos.x];
                 this.ctx.drawImage(msg.img, 
@@ -108,25 +105,22 @@ class CanvasChat {
     }
 
     createImg(msg) {
-        let b = this.createBubble(msg);
+        let b = this.createBlob(msg);
         msg.width = b.width;
         msg.height = b.height;
         
         let DOMURL = window.URL || window.webkitURL || window;
-        this.loaded = false;
         let img = new Image();
         let svg = new Blob([b.blob], {type: 'image/svg+xml;charset=utf-8'});
         let url = DOMURL.createObjectURL(svg);
         img.onload = () => {
-            this.loaded = true;
+            this.add(msg);
         };
         img.src = url;
         msg.img = img;
-
-        return msg;
     }
 
-    createBubble(msg) {
+    createBlob(msg) {
         // I did this function to get the real width and height of
         // the canvas bubble cause it's a bit different, and to
         // prepare the blob string while sanitizing the chat msg.
@@ -138,7 +132,8 @@ class CanvasChat {
         div2.className = 'game-chatMessage';
         div2.style.maxWidth = 'calc(100% - 18px)';
         div2.style.backgroundColor = '#ffffff';
-        div2.style.fontFamily = 'monospace';
+        div2.style.fontFamily = 'Arial';
+        div2.style.fontSize = '14px';
         div2.style.color = '#000000';
         let span = document.createElement('span');
         span.className = 'game-boldText';
@@ -164,8 +159,8 @@ class CanvasChat {
                     'padding: 2px 8px;' +
                     'border: 1px solid #000000;' +
                     'display: inline-block;' +
-                    'font-family: monospace;' +
-                    'font-size: 16px;' + 
+                    'font-family: Arial;' +
+                    'font-size: 14px;' + 
                     'color: #000000;' +
                 '}' +
                 '.game-boldText {' +

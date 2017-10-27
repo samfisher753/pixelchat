@@ -437,7 +437,7 @@ class Game {
         chat.appendChild(msgC);
         chat.scrollTop = chat.scrollHeight;
 
-        this.canvasChat.add({player: player, text: msg});
+        this.canvasChat.createImg({player: player, text: msg});
     }
 
     addChatInfoMessage(msg) {
