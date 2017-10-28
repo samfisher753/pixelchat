@@ -26,7 +26,7 @@ class Game {
         this.mousedown = false;
         this.disableClick = false; 
         this.resizedown = false;
-        this.receiveRoom = false;
+        this.inRoom = false;
 
         this.configureSocket();
         this.getPlayerName();
@@ -43,7 +43,7 @@ class Game {
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
             this.leaveB.style.display = 'inline-block';
-            this.receiveRoom = true;
+            this.inRoom = true;
 
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
@@ -57,7 +57,7 @@ class Game {
 
     leaveRoom() {
         this.socket.emit('leave room');
-        this.receiveRoom = false;
+        this.inRoom = false;
         this.canvasChat = null;
         this.room = null;
         this.leaveB.style.display = 'none';
@@ -144,16 +144,18 @@ class Game {
         let canvas = document.getElementsByClassName('game-canvas')[0];
         let body = document.getElementsByTagName('body')[0];
         body.onresize = () => {
-            // Resize canvas
-            canvas.height = canvas.clientHeight;
-            canvas.width = canvas.clientWidth;
-            // Update Grid
-            Grid.center(canvas.width,canvas.height);
-            Grid.createDrawOrder();
-            // Resize over canvas chat
-            this.canvasChat.chat.height = canvas.height;
-            this.canvasChat.chat.width = canvas.width;
-            this.canvasChat.defaultY = canvas.height/3;
+            if (this.inRoom){
+                // Resize canvas
+                canvas.height = canvas.clientHeight;
+                canvas.width = canvas.clientWidth;
+                // Update Grid
+                Grid.center(canvas.width,canvas.height);
+                Grid.createDrawOrder();
+                // Resize over canvas chat
+                this.canvasChat.chat.height = canvas.height;
+                this.canvasChat.chat.width = canvas.width;
+                this.canvasChat.defaultY = canvas.height/3;
+            }
         };
 
         let r = document.getElementsByClassName('game-chatResize')[0];
@@ -172,33 +174,37 @@ class Game {
         };
         
         document.onmousemove = (e) => {
-            if (this.mousedown){
-                // Prevent from selecting text while dragging
-                window.getSelection().removeAllRanges();
-                this.mouse = e;
-                // Disable click event after dragging
-                this.disableClick = true;  
-            }
-            else if (this.resizedown){
-                c.style.transition = 'none';
-                b.style.transition = 'none';
-                window.getSelection().removeAllRanges();
-                let rdx = e.clientX - this.xIni;
-                let pc = c.getBoundingClientRect().width + rdx;
-                if (pc < this.minChatWidth) pc = this.minChatWidth;
-                else if (pc+5 > body.clientWidth) pc = body.clientWidth-5;
-                let pr = pc - 5;
-                c.style.width = pc + 'px';
-                r.style.left = pr + 'px';
-                b.style.left = pc + 'px';
-                chat.scrollTop = chat.scrollHeight;
-                this.xIni = e.clientX;
+            if (this.inRoom){
+                if (this.mousedown){
+                    // Prevent from selecting text while dragging
+                    window.getSelection().removeAllRanges();
+                    this.mouse = e;
+                    // Disable click event after dragging
+                    this.disableClick = true;  
+                }
+                else if (this.resizedown){
+                    c.style.transition = 'none';
+                    b.style.transition = 'none';
+                    window.getSelection().removeAllRanges();
+                    let rdx = e.clientX - this.xIni;
+                    let pc = c.getBoundingClientRect().width + rdx;
+                    if (pc < this.minChatWidth) pc = this.minChatWidth;
+                    else if (pc+5 > body.clientWidth) pc = body.clientWidth-5;
+                    let pr = pc - 5;
+                    c.style.width = pc + 'px';
+                    r.style.left = pr + 'px';
+                    b.style.left = pc + 'px';
+                    chat.scrollTop = chat.scrollHeight;
+                    this.xIni = e.clientX;
+                }
             }
         };
 
         document.onmouseup = (e) => {
-            this.mousedown = false;
-            this.resizedown = false;
+            if (this.inRoom) {
+                this.mousedown = false;
+                this.resizedown = false;
+            }
         };
 
         canvas.onclick = (e) => {
@@ -268,7 +274,7 @@ class Game {
         // Event: Receive room info
         this.socket.on('room info', (room) => {
             // If we already are in a room, joining or changing room
-            if (this.receiveRoom){
+            if (this.inRoom){
                 // If join room or change room
                 if (this.room===null || room.name !== this.room.name) {
                     this.room = new Room({client: true});
@@ -437,20 +443,22 @@ class Game {
         // Drag files
         let app = document.getElementById('app');
         app.ondragover = (e) => {
-            e.preventDefault();
+            if (this.inRoom) e.preventDefault();
         };
 
         app.ondragend = (e) => {
-            e.preventDefault();
+            if (this.inRoom) e.preventDefault();
         };
 
         app.ondrop = (e) => {
-            e.preventDefault();
-            // Just one file per drop to avoid spam
-            let file = e.dataTransfer.files[0];
-            if (this.allowedFile(file)){
-                // Read and send file
-                this.readFile(file);
+            if (this.inRoom) {
+                e.preventDefault();
+                // Just one file per drop to avoid spam
+                let file = e.dataTransfer.files[0];
+                if (this.allowedFile(file)){
+                    // Read and send file
+                    this.readFile(file);
+                }
             }
         };
     }
@@ -459,8 +467,8 @@ class Game {
         let fr = new FileReader();
         fr.onload = (e) => {
             let data = e.target.result;
-            let type = data.substring(5,10);
-            let msg = { type: type, data: data };
+            let type = data.substring(5,20).split(';')[0];
+            let msg = { type: type, data: data, filename: file.name };
             this.socket.emit('file message', msg);
             msg.player = this.player.name;
             this.addFileMsg(msg);
@@ -469,14 +477,15 @@ class Game {
     }
 
     addFileMsg(msg) {
-        if (msg.type === 'image'){
+        let type = msg.type.split('/')[0];
+        if (type === 'image'){
             this.addImageMsg(msg);
         }
-        else if (msg.type === 'video'){
-
+        else if (type === 'video'){
+            this.addVideoMsg(msg);
         }
-        else if (msg.type === 'audio'){
-
+        else if (type === 'audio'){
+            this.addAudioMsg(msg);
         }
     }
 
@@ -493,10 +502,9 @@ class Game {
 
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
 
+        let file = document.createElement('div');
         let img = new Image();
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '150px';
-        img.style.marginTop = '5px';
+        img.className = 'file';
         img.onload = () => {
             chat.appendChild(msgC);
             chat.scrollTop = chat.scrollHeight;
@@ -505,10 +513,135 @@ class Game {
             this.canvasChat.add(msg);
         }
         img.src = msg.data;
+        let link = this.createFileLink(msg);
+        file.appendChild(img);
+        file.appendChild(link);
 
         msgD.appendChild(nameSpan);
-        msgD.appendChild(img);
+        msgD.appendChild(file);
         msgC.appendChild(msgD);
+    }
+
+    addVideoMsg(msg) {
+        let msgC = document.createElement('div');
+        msgC.className = 'game-chatMessageC';
+
+        let msgD = document.createElement('div');
+        msgD.className = 'game-chatMessage';
+        let nameSpan = document.createElement('span');
+        nameSpan.className = 'game-boldText';
+        nameSpan.style.float = 'left';
+        nameSpan.textContent = msg.player + ':';
+
+        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
+
+        let file;
+        if (msg.type === 'video/mp4'){
+            file = document.createElement('div');
+            let vid = document.createElement('VIDEO');
+            vid.className = 'file';
+            vid.onloadeddata = () => {
+                chat.appendChild(msgC);
+                chat.scrollTop = chat.scrollHeight;
+                delete msg.data;
+                msg.html = msgC.cloneNode(true);
+                // Clone event too
+                let vid2 = msg.html.getElementsByTagName('VIDEO')[0];
+                vid2.onclick = () => {
+                    if (vid2.paused) vid2.play();
+                    else vid2.pause();
+                };
+                // Draw vid on canvas chat too
+                this.canvasChat.add(msg);
+            };
+            vid.onclick = () => {
+                if (vid.paused) vid.play();
+                else vid.pause();
+            };
+            vid.src = msg.data;
+            vid.load();
+            let link = this.createFileLink(msg);
+            file.appendChild(vid);
+            file.appendChild(link);
+        }
+        else {
+            file = this.createFileLink(msg);
+        }
+
+        msgD.appendChild(nameSpan);
+        msgD.appendChild(file);
+        msgC.appendChild(msgD);
+
+        if (msg.type !== 'video/mp4'){
+            chat.appendChild(msgC);
+            chat.scrollTop = chat.scrollHeight;
+            msg.html = msgC.cloneNode(true);
+            // Draw download link on canvas chat too
+            this.canvasChat.add(msg);
+        }
+    }
+
+    addAudioMsg(msg){
+        let msgC = document.createElement('div');
+        msgC.className = 'game-chatMessageC';
+
+        let msgD = document.createElement('div');
+        msgD.className = 'game-chatMessage';
+        let nameSpan = document.createElement('span');
+        nameSpan.className = 'game-boldText';
+        nameSpan.style.float = 'left';
+        nameSpan.textContent = msg.player + ':';
+
+        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
+
+        let file;
+        if (msg.type === 'audio/mpeg' || msg.type === 'audio/wav' ||
+            msg.type === 'audio/mp3'){
+            file = document.createElement('div');
+            let audio = document.createElement('audio');
+            audio.setAttribute('controls','');
+            audio.className = 'file';
+            audio.onloadeddata = () => {
+                chat.appendChild(msgC);
+                chat.scrollTop = chat.scrollHeight;
+                delete msg.data;
+                msg.html = msgC.cloneNode(true);
+                // Draw vid on canvas chat too
+                this.canvasChat.add(msg);
+            };
+            audio.src = msg.data;
+            audio.load();
+            let link = this.createFileLink(msg);
+            file.appendChild(audio);
+            file.appendChild(link);
+        }
+        else {
+            file = this.createFileLink(msg);
+        }
+
+        msgD.appendChild(nameSpan);
+        msgD.appendChild(file);
+        msgC.appendChild(msgD);
+
+        if (msg.type !== 'audio/mpeg' && msg.type !== 'audio/wav' &&
+            msg.type !== 'audio/mp3'){
+            chat.appendChild(msgC);
+            chat.scrollTop = chat.scrollHeight;
+            msg.html = msgC.cloneNode(true);
+            // Draw download link on canvas chat too
+            this.canvasChat.add(msg);
+        }
+    }
+
+    createFileLink(msg) {
+        let link = document.createElement('a');
+        link.innerHTML = 'Download '+msg.type.split('/')[0]+' file';
+        let blob = this.dataURItoBlob(msg);
+        let url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', msg.filename);
+        link.setAttribute('target', '_blank');
+        return link;
     }
 
     addChatMsg(msg) {
@@ -627,6 +760,17 @@ class Game {
                 return true;
 
         return false;
+    }
+
+    dataURItoBlob(msg) {
+        let byteString = atob(msg.data.split(',')[1]);
+
+        let ab = new ArrayBuffer(byteString.length);
+        let ua = new Uint8Array(ab);
+        for (let i=0; i<byteString.length; ++i)
+            ua[i] = byteString.charCodeAt(i);
+        
+        return new Blob([ab], {type: msg.type});
     }
 
 }
