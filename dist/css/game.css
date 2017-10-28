@@ -23,7 +23,7 @@
     width: 100%;
     padding: 0;
     margin: 0;
-    z-index: 1;
+    z-index: 2;
     background-color: #2e2e2c;
     border-top: 2px solid #53524f;
     border-bottom: 1px solid #53524f;
@@ -63,7 +63,7 @@
     right: 40%;
     top: 30%;
     bottom: 30%;
-    z-index: 1;
+    z-index: 4;
     padding: 0;
     margin: 0;
     background-color: #bbbbbb;
@@ -89,7 +89,7 @@
     bottom: 50px;
     left: 0;
     background: rgba(46,46,44,0.85);/*#bbbbbb;*/
-    z-index: 1;
+    z-index: 2;
     width: 447px; /*Resizable in js*/
 }
 

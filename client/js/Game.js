@@ -37,6 +37,7 @@ class Game {
             this.bindChatEvents();
             this.createCanvas();
             this.bindEvents();
+            this.canvasChat = new CanvasChat();
             let app = document.getElementById('app');
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
@@ -69,11 +70,13 @@ class Game {
         let canvas = document.getElementsByClassName('game-canvas')[0];
         let chatIn = document.getElementsByClassName('game-chatInput')[0];
         let menu = document.getElementsByClassName('game-menu')[0];
+        let cChat = document.getElementById('canvasChat');
         app.removeChild(chat);
         app.removeChild(chatR);
         app.removeChild(hideB);
         app.removeChild(canvas);
         menu.removeChild(chatIn);
+        app.removeChild(cChat);
         app.style.backgroundImage = 'url("../textures/misc/background.jpg")';
         app.style.backgroundColor = '#10436f';
     }
@@ -140,10 +143,15 @@ class Game {
         let canvas = document.getElementsByClassName('game-canvas')[0];
         let body = document.getElementsByTagName('body')[0];
         body.onresize = () => {
+            // Resize canvas
             canvas.height = canvas.clientHeight;
             canvas.width = canvas.clientWidth;
+            // Update Grid
             Grid.center(canvas.width,canvas.height);
             Grid.createDrawOrder();
+            // Resize over canvas chat
+            this.canvasChat.chat.height = canvas.height;
+            this.canvasChat.chat.width = canvas.width;
             this.canvasChat.defaultY = canvas.height/3;
         };
 
@@ -264,9 +272,9 @@ class Game {
                     Grid.size = this.room.size;
                     Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
                     Grid.createDrawOrder();
-                    // Create canvasChat
-                    this.canvasChat = new CanvasChat(this.canvasCtx);
-                    this.canvasChat.defaultY = this.canvasCtx.canvas.height/3;
+                    // Clear canvas chat
+                    this.canvasChat.clear();
+                    
                 }
                 else this.room.update(room);
                 // Update canvas chat players
@@ -462,8 +470,8 @@ class Game {
         chat.appendChild(msgC);
         chat.scrollTop = chat.scrollHeight;
 
-        msg.msgSpan = msgSpan.cloneNode(true);
-        this.canvasChat.createImg(msg);
+        msg.html = msgC.cloneNode(true);
+        this.canvasChat.add(msg);
     }
 
     addChatInfoMessage(msg) {
