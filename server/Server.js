@@ -199,6 +199,19 @@ class Server {
                         this.sockets[q.name].emit('chat message', msg);
                 }
             });
+
+            socket.on('file message', (msg) => {
+                msg.player = player.name;
+
+                // Server side terminal msgs
+                console.log(msg.player+' sent a/an '+msg.type+' file.');
+
+                for (let p in room.players){
+                    let q = room.players[p];
+                    if (q.name !== msg.player)
+                        this.sockets[q.name].emit('file message', msg);
+                }
+            });
         
             socket.on('disconnect', () => {
                 // Avoid problems in the case a player connected but 

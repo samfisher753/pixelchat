@@ -19,6 +19,7 @@ class Game {
         this.socket = io({reconnection: false});
         this.canvasCtx = null;
         this.minChatWidth = 150;
+        this.maxFileSize = 300 * 1024 * 1024; // 300MB
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
         this.mouse = null;
@@ -47,11 +48,11 @@ class Game {
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
         else {
-            this.addChatInfoMessage('You left '+this.room.name);
+            this.addChatInfoMsg('You left '+this.room.name);
         }
 
         this.socket.emit('join room', name);
-        this.addChatInfoMessage('You joined '+name);
+        this.addChatInfoMsg('You joined '+name);
     }
 
     leaveRoom() {
@@ -245,7 +246,12 @@ class Game {
 
         // Event: Receive chat message
         this.socket.on('chat message', (msg) => {
-            this.addChatMessage(msg);
+            this.addChatMsg(msg);
+        });
+
+        // Event: Receive file message
+        this.socket.on('file message', (msg) => {
+            this.addFileMsg(msg);
         });
 
         // Event: Receive number of players
@@ -283,11 +289,11 @@ class Game {
         });
 
         this.socket.on('player join', (name) => {
-            this.addChatInfoMessage(name+' joined the room');
+            this.addChatInfoMsg(name+' joined the room');
         });
 
         this.socket.on('player left', (name) => {
-            this.addChatInfoMessage(name+' left the room');
+            this.addChatInfoMsg(name+' left the room');
         });
 
     }
@@ -403,7 +409,7 @@ class Game {
                 let m = { type: 'text', text: msg };
                 this.socket.emit('chat message', m);
                 m.player = this.player.name;
-                this.addChatMessage(m);
+                this.addChatMsg(m);
             }
         };
 
@@ -427,9 +433,54 @@ class Game {
                 r.style.display = 'none';
             }
         };
+
+        // Drag files
+        let app = document.getElementById('app');
+        app.ondragover = (e) => {
+            e.preventDefault();
+        };
+
+        app.ondragend = (e) => {
+            e.preventDefault();
+        };
+
+        app.ondrop = (e) => {
+            e.preventDefault();
+            // Just one file per drop to avoid spam
+            let file = e.dataTransfer.files[0];
+            if (this.allowedFile(file)){
+                // Read and send file
+                this.readFile(file);
+            }
+        };
     }
 
-    addChatMessage(msg) {
+    readFile(file) {
+        let fr = new FileReader();
+        fr.onload = (e) => {
+            let data = e.target.result;
+            let type = data.substring(5,10);
+            let msg = { type: type, data: data };
+            this.socket.emit('file message', msg);
+            msg.player = this.player.name;
+            this.addFileMsg(msg);
+        };
+        fr.readAsDataURL(file);
+    }
+
+    addFileMsg(msg) {
+        if (msg.type === 'image'){
+            this.addImageMsg(msg);
+        }
+        else if (msg.type === 'video'){
+
+        }
+        else if (msg.type === 'audio'){
+
+        }
+    }
+
+    addImageMsg(msg){
         let msgC = document.createElement('div');
         msgC.className = 'game-chatMessageC';
 
@@ -437,7 +488,38 @@ class Game {
         msgD.className = 'game-chatMessage';
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
-        nameSpan.textContent = msg.player + ': ';
+        nameSpan.style.float = 'left';
+        nameSpan.textContent = msg.player + ':';
+
+        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
+
+        let img = new Image();
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '150px';
+        img.style.marginTop = '5px';
+        img.onload = () => {
+            chat.appendChild(msgC);
+            chat.scrollTop = chat.scrollHeight;
+            delete msg.data;
+            msg.html = msgC.cloneNode(true);
+            this.canvasChat.add(msg);
+        }
+        img.src = msg.data;
+
+        msgD.appendChild(nameSpan);
+        msgD.appendChild(img);
+        msgC.appendChild(msgD);
+    }
+
+    addChatMsg(msg) {
+        let msgC = document.createElement('div');
+        msgC.className = 'game-chatMessageC';
+
+        let msgD = document.createElement('div');
+        msgD.className = 'game-chatMessage';
+        let nameSpan = document.createElement('span');
+        nameSpan.className = 'game-boldText';
+        nameSpan.textContent = msg.player + ':';
 
         // Check for urls
         let msgSpan = document.createElement('span');
@@ -474,7 +556,7 @@ class Game {
         this.canvasChat.add(msg);
     }
 
-    addChatInfoMessage(msg) {
+    addChatInfoMsg(msg) {
         let msgC = document.createElement('div');
         msgC.className = 'game-chatMessageC';
 
@@ -529,6 +611,22 @@ class Game {
         app.appendChild(menu);
 
         nickInput.focus();
+    }
+
+    allowedFile(file) {
+        let allowedTypes = [
+            'image',
+            'video',
+            'audio',
+        ];
+
+        if (file.size > this.maxFileSize) return false;
+
+        for (let i=0; i<allowedTypes.length; ++i)
+            if (file.type.split('/')[0] === allowedTypes[i])
+                return true;
+
+        return false;
     }
 
 }
