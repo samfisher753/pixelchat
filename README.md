@@ -1,4 +1,4 @@
-# game-demo
+# Open Chat
 
 A habbo-like web chat application made with Node.js, Express and Socket.IO.
 

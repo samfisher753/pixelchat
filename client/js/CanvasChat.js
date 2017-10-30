@@ -30,14 +30,10 @@ class CanvasChat {
     add(msg) {
         msg.html.style.position = 'fixed';
         let msgD = msg.html.getElementsByClassName('game-chatMessage')[0];
-        msgD.style.left = '0';
-        msgD.style.fontSize = '14px';
+        msgD.className = 'game-chatMessage game-canvasChatMessage';
         msgD.style.maxWidth = (this.maxW - 18) + 'px'; // 18 padding + border
-        msgD.style.pointerEvents = 'auto';
         this.chat.appendChild(msg.html);
-        let p = msgD.getBoundingClientRect();
-        msg.html.style.width = p.width + 'px';
-        msg.html.style.height = p.height + 'px';
+        let p = msg.html.getBoundingClientRect();
         msg.width = p.width;
         msg.height = p.height;
 

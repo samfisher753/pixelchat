@@ -16,6 +16,13 @@
     background-attachment: fixed;
 }
 
+.game-infoSpan {
+    position: absolute;
+    right: 0;
+    color: #ffffff;
+    z-index: 2;
+}
+
 .game-menu {
     position: absolute;
     bottom: 0;
@@ -130,7 +137,6 @@
 
 .game-chatMessageC {
     position: relative;
-    width: 100%;
 }
 
 .game-chatMessage {
@@ -146,6 +152,12 @@
     border: 1px solid #000000;
     display: inline-block;
     color: #000000;
+}
+
+.game-canvasChatMessage {
+    left: 0;
+    font-size: 14px;
+    pointer-events: auto;
 }
 
 .game-chatInfoMessage {
@@ -226,9 +238,13 @@ a:visited {
     color: #1884ff;
 }
 
+input:focus {
+    outline: none;
+}
+
 .file {
     display: block;
-    max-width: 100%;
     max-height: 150px;
+    max-width: 100%;
     margin-top: 5px;
 }

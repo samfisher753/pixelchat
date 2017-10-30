@@ -362,14 +362,13 @@ class Game {
     createInfoSpans() {
         let app = document.getElementById('app');
         this.fpsSpan = document.createElement('span');
-        this.fpsSpan.style = 'position: absolute; right: 0; color: #ffffff;' + 
-            ' z-index: 1;';
+        this.fpsSpan.className = 'game-infoSpan';
         this.fpsSpan.innerHTML = 'fps: 0';
         app.appendChild(this.fpsSpan);
 
         this.playersSpan = document.createElement('span');
-        this.playersSpan.style = 'position: absolute; right: 0;'+
-            ' color: #ffffff; z-index: 1; top: ' + this.fpsSpan.clientHeight + 'px;';
+        this.playersSpan.className = 'game-infoSpan';
+        this.playersSpan.style.top = this.fpsSpan.clientHeight + 'px';
         this.playersSpan.innerHTML = 'online: 0';
         app.appendChild(this.playersSpan);
     }
@@ -538,28 +537,27 @@ class Game {
         let file;
         if (msg.type === 'video/mp4'){
             file = document.createElement('div');
-            let vid = document.createElement('VIDEO');
+            let vid = document.createElement('video');
+            vid.setAttribute('controls','');
             vid.className = 'file';
             vid.onloadeddata = () => {
                 chat.appendChild(msgC);
                 chat.scrollTop = chat.scrollHeight;
-                delete msg.data;
-                msg.html = msgC.cloneNode(true);
-                // Clone event too
-                let vid2 = msg.html.getElementsByTagName('VIDEO')[0];
-                vid2.onclick = () => {
-                    if (vid2.paused) vid2.play();
-                    else vid2.pause();
-                };
-                // Draw vid on canvas chat too
-                this.canvasChat.add(msg);
-            };
-            vid.onclick = () => {
-                if (vid.paused) vid.play();
-                else vid.pause();
             };
             vid.src = msg.data;
+            let vid2 = vid.cloneNode(true);
+            vid2.onloadeddata = () => {
+                msg.html = msgC.cloneNode(true);
+                let msgDClone = msg.html.getElementsByClassName('game-chatMessage')[0];
+                let fileClone = msgDClone.getElementsByTagName('div')[0];
+                let vidClone = fileClone.getElementsByTagName('video');
+                // In case vid2 finish loading after vid, remove the cloned vid
+                if (vidClone.length > 0) fileClone.removeChild(vidClone[0]);
+                fileClone.insertBefore(vid2,fileClone.firstChild);
+                this.canvasChat.add(msg);
+            };
             vid.load();
+            vid2.load();
             let link = this.createFileLink(msg);
             file.appendChild(vid);
             file.appendChild(link);
@@ -576,7 +574,6 @@ class Game {
             chat.appendChild(msgC);
             chat.scrollTop = chat.scrollHeight;
             msg.html = msgC.cloneNode(true);
-            // Draw download link on canvas chat too
             this.canvasChat.add(msg);
         }
     }
@@ -606,7 +603,6 @@ class Game {
                 chat.scrollTop = chat.scrollHeight;
                 delete msg.data;
                 msg.html = msgC.cloneNode(true);
-                // Draw vid on canvas chat too
                 this.canvasChat.add(msg);
             };
             audio.src = msg.data;
@@ -628,7 +624,6 @@ class Game {
             chat.appendChild(msgC);
             chat.scrollTop = chat.scrollHeight;
             msg.html = msgC.cloneNode(true);
-            // Draw download link on canvas chat too
             this.canvasChat.add(msg);
         }
     }
