@@ -5,7 +5,6 @@ class Game {
         this.player = null;
         this.room = null;
         this.roomsList = null;
-        this.maxMsgLength = 136;
         this.maxNickLength = 15;
 
         // Game loop
@@ -18,8 +17,6 @@ class Game {
         // Misc
         this.socket = io({reconnection: false});
         this.canvasCtx = null;
-        this.minChatWidth = 150;
-        this.maxFileSize = 300 * 1024 * 1024; // 300MB
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
         this.mouse = null;
@@ -29,16 +26,16 @@ class Game {
         this.inRoom = false;
 
         this.configureSocket();
+        Chat.socket = this.socket;
         this.getPlayerName();
     }
 
     joinRoom(name) {
         if (this.room === null) {
-            this.createChatPanel(); 
-            this.bindChatEvents();
+            Chat.create();
             this.createCanvas();
             this.bindEvents();
-            this.canvasChat = new CanvasChat();
+            CanvasChat.init();
             let app = document.getElementById('app');
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
@@ -48,36 +45,26 @@ class Game {
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
         else {
-            this.addChatInfoMsg('You left '+this.room.name);
+            Chat.addInfoMsg('You left '+this.room.name);
         }
 
         this.socket.emit('join room', name);
-        this.addChatInfoMsg('You joined '+name);
+        Chat.addInfoMsg('You joined '+name);
     }
 
     leaveRoom() {
         this.socket.emit('leave room');
         this.inRoom = false;
-        this.canvasChat = null;
         this.room = null;
         this.leaveB.style.display = 'none';
         cancelAnimationFrame(this.frame);
         this.frame = null;
         this.fpsSpan.innerHTML = 'fps: 0';
+        Chat.remove();
         let app = document.getElementById('app');
-        let chat = document.getElementsByClassName('game-chat')[0];
-        let chatR = document.getElementsByClassName('game-chatResize')[0];
-        let hideB = document.getElementsByClassName('game-hideChatButton')[0];
         let canvas = document.getElementsByClassName('game-canvas')[0];
-        let chatIn = document.getElementsByClassName('game-chatInput')[0];
-        let menu = document.getElementsByClassName('game-menu')[0];
-        let cChat = document.getElementById('canvasChat');
-        app.removeChild(chat);
-        app.removeChild(chatR);
-        app.removeChild(hideB);
         app.removeChild(canvas);
-        menu.removeChild(chatIn);
-        app.removeChild(cChat);
+        app.removeChild(CanvasChat.chat);
         app.style.backgroundImage = 'url("../textures/misc/background.jpg")';
         app.style.backgroundColor = '#10436f';
     }
@@ -107,7 +94,7 @@ class Game {
     update() {
         if (this.room !== null){
             this.room.updateLogic();
-            this.canvasChat.update();
+            CanvasChat.update();
         }
 
         this.d = {x:0, y:0};
@@ -135,7 +122,7 @@ class Game {
         // Draw room
         if (this.room !== null) {
             this.room.draw(ctx);
-            this.canvasChat.draw();
+            CanvasChat.draw();
         }
     
     }
@@ -152,9 +139,9 @@ class Game {
                 Grid.center(canvas.width,canvas.height);
                 Grid.createDrawOrder();
                 // Resize over canvas chat
-                this.canvasChat.chat.height = canvas.height;
-                this.canvasChat.chat.width = canvas.width;
-                this.canvasChat.defaultY = canvas.height/3;
+                CanvasChat.chat.height = canvas.height;
+                CanvasChat.chat.width = canvas.width;
+                CanvasChat.defaultY = canvas.height/3;
             }
         };
 
@@ -188,7 +175,7 @@ class Game {
                     window.getSelection().removeAllRanges();
                     let rdx = e.clientX - this.xIni;
                     let pc = c.getBoundingClientRect().width + rdx;
-                    if (pc < this.minChatWidth) pc = this.minChatWidth;
+                    if (pc < Chat.minChatWidth) pc = Chat.minChatWidth;
                     else if (pc+5 > body.clientWidth) pc = body.clientWidth-5;
                     let pr = pc - 5;
                     c.style.width = pc + 'px';
@@ -215,6 +202,24 @@ class Game {
             this.disableClick = false;
         };
 
+        // Drag files
+        let app = document.getElementById('app');
+        app.ondragover = (e) => {
+            if (this.inRoom) e.preventDefault();
+        };
+
+        app.ondragend = (e) => {
+            if (this.inRoom) e.preventDefault();
+        };
+
+        app.ondrop = (e) => {
+            if (this.inRoom) {
+                e.preventDefault();
+                // Just one file per drop to avoid spam
+                let file = e.dataTransfer.files[0];
+                Chat.checkAndReadFile(file);
+            }
+        };
     }
 
     createCanvas() {
@@ -232,6 +237,7 @@ class Game {
         this.socket.on('check name', (b) => {
             if (b.res){
                 this.player = new Player({ name: b.name, client: true });
+                Chat.playerName = this.player.name;
                 let app = document.getElementById('app');
                 app.innerHTML = '';
                 this.createInfoSpans();
@@ -252,12 +258,12 @@ class Game {
 
         // Event: Receive chat message
         this.socket.on('chat message', (msg) => {
-            this.addChatMsg(msg);
+            Chat.addMsg(msg);
         });
 
         // Event: Receive file message
         this.socket.on('file message', (msg) => {
-            this.addFileMsg(msg);
+            Chat.addFileMsg(msg);
         });
 
         // Event: Receive number of players
@@ -285,21 +291,21 @@ class Game {
                     Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
                     Grid.createDrawOrder();
                     // Clear canvas chat
-                    this.canvasChat.clear();
+                    CanvasChat.clear();
                     
                 }
                 else this.room.update(room);
                 // Update canvas chat players
-                this.canvasChat.players = this.room.players;
+                CanvasChat.players = this.room.players;
             }
         });
 
         this.socket.on('player join', (name) => {
-            this.addChatInfoMsg(name+' joined the room');
+            Chat.addInfoMsg(name+' joined the room');
         });
 
         this.socket.on('player left', (name) => {
-            this.addChatInfoMsg(name+' left the room');
+            Chat.addInfoMsg(name+' left the room');
         });
 
     }
@@ -373,331 +379,6 @@ class Game {
         app.appendChild(this.playersSpan);
     }
 
-    createChatPanel() {
-        let app = document.getElementById('app');
-        let chatC = document.createElement('div');
-        chatC.className = 'game-chat';
-        let chatMessagesC = document.createElement('div');
-        chatMessagesC.className = 'game-chatMessagesContainer';
-        let chatR = document.createElement('div');
-        chatR.className = 'game-chatResize';
-        let chatB = document.createElement('button');
-        chatB.className = 'game-hideChatButton';
-        chatB.innerHTML = '<';
-
-        chatC.appendChild(chatMessagesC);
-        app.appendChild(chatC);
-        app.appendChild(chatR);
-        app.appendChild(chatB);
-
-        // Add chat input to menu bar
-        let menuBar = document.getElementsByClassName('game-menu')[0];
-        let chatInputC = document.createElement('div');
-        chatInputC.className = 'game-chatInput';
-        this.chatInput = document.createElement('input');
-        this.chatInput.type = 'text';
-        this.chatInput.maxlength = this.maxMsgLength;
-        chatInputC.appendChild(this.chatInput);
-        menuBar.appendChild(chatInputC);
-    }
-
-    bindChatEvents() {
-        this.chatInput.onkeypress = (e) => {
-            let msg = this.chatInput.value.trim();
-            if (msg.length >= this.maxMsgLength &&
-                e.keyCode !== 46 && e.keyCode !== 8 && e.keyCode !== 13){
-                e.preventDefault();
-            }
-            else if (e.keyCode === 13 && msg !== ''){
-                this.chatInput.value = '';
-                msg = msg.slice(0,this.maxMsgLength);
-                let m = { type: 'text', text: msg };
-                this.socket.emit('chat message', m);
-                m.player = this.player.name;
-                this.addChatMsg(m);
-            }
-        };
-
-        let b = document.getElementsByClassName('game-hideChatButton')[0];
-        let c = document.getElementsByClassName('game-chat')[0];
-        let r = document.getElementsByClassName('game-chatResize')[0];
-        b.onclick = () => {
-            c.style.transition = '0.5s';
-            b.style.transition = '0.5s';
-            let pc = c.getBoundingClientRect();
-            if (pc.left < 0){
-                b.innerHTML = '<';
-                c.style.left = '0';
-                b.style.left = pc.width + 'px';
-                r.style.display = 'block';
-            }
-            else {
-                b.innerHTML = '>';
-                c.style.left = -pc.width + 'px';
-                b.style.left = '0';
-                r.style.display = 'none';
-            }
-        };
-
-        // Drag files
-        let app = document.getElementById('app');
-        app.ondragover = (e) => {
-            if (this.inRoom) e.preventDefault();
-        };
-
-        app.ondragend = (e) => {
-            if (this.inRoom) e.preventDefault();
-        };
-
-        app.ondrop = (e) => {
-            if (this.inRoom) {
-                e.preventDefault();
-                // Just one file per drop to avoid spam
-                let file = e.dataTransfer.files[0];
-                if (this.allowedFile(file)){
-                    // Read and send file
-                    this.readFile(file);
-                }
-            }
-        };
-    }
-
-    readFile(file) {
-        let fr = new FileReader();
-        fr.onload = (e) => {
-            let data = e.target.result;
-            let type = data.substring(5,20).split(';')[0];
-            let msg = { type: type, data: data, filename: file.name };
-            this.socket.emit('file message', msg);
-            msg.player = this.player.name;
-            this.addFileMsg(msg);
-        };
-        fr.readAsDataURL(file);
-    }
-
-    addFileMsg(msg) {
-        let type = msg.type.split('/')[0];
-        if (type === 'image'){
-            this.addImageMsg(msg);
-        }
-        else if (type === 'video'){
-            this.addVideoMsg(msg);
-        }
-        else if (type === 'audio'){
-            this.addAudioMsg(msg);
-        }
-    }
-
-    addImageMsg(msg){
-        let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessageC';
-
-        let msgD = document.createElement('div');
-        msgD.className = 'game-chatMessage';
-        let nameSpan = document.createElement('span');
-        nameSpan.className = 'game-boldText';
-        nameSpan.style.float = 'left';
-        nameSpan.textContent = msg.player + ':';
-
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-
-        let file = document.createElement('div');
-        let img = new Image();
-        img.className = 'file';
-        img.onload = () => {
-            chat.appendChild(msgC);
-            chat.scrollTop = chat.scrollHeight;
-            delete msg.data;
-            msg.html = msgC.cloneNode(true);
-            this.canvasChat.add(msg);
-        }
-        img.src = msg.data;
-        let link = this.createFileLink(msg);
-        file.appendChild(img);
-        file.appendChild(link);
-
-        msgD.appendChild(nameSpan);
-        msgD.appendChild(file);
-        msgC.appendChild(msgD);
-    }
-
-    addVideoMsg(msg) {
-        let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessageC';
-
-        let msgD = document.createElement('div');
-        msgD.className = 'game-chatMessage';
-        let nameSpan = document.createElement('span');
-        nameSpan.className = 'game-boldText';
-        nameSpan.style.float = 'left';
-        nameSpan.textContent = msg.player + ':';
-
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-
-        let file;
-        if (msg.type === 'video/mp4'){
-            file = document.createElement('div');
-            let vid = document.createElement('video');
-            vid.setAttribute('controls','');
-            vid.className = 'file';
-            vid.onloadeddata = () => {
-                chat.appendChild(msgC);
-                chat.scrollTop = chat.scrollHeight;
-            };
-            vid.src = msg.data;
-            let vid2 = vid.cloneNode(true);
-            vid2.onloadeddata = () => {
-                msg.html = msgC.cloneNode(true);
-                let msgDClone = msg.html.getElementsByClassName('game-chatMessage')[0];
-                let fileClone = msgDClone.getElementsByTagName('div')[0];
-                let vidClone = fileClone.getElementsByTagName('video');
-                // In case vid2 finish loading after vid, remove the cloned vid
-                if (vidClone.length > 0) fileClone.removeChild(vidClone[0]);
-                fileClone.insertBefore(vid2,fileClone.firstChild);
-                this.canvasChat.add(msg);
-            };
-            vid.load();
-            vid2.load();
-            let link = this.createFileLink(msg);
-            file.appendChild(vid);
-            file.appendChild(link);
-        }
-        else {
-            file = this.createFileLink(msg);
-        }
-
-        msgD.appendChild(nameSpan);
-        msgD.appendChild(file);
-        msgC.appendChild(msgD);
-
-        if (msg.type !== 'video/mp4'){
-            chat.appendChild(msgC);
-            chat.scrollTop = chat.scrollHeight;
-            msg.html = msgC.cloneNode(true);
-            this.canvasChat.add(msg);
-        }
-    }
-
-    addAudioMsg(msg){
-        let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessageC';
-
-        let msgD = document.createElement('div');
-        msgD.className = 'game-chatMessage';
-        let nameSpan = document.createElement('span');
-        nameSpan.className = 'game-boldText';
-        nameSpan.style.float = 'left';
-        nameSpan.textContent = msg.player + ':';
-
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-
-        let file;
-        if (msg.type === 'audio/mpeg' || msg.type === 'audio/wav' ||
-            msg.type === 'audio/mp3'){
-            file = document.createElement('div');
-            let audio = document.createElement('audio');
-            audio.setAttribute('controls','');
-            audio.className = 'file';
-            audio.onloadeddata = () => {
-                chat.appendChild(msgC);
-                chat.scrollTop = chat.scrollHeight;
-                delete msg.data;
-                msg.html = msgC.cloneNode(true);
-                this.canvasChat.add(msg);
-            };
-            audio.src = msg.data;
-            audio.load();
-            let link = this.createFileLink(msg);
-            file.appendChild(audio);
-            file.appendChild(link);
-        }
-        else {
-            file = this.createFileLink(msg);
-        }
-
-        msgD.appendChild(nameSpan);
-        msgD.appendChild(file);
-        msgC.appendChild(msgD);
-
-        if (msg.type !== 'audio/mpeg' && msg.type !== 'audio/wav' &&
-            msg.type !== 'audio/mp3'){
-            chat.appendChild(msgC);
-            chat.scrollTop = chat.scrollHeight;
-            msg.html = msgC.cloneNode(true);
-            this.canvasChat.add(msg);
-        }
-    }
-
-    createFileLink(msg) {
-        let link = document.createElement('a');
-        link.innerHTML = 'Download '+msg.type.split('/')[0]+' file';
-        let blob = this.dataURItoBlob(msg);
-        let url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', msg.filename);
-        link.setAttribute('target', '_blank');
-        return link;
-    }
-
-    addChatMsg(msg) {
-        let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessageC';
-
-        let msgD = document.createElement('div');
-        msgD.className = 'game-chatMessage';
-        let nameSpan = document.createElement('span');
-        nameSpan.className = 'game-boldText';
-        nameSpan.textContent = msg.player + ':';
-
-        // Check for urls
-        let msgSpan = document.createElement('span');
-        let reg = new RegExp('(https?:\/\/[^<>\\s]+)', 'gi');
-        let r = reg.exec(msg.text);
-        let i = 0;
-        while (r !== null){
-            if (r.index > i){
-                let txt = document.createTextNode(msg.text.substring(i,r.index));
-                msgSpan.appendChild(txt);
-            }
-            i = reg.lastIndex;
-            let link = document.createElement('a');
-            let l = document.createTextNode(r[0]);
-            link.appendChild(l);
-            link.setAttribute('href', r[0]);
-            link.setAttribute('target', '_blank');
-            msgSpan.appendChild(link);
-            r = reg.exec(msg.text);
-        }
-        if (msg.text.length > i){
-            let txt = document.createTextNode(msg.text.substring(i,msg.text.length));
-            msgSpan.appendChild(txt);
-        }
-
-        msgD.appendChild(nameSpan);
-        msgD.appendChild(msgSpan);
-        msgC.appendChild(msgD);
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-        chat.appendChild(msgC);
-        chat.scrollTop = chat.scrollHeight;
-
-        msg.html = msgC.cloneNode(true);
-        this.canvasChat.add(msg);
-    }
-
-    addChatInfoMsg(msg) {
-        let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessageC';
-
-        let msgD = document.createElement('div');
-        msgD.className = 'game-chatMessage game-chatInfoMessage game-boldText';
-        msgD.textContent = msg;
-
-        msgC.appendChild(msgD);
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-        chat.appendChild(msgC);
-        chat.scrollTop = chat.scrollHeight;
-    }
-
     getPlayerName(){
         let app = document.getElementById('app');
 
@@ -739,33 +420,6 @@ class Game {
         app.appendChild(menu);
 
         nickInput.focus();
-    }
-
-    allowedFile(file) {
-        let allowedTypes = [
-            'image',
-            'video',
-            'audio',
-        ];
-
-        if (file.size > this.maxFileSize) return false;
-
-        for (let i=0; i<allowedTypes.length; ++i)
-            if (file.type.split('/')[0] === allowedTypes[i])
-                return true;
-
-        return false;
-    }
-
-    dataURItoBlob(msg) {
-        let byteString = atob(msg.data.split(',')[1]);
-
-        let ab = new ArrayBuffer(byteString.length);
-        let ua = new Uint8Array(ab);
-        for (let i=0; i<byteString.length; ++i)
-            ua[i] = byteString.charCodeAt(i);
-        
-        return new Blob([ab], {type: msg.type});
     }
 
 }

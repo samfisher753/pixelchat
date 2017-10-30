@@ -1,6 +1,6 @@
-class CanvasChat {
+let CanvasChat = {
 
-    constructor(){
+    init(){
         this.players = {};
         this.msgs = [];
 
@@ -25,7 +25,7 @@ class CanvasChat {
         this.chat.style.zIndex = '1';
         this.chat.style.pointerEvents = 'none';
         app.appendChild(this.chat);
-    }
+    },
 
     add(msg) {
         msg.html.style.position = 'fixed';
@@ -49,7 +49,7 @@ class CanvasChat {
         }
 
         this.msgs.push(msg);
-    }
+    },
 
     touch(a, b) {
         let pa = Grid.drawPos[a.pos.y][a.pos.x];
@@ -67,7 +67,7 @@ class CanvasChat {
         }
 
         return false;
-    }
+    },
 
     move(msg, iIni) {
         for (let i=0; i<this.msgs.length; ++i){
@@ -79,7 +79,7 @@ class CanvasChat {
                 this.move(this.msgs[i], i);
             }
         }
-    }
+    },
 
     clean() {
         for (let i=0; i<this.msgs.length; ++i){
@@ -89,7 +89,7 @@ class CanvasChat {
                 --i;
             }
         }
-    }
+    },
 
     update() {
         ++this.t;
@@ -103,7 +103,7 @@ class CanvasChat {
             this.clean();
         }
         
-    }
+    },
 
     draw() {
         if (this.msgs.length > 0) {
@@ -113,7 +113,7 @@ class CanvasChat {
                 msg.html.style.top = (this.defaultY+msg.dy) + 'px';
             }
         }
-    }
+    },
 
     clear() {
         this.msgs = [];
