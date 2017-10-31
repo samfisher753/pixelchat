@@ -87,12 +87,13 @@ class Room {
 
     draw(ctx) {
         // Draw room
-        let drawO = Grid.getDrawOrdered();
+        let drawO = Grid.drawOrdered;
         for (let tile of drawO){
             let cell = this.array[tile.y][tile.x];
             if (cell !== null){
+                let drawPos = Grid.drawPos[tile.y][tile.x];
                 let img = Assets.getImage(cell.material);
-                ctx.drawImage(img, parseInt(tile.drawPos.x), parseInt(tile.drawPos.y));
+                ctx.drawImage(img, parseInt(drawPos.x), parseInt(drawPos.y));
             }
         }
         
@@ -100,8 +101,9 @@ class Room {
         for (let tile of drawO){
             let cell = this.array[tile.y][tile.x];
             if (cell !== null && cell.players.length > 0){
+                let drawPos = Grid.drawPos[tile.y][tile.x];
                 for (let player of cell.players){
-                    this.players[player].draw(ctx, tile.drawPos);
+                    this.players[player].draw(ctx, drawPos);
                 }
             }
         }

@@ -27,18 +27,15 @@ let Grid = {
         this.originY += d.y;
     },
 
-    getDrawOrdered() {
-        return this.drawOrdered;
-    },
-
     cellAt(x, y) {
         for(let cell of this.drawOrdered){
-            let qx = cell.drawPos.x + this.dx;
-            let qy = cell.drawPos.y + this.dy;
+            let drawPos = this.drawPos[cell.y][cell.x];
+            let qx = drawPos.x + this.dx;
+            let qy = drawPos.y + this.dy;
             let px = x - qx;
             let py = y - qy;
             let r = (Math.abs(px)/this.dx) + (Math.abs(py)/this.dy);
-            if (r <= 1) return {x: cell.x, y: cell.y};
+            if (r <= 1) return cell;
         }
         return null;
     },
@@ -77,9 +74,10 @@ let Grid = {
             }
 
             while (i < this.size && j < this.size){
-                let pos = {x: j, y: i, drawPos: {x: drawX, y: drawY}};
+                let pos = {x: j, y: i};
+                let drawPos = {x: drawX, y: drawY};
                 this.drawOrdered.push(pos);
-                this.drawPos[i][j] = pos.drawPos;
+                this.drawPos[i][j] = drawPos;
                 ++i;
                 ++j;
                 drawX += this.tileW;
