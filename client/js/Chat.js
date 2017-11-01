@@ -55,6 +55,10 @@ let Chat = {
 
         this.micB = document.createElement('button');
         this.micB.className = 'game-mic';
+        if (!WavRecorder.available){
+            this.micB.className += ' game-disabled';
+            this.micB.setAttribute('disabled','');
+        }
         let micBimg = document.createElement('img');
         micBimg.src = 'textures/icons/mic.png';
         this.micB.appendChild(micBimg);

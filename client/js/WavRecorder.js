@@ -4,6 +4,7 @@ Small changes made to record only one channel(mono) cause I'll be recording mic 
 
 let WavRecorder = {
 
+    available: false,
     sampleRate: null,
     volume: 1,
     channel: [],
@@ -12,13 +13,17 @@ let WavRecorder = {
 
     init() {
         navigator.mediaDevices.getUserMedia({audio: true, video: false})
-            .then(WavRecorder.success);
+            .then(WavRecorder.success)
+            .catch((e) => {
+                alert('Audio capture not supported in this browser.')
+            });
     },
 
     success(stream) {
         // creates the audio context
         window.AudioContext = window.AudioContext || window.webKitAudioContext;
         let wr = WavRecorder;
+        wr.available = true;
         let audioCtx = new AudioContext();
 
         // we query the context sample rate (varies depending on platforms)
@@ -43,6 +48,7 @@ let WavRecorder = {
         let audioInput = audioCtx.createMediaStreamSource(stream);
         // we connect the recorder
         audioInput.connect(recorder);
+        recorder.connect(audioCtx.destination);
     },
 
     start() {

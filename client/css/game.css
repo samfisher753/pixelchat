@@ -58,7 +58,7 @@
     border-radius: 6px;
 }
 
-.game-mic:active {
+.game-mic:enabled:active {
     background: #eb6f6f;
 }
 
@@ -258,6 +258,15 @@ a:visited {
 
 input:focus {
     outline: none;
+}
+
+button:focus {
+    outline: none;
+}
+
+.game-disabled {
+    opacity: 0.3;
+    cursor: default;
 }
 
 .game-file {
