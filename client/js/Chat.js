@@ -11,6 +11,10 @@ let Chat = {
         'audio',
     ],
 
+    init() {
+        WavRecorder.init();
+    },
+
     create() {
         this.createChatPanel(); 
         this.bindChatEvents();
@@ -48,12 +52,22 @@ let Chat = {
 
         // Add chat input to menu bar
         let menuBar = document.getElementsByClassName('game-menu')[0];
+
+        this.micB = document.createElement('button');
+        this.micB.className = 'game-mic';
+        let micBimg = document.createElement('img');
+        micBimg.src = 'textures/icons/mic.png';
+        this.micB.appendChild(micBimg);
+
         let chatInputC = document.createElement('div');
         chatInputC.className = 'game-chatInput';
         this.chatInput = document.createElement('input');
         this.chatInput.type = 'text';
         this.chatInput.maxlength = this.maxMsgLength;
+
+        chatInputC.appendChild(this.micB);
         chatInputC.appendChild(this.chatInput);
+
         menuBar.appendChild(chatInputC);
     },
 
@@ -72,6 +86,28 @@ let Chat = {
                 this.socket.emit('chat message', m);
                 m.player = this.playerName;
                 this.addMsg(m);
+            }
+        };
+
+        // Record voice note
+        this.micB.onmousedown = (e) => {
+            WavRecorder.start();
+        };
+
+        // Stop recording and send voice note
+        let app = document.getElementById('app');
+        app.onmouseup = (e) => {
+            if (WavRecorder.recording) {
+                let file = WavRecorder.stop();
+                file.name = 'OpenChat-'+this.playerName+this.timeString()+'.wav';
+                this.readFile(file);
+            }
+        };
+
+        // Cancel voice note
+        app.onkeydown = (e) => {
+            if (e.keyCode === 27 && WavRecorder.recording){
+                WavRecorder.cancel();
             }
         };
 
@@ -96,6 +132,21 @@ let Chat = {
             }
         };
 
+    },
+
+    timeString() {
+        let d = new Date();
+        let M = this.twoDigitString(d.getMonth()+1);
+        let day = this.twoDigitString(d.getDate());
+        let h = this.twoDigitString(d.getHours());
+        let m = this.twoDigitString(d.getMinutes());
+        let s = this.twoDigitString(d.getSeconds());
+        return d.getFullYear()+M+day+h+m+s;
+    },
+
+    twoDigitString(n){
+        if (n<10) n = '0'+n;
+        return ''+n;
     },
 
     checkAndReadFile(file) {
