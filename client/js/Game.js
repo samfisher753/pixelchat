@@ -71,6 +71,7 @@ class Game {
 
     startGame(){
         this.createMenu();
+        Chat.init();
     }
 
     gameLoop(timeStamp) {

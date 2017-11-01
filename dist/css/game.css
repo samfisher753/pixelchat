@@ -47,14 +47,31 @@
     cursor: pointer;
 }
 
+.game-mic {
+    position: relative;
+    padding: 3px 3px 0 3px;
+    margin-right: 10px;
+    background: #f5f1ee;
+    cursor: pointer;
+    border: 0;
+    bottom: 5px;
+    border-radius: 6px;
+}
+
+.game-mic:active {
+    background: #eb6f6f;
+}
+
 .game-chatInput {
     position: absolute;
     left: 33%;
-    bottom: 10px;
+    bottom: 0;
 }
 
 .game-chatInput input {
+    position: absolute;
     text-align: left;
+    bottom: 10px;
     width: 500px;
     height: 25px;
     background-color: #ffffff;
@@ -103,7 +120,8 @@
 .game-chatResize {
     position: absolute;
     width: 10px;
-    height: 100%;
+    top: 0;
+    bottom: 50px;
     left: 442px; /*Resizable in js*/
     z-index: 2;
     cursor: ew-resize;
