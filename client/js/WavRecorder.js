@@ -1,13 +1,13 @@
 /* Thanks to Thibault Imbert article https://typedarray.org/from-microphone-to-wav-with-getusermedia-and-web-audio/
-and the Wave File Format specification http://tiny.systems/software/soundProgrammer/WavFormatDocs.pdf
-Small changes made to record only one channel(mono) cause I'll be recording mic only.*/
+and the Wave File Format specification http://tiny.systems/software/soundProgrammer/WavFormatDocs.pdf */
 
 let WavRecorder = {
 
     available: false,
     sampleRate: null,
     volume: 1,
-    channel: [],
+    leftchannel: [],
+    rightchannel: [],
     recordingLength: 0,
     recording: false,
 
@@ -33,14 +33,16 @@ let WavRecorder = {
         dispatched and how many sample-frames need to be processed each call. 
         Lower values for buffer size will result in a lower (better) latency. 
         Higher values will be necessary to avoid audio breakup and glitches */
-        let bufferSize = 2048;
+        let bufferSize = 1024;
         let recorder = audioCtx.createScriptProcessor(bufferSize, 2, 2);
 
         recorder.onaudioprocess = (e) => {
             if (!wr.recording) return;
-            let data = e.inputBuffer.getChannelData(0);
+            let left = e.inputBuffer.getChannelData(0);
+            let right = e.inputBuffer.getChannelData(1);
             // we clone the samples
-            wr.channel.push(new Float32Array(data));
+            wr.leftchannel.push(new Float32Array(left));
+            wr.rightchannel.push(new Float32Array(right));
             wr.recordingLength += bufferSize;
         }
 
@@ -54,7 +56,8 @@ let WavRecorder = {
     start() {
         this.recording = true;
         // reset the buffers for the new recording
-        this.channel = [];
+        this.leftchannel = [];
+        this.rightchannel = [];
         this.recordingLength = 0;
     },
 
@@ -66,16 +69,20 @@ let WavRecorder = {
         // we stop recording
         this.recording = false;
 
-        // we flat the channel
-        let channel = this.mergeBuffers(this.channel, this.recordingLength);
+        // we flat the channels
+        let leftChannel = this.mergeBuffers(this.leftchannel, this.recordingLength);
+        let rightChannel = this.mergeBuffers(this.rightchannel, this.recordingLength);
+
+        // interleave both channels
+        let interleaved = this.interleave(leftChannel, rightChannel);
         
         // we create our wav file
-        let buffer = new ArrayBuffer(44 + channel.length * 2);
+        let buffer = new ArrayBuffer(44 + interleaved.length * 2);
         let view = new DataView(buffer);
         
         // RIFF chunk descriptor
         this.writeUTFBytes(view, 0, 'RIFF');
-        view.setUint32(4, 44 + channel.length * 2, true);
+        view.setUint32(4, 44 + interleaved.length * 2, true);
         this.writeUTFBytes(view, 8, 'WAVE');
         // FMT sub-chunk
         this.writeUTFBytes(view, 12, 'fmt ');
@@ -83,26 +90,26 @@ let WavRecorder = {
         view.setUint32(16, 16, true);
         // PCM format (1)
         view.setUint16(20, 1, true);
-        // mono (1 channel)
-        view.setUint16(22, 1, true);
+        // stereo (2 channels)
+        view.setUint16(22, 2, true);
         // sample rate
         view.setUint32(24, this.sampleRate, true);
-        // byte rate = sample rate * num channels(1) * bitsPerSample(16)/8
-        view.setUint32(28, this.sampleRate * 2, true);
+        // byte rate = sample rate * num channels(2) * bitsPerSample(16)/8
+        view.setUint32(28, this.sampleRate * 4, true);
         // block align = num channels * bitsPerSample/8
-        view.setUint16(32, 2, true);
+        view.setUint16(32, 4, true);
         // bits per sample
         view.setUint16(34, 16, true);
         // data sub-chunk
         this.writeUTFBytes(view, 36, 'data');
-        view.setUint32(40, channel.length * 2, true);
+        view.setUint32(40, interleaved.length * 2, true);
         
         // write the PCM samples
-        let lng = channel.length;
+        let lng = interleaved.length;
         let index = 44;
         let volume = this.volume;
         for (let i = 0; i < lng; ++i){
-            view.setInt16(index, channel[i] * (0x7FFF * volume), true);
+            view.setInt16(index, interleaved[i] * (0x7FFF * volume), true);
             index += 2;
         }
         
@@ -121,6 +128,18 @@ let WavRecorder = {
             offset += buffer.length;
         }
         return result;
+    },
+
+    interleave(leftChannel, rightChannel) {
+        let length = leftChannel.length + rightChannel.length;
+        let res = new Float32Array(length);
+        let l = leftChannel.length;
+        let index = 0;
+        for (let i=0; i<l; ++i){
+            res[index++] = leftChannel[i];
+            res[index++] = rightChannel[i];
+        }
+        return res;
     },
       
     writeUTFBytes(view, offset, string) { 
