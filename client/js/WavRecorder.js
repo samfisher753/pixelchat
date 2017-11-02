@@ -8,7 +8,7 @@ let WavRecorder = {
     sampleRate: null,
     volume: 1,
     channel: [],
-    recordingLenght: 0,
+    recordingLength: 0,
     recording: false,
 
     init() {
