@@ -111,7 +111,7 @@ class Server {
         for (let i=0; i<size; ++i){
             array.push([]);
             for (let j=0; j<size; ++j){
-                array[i].push({ material: 'grass', players: [] });
+                array[i].push({ material: 'default', players: [] });
             }
         }
 

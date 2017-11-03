@@ -45,6 +45,7 @@ let Assets = {
         // Floors
         let path = './textures/floor/';
         this.imgFiles.push(path+'grass.png');
+        this.imgFiles.push(path+'default.png');
 
         // Characters
         path = './textures/character/';
