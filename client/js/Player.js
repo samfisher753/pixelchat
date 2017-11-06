@@ -64,11 +64,6 @@ class Player {
         this.walkd = {x:0, y:0};
     }
 
-    checkAvatarFiles() {
-        if (typeof Assets.avatars[this.name] !== 'undefined')
-            this.avatarName = this.name;
-    }
-
     getPosDirection(a, b) {
         let u = {x: a.x-b.x, y: a.y-b.y};
         if (u.x === 0 && u.y === 0) return this.direction;
