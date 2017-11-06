@@ -2,7 +2,8 @@
 let params = {};
 params.velocity = 1.3;
 params.framesPerImgWalk = 6;
-params.adjustY = -69;
+params.adjustY = -84;
+params.adjustX = 1;
 params.X = [  0,  1, 1, 1, 0, -1, -1, -1 ];               
 params.Y = [ -1, -1, 0, 1, 1,  1,  0, -1 ];
 
@@ -65,8 +66,7 @@ class Player {
     }
 
     fetchImages() {
-        let name = 'sam'+this.direction+this.status;
-        this.images = Assets.getImgArray(name);
+        this.images = Assets.getImgArray('defaultAvatar', this.status, this.direction);
     }
 
     getPosDirection(a, b) {
@@ -257,11 +257,11 @@ class Player {
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x), parseInt(drawPos.y-6));
         if (this.images.length === 1){
-            ctx.drawImage(this.images[0], parseInt(drawPos.x), parseInt(drawPos.y+params.adjustY));
+            ctx.drawImage(this.images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
         }
         else {
-            if (this.animFrame < 240) ctx.drawImage(this.images[0], parseInt(drawPos.x), parseInt(drawPos.y+params.adjustY));
-            else ctx.drawImage(this.images[1], parseInt(drawPos.x), parseInt(drawPos.y+params.adjustY));
+            if (this.animFrame < 240) ctx.drawImage(this.images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+            else ctx.drawImage(this.images[1], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
         }
     }
 
@@ -269,7 +269,7 @@ class Player {
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x+this.walkd.x), parseInt(drawPos.y-6+this.walkd.y));
         let img = this.images[parseInt(this.animFrame/params.framesPerImgWalk)];
-        ctx.drawImage(img, parseInt(drawPos.x+this.walkd.x), parseInt(drawPos.y+params.adjustY+this.walkd.y));
+        ctx.drawImage(img, parseInt(drawPos.x+params.adjustX+this.walkd.x), parseInt(drawPos.y+params.adjustY+this.walkd.y));
     }
 
 }

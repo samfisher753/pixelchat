@@ -1,15 +1,15 @@
 let app = document.getElementById('app');
 
 let canvas = document.createElement('canvas');
-canvas.width = 33;
-canvas.height = 80;
+canvas.width = 39;
+canvas.height = 81;
 let ctx = canvas.getContext('2d');
 
 let img = new Image();
 img.onload = () => {
     getLayer();
 };
-img.src = 'test4.png';
+img.src = 'wtest4.png';
 
 app.appendChild(canvas);
 
@@ -17,7 +17,7 @@ app.appendChild(canvas);
 function getLayer() {
     ctx.drawImage(img, 0, 0);
     console.log(ctx.getImageData(26,3,1,1).data);
-    let imgd = ctx.getImageData(0,0,33,80);
+    let imgd = ctx.getImageData(0,0,39,81);
     let l = imgd.data.length/4;
     for (let i=0; i<l; ++i){
         let index = i*4;
