@@ -3,7 +3,7 @@ let params = {};
 params.velocity = 1.3;
 params.framesPerImgWalk = 6;
 params.adjustY = -84;
-params.adjustX = 1;
+params.adjustX = 0;
 params.X = [  0,  1, 1, 1, 0, -1, -1, -1 ];               
 params.Y = [ -1, -1, 0, 1, 1,  1,  0, -1 ];
 
