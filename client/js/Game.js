@@ -243,6 +243,7 @@ class Game {
                 app.innerHTML = '';
                 this.createInfoSpans();
                 Assets.load();
+                Assets.loadAvatarImages(this.player.name, false, this.player);
                 // Send player name
                 this.socket.emit('new player', this.player.name);
             }

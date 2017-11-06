@@ -10,12 +10,21 @@ class Room {
         this.client = room.client || false;
     }
 
+    // Client side. Re-create/update Player objects.
     update(room) {
         let players = {};
         for (let p in room.players){
             let q;
             if (typeof this.players[p] === 'undefined') {
                 q = new Player(room.players[p]);
+                
+                if (typeof Assets.avatars[q.name] === 'undefined'){
+                    Assets.loadAvatarImages(q.name, false, q);
+                    q.images = Assets.avatars['defaultAvatar'];
+                }
+                else {
+                    q.images = Assets.avatars[q.name];
+                }
             }
             else {
                 q = this.players[p];

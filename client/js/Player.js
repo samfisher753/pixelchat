@@ -62,11 +62,11 @@ class Player {
         this.status = status;
         this.animFrame = -1;
         this.walkd = {x:0, y:0};
-        if (this.client) this.fetchImages();
     }
 
-    fetchImages() {
-        this.images = Assets.getImgArray('defaultAvatar', this.status, this.direction);
+    checkAvatarFiles() {
+        if (typeof Assets.avatars[this.name] !== 'undefined')
+            this.avatarName = this.name;
     }
 
     getPosDirection(a, b) {
@@ -86,7 +86,6 @@ class Player {
         if (this.status === 'stand'){
             let d = this.getPosDirection(this.pos, tgt);
             this.direction = d;
-            if (this.client) this.fetchImages();
         }
     }
 
@@ -237,38 +236,39 @@ class Player {
 
         // Update animFrame
         ++this.animFrame;
-        if (this.animFrame === this.images.length*params.framesPerImgWalk)
+        if (this.animFrame === 4*params.framesPerImgWalk)
             this.animFrame = 0;
         
     }
 
     draw(ctx, drawPos) {
+        let images = this.images[this.status][this.direction];
         switch(this.status){
             case 'stand':
-                this.drawStand(ctx, drawPos); 
+                this.drawStand(ctx, drawPos, images); 
                 break;
             case 'walk':
-                this.drawWalk(ctx, drawPos);
+                this.drawWalk(ctx, drawPos, images);
                 break;
         }
     }
 
-    drawStand(ctx, drawPos) {
+    drawStand(ctx, drawPos, images) {
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x), parseInt(drawPos.y-6));
-        if (this.images.length === 1){
-            ctx.drawImage(this.images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+        if (images.length === 1){
+            ctx.drawImage(images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
         }
         else {
-            if (this.animFrame < 240) ctx.drawImage(this.images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
-            else ctx.drawImage(this.images[1], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+            if (this.animFrame < 240) ctx.drawImage(images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+            else ctx.drawImage(images[1], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
         }
     }
 
-    drawWalk(ctx, drawPos) {
+    drawWalk(ctx, drawPos, images) {
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x+this.walkd.x), parseInt(drawPos.y-6+this.walkd.y));
-        let img = this.images[parseInt(this.animFrame/params.framesPerImgWalk)];
+        let img = images[parseInt(this.animFrame/params.framesPerImgWalk)];
         ctx.drawImage(img, parseInt(drawPos.x+params.adjustX+this.walkd.x), parseInt(drawPos.y+params.adjustY+this.walkd.y));
     }
 
