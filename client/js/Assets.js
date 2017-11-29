@@ -59,7 +59,7 @@ let Assets = {
                     img.src = frame;
                     img.onload = () => {
                         this.avatars[playerName].num_loaded++;
-                        if (this.avatars[playerName].num_loaded === 45){
+                        if (this.avatars[playerName].num_loaded === 51){
                             if (player !== null) player.images = this.avatars[playerName];
                             if (startGame) game.startGame();
                         }
@@ -103,6 +103,15 @@ let Assets = {
             }
             d = (d+1)%8;
         }
+
+        av['sit'] = [
+            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=6&head_direction=6&action=sit'],
+            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=0&head_direction=0&action=sit'],
+            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit',
+             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit&gesture=eyb'],
+            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit',
+             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit&gesture=eyb']
+        ];
 
         return av;
     }

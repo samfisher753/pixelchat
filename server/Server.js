@@ -191,13 +191,16 @@ class Server {
 
                 // Server side terminal msgs
                 console.log(msg.player + ': ' + msg.text);
-                
+
+                this.checkCmd(msg, player);
+
                 // Send msg to room players
                 for (let p in room.players){
                     let q = room.players[p];
                     if (q.name !== msg.player)
                         this.sockets[q.name].emit('chat message', msg);
                 }
+                
             });
 
             socket.on('file message', (msg) => {
@@ -298,6 +301,17 @@ class Server {
             let q = this.sockets[p];
             q.emit('player left', playerName);
         }
+    }
+
+    checkCmd(msg, player) {
+        if (msg.text.substring(0,1) === ':'){
+            let cmd = msg.text.substring(1, msg.text.length);
+            switch (cmd) {
+                case 'sit':
+                    player.sit();
+                    break;
+            }
+        };
     }
 
 };
