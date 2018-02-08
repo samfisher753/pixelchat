@@ -48,6 +48,7 @@ class Game {
             Chat.addInfoMsg('You left '+this.room.name);
         }
 
+        Chat.chatInput.focus();
         this.socket.emit('join room', name);
         Chat.addInfoMsg('You joined '+name);
     }
@@ -165,7 +166,7 @@ class Game {
             if (this.inRoom){
                 if (this.mousedown){
                     // Prevent from selecting text while dragging
-                    window.getSelection().removeAllRanges();
+                    //window.getSelection().removeAllRanges();
                     this.mouse = e;
                     // Disable click event after dragging
                     this.disableClick = true;  
@@ -192,6 +193,7 @@ class Game {
             if (this.inRoom) {
                 this.mousedown = false;
                 this.resizedown = false;
+                Chat.chatInput.focus();
             }
         };
 

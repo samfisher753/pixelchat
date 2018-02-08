@@ -73,9 +73,6 @@ let Chat = {
         chatInputC.appendChild(this.chatInput);
 
         menuBar.appendChild(chatInputC);
-
-        // Set focus on chat input
-        this.chatInput.focus();
     },
 
     bindChatEvents() {
