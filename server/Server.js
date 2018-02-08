@@ -311,7 +311,10 @@ class Server {
                     player.sit();
                     break;
             }
-        };
+        }
+        else if (msg.text === 'o/'){
+            player.wave();
+        }
     }
 
 };

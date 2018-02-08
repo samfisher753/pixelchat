@@ -157,33 +157,48 @@ class Player {
         this.changeAnim(this.direction, 'sit');
     }
 
+    wave() {
+        this.changeAnim(this.direction, 'wave');
+    }
+
     updateLogic(room) {
-        if (this.status === 'stand' || this.status === 'sit'){
-            this.updateLogicStand(room);
-        }
-        else if (this.status === 'walk'){
+        if (this.status === 'walk'){
             this.updateLogicWalk(room);
+        }
+        else {
+            // Check mouse click
+            if (this.click !== null) {
+                let c = room.cell(this.click.x, this.click.y);
+                // If there is a room cell there
+                if (c !== null){
+                    // If player on the cell, change direction
+                    if (c.players.length > 0) {
+                        this.changeDirection(c.pos);
+                    }
+                    // If not, move to cell
+                    else {
+                        this.move(c.pos, room);
+                    }
+                }
+                this.click = null;
+            }
+
+            if (this.status === 'stand' || this.status === 'sit'){
+                this.updateLogicStand();
+            }
+            // Wave
+            else {
+                this.updateLogicWave();
+            }
         }
     }
 
-    updateLogicStand(room) {
-        if (this.click !== null) {
-            let c = room.cell(this.click.x, this.click.y);
-            // If there is a room cell there
-            if (c !== null){
-                // If player on the cell, change direction
-                if (c.players.length > 0) {
-                    this.changeDirection(c.pos);
-                }
-                // If not, move to cell
-                else {
-                    this.move(c.pos, room);
-                }
-            }
-            this.click = null;
-        }
+    updateLogicWave() {
+        ++this.animFrame;
+        if (this.animFrame === 250) this.changeAnim(this.direction,'stand');
+    }
 
-        // Update animFrame
+    updateLogicStand() {
         ++this.animFrame;
         if (this.animFrame === 246) this.animFrame = 0;
     }
@@ -252,6 +267,9 @@ class Player {
             case 'sit':
                 this.drawSit(ctx, drawPos);
                 break;
+            case 'wave':
+                this.drawWave(ctx, drawPos);
+                break;
         }
     }
 
@@ -287,6 +305,14 @@ class Player {
         ctx.drawImage(shadow, parseInt(drawPos.x+this.walkd.x), parseInt(drawPos.y-6+this.walkd.y));
         let img = images[parseInt(this.animFrame/params.framesPerImgWalk)];
         ctx.drawImage(img, parseInt(drawPos.x+params.adjustX+this.walkd.x), parseInt(drawPos.y+params.adjustY+this.walkd.y));
+    }
+
+    drawWave(ctx, drawPos) {
+        let images = this.images[this.status][this.direction];
+        let shadow = Assets.getImage('shadow');
+        ctx.drawImage(shadow, parseInt(drawPos.x), parseInt(drawPos.y-6));
+        let f = parseInt((this.animFrame%10) / 5);
+        ctx.drawImage(images[f], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
     }
 
 }

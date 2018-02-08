@@ -4,6 +4,7 @@ let Assets = {
     imgLoaded: 0,
     imgFiles: [],
     avatars: {},
+    imagesToLoad: 67,
 
     load() {
         this.fillFileArrays();
@@ -59,7 +60,7 @@ let Assets = {
                     img.src = frame;
                     img.onload = () => {
                         this.avatars[playerName].num_loaded++;
-                        if (this.avatars[playerName].num_loaded === 51){
+                        if (this.avatars[playerName].num_loaded === this.imagesToLoad){
                             if (player !== null) player.images = this.avatars[playerName];
                             if (startGame) game.startGame();
                         }
@@ -94,7 +95,6 @@ let Assets = {
 
         av['walk'] = [];
         let d = 6;
-        let f = 0;
         for (let i=0; i<8; ++i){
             av['walk'].push([]);
             for (let f=0; f<4; ++f){
@@ -112,6 +112,17 @@ let Assets = {
             ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit',
              'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit&gesture=eyb']
         ];
+
+        av['wave'] = [];
+        d = 6;
+        for (let i=0; i<8; ++i){
+            av['wave'].push([]);
+            for (let f=0; f<2; ++f){
+                let s = 'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction='+d+'&head_direction='+d+'&action=wav&frame='+f;
+                av['wave'][i].push(s);
+            }
+            d = (d+1)%8;
+        }
 
         return av;
     }

@@ -173,7 +173,7 @@ class Game {
                 else if (this.resizedown){
                     c.style.transition = 'none';
                     b.style.transition = 'none';
-                    window.getSelection().removeAllRanges();
+                    //window.getSelection().removeAllRanges();
                     let rdx = e.clientX - this.xIni;
                     let pc = c.getBoundingClientRect().width + rdx;
                     if (pc < Chat.minChatWidth) pc = Chat.minChatWidth;
@@ -221,6 +221,7 @@ class Game {
                 Chat.checkAndReadFile(file);
             }
         };
+
     }
 
     createCanvas() {

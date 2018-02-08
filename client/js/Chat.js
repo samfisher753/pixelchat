@@ -73,6 +73,9 @@ let Chat = {
         chatInputC.appendChild(this.chatInput);
 
         menuBar.appendChild(chatInputC);
+
+        // Set focus on chat input
+        this.chatInput.focus();
     },
 
     bindChatEvents() {
@@ -114,6 +117,11 @@ let Chat = {
                 WavRecorder.cancel();
             }
         };
+
+        // Maintain focus over chat input
+        this.chatInput.onblur = (e) => {
+            this.chatInput.focus();
+        }
 
         let b = document.getElementsByClassName('game-hideChatButton')[0];
         let c = document.getElementsByClassName('game-chat')[0];
