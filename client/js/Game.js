@@ -17,6 +17,7 @@ class Game {
         // Misc
         this.socket = io({reconnection: false});
         this.canvasCtx = null;
+        this.maskCanvasCtx = null;
         this.d = { x:0, y:0 };
         this.initialPos = { x:0, y:0 };
         this.mouse = null;
@@ -63,7 +64,9 @@ class Game {
         this.fpsSpan.innerHTML = 'fps: 0';
         Chat.remove();
         let app = document.getElementById('app');
-        let canvas = document.getElementsByClassName('game-canvas')[0];
+        let maskCanvas = document.getElementsByClassName('game-canvas')[0];
+        let canvas = document.getElementsByClassName('game-canvas')[1];
+        app.removeChild(maskCanvas);
         app.removeChild(canvas);
         app.removeChild(CanvasChat.chat);
         app.style.backgroundImage = 'url("../textures/misc/background.jpg")';
@@ -130,10 +133,14 @@ class Game {
     }
 
     bindEvents() {
-        let canvas = document.getElementsByClassName('game-canvas')[0];
+        let maskCanvas = document.getElementsByClassName('game-canvas')[0];
+        let canvas = document.getElementsByClassName('game-canvas')[1];
         let body = document.getElementsByTagName('body')[0];
         body.onresize = () => {
             if (this.inRoom){
+                // Resize Mask Canvas
+                maskCanvas.height = maskCanvas.clientHeight;
+                maskCanvas.width = maskCanvas.clientWidth;
                 // Resize canvas
                 canvas.height = canvas.clientHeight;
                 canvas.width = canvas.clientWidth;
@@ -228,6 +235,16 @@ class Game {
 
     createCanvas() {
         let app = document.getElementById('app');
+
+        // Mask Canvas
+        let maskCanvas = document.createElement('canvas');
+        maskCanvas.className = 'game-canvas';
+        this.maskCanvasCtx = maskCanvas.getContext('2d');
+        app.appendChild(maskCanvas);
+        maskCanvas.height = maskCanvas.clientHeight;
+        maskCanvas.width = maskCanvas.clientWidth;
+
+        //Game Canvas
         let canvas = document.createElement('canvas');
         canvas.className = 'game-canvas';
         this.canvasCtx = canvas.getContext('2d');
