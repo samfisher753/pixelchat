@@ -13,6 +13,7 @@ let Assets = {
 
     loadImages() {
         let tile = new Image();
+        tile.crossOrigin = 'Anonymous';
         tile.src = this.imgFiles[this.imgLoaded];
         tile.onload = () => {
             let s = tile.src.split('/');
@@ -57,6 +58,7 @@ let Assets = {
                 this.avatars[playerName][status].push([]);
                 for (let frame of dir){
                     let img = new Image();
+                    img.crossOrigin = 'Anonymous';
                     img.src = frame;
                     img.onload = () => {
                         this.avatars[playerName].num_loaded++;

@@ -256,63 +256,94 @@ class Player {
         
     }
 
-    draw(ctx, drawPos) {
+    draw(ctx, drawPos, maskCtx, maskNum) {
         switch(this.status){
             case 'stand':
-                this.drawStand(ctx, drawPos); 
+                this.drawStand(ctx, drawPos, maskCtx, maskNum); 
                 break;
             case 'walk':
-                this.drawWalk(ctx, drawPos);
+                this.drawWalk(ctx, drawPos, maskCtx, maskNum);
                 break;
             case 'sit':
-                this.drawSit(ctx, drawPos);
+                this.drawSit(ctx, drawPos, maskCtx, maskNum);
                 break;
             case 'wave':
-                this.drawWave(ctx, drawPos);
+                this.drawWave(ctx, drawPos, maskCtx, maskNum);
                 break;
         }
     }
 
-    drawStand(ctx, drawPos) {
+    drawStand(ctx, drawPos, maskCtx, maskNum) {
         let images = this.images[this.status][this.direction];
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x), parseInt(drawPos.y-6));
-        if (images.length === 1){
+        if (images.length === 1 || this.animFrame < 240){
             ctx.drawImage(images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+            this.drawMask(images[0], maskCtx, maskNum, parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
         }
         else {
-            if (this.animFrame < 240) ctx.drawImage(images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
-            else ctx.drawImage(images[1], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+            ctx.drawImage(images[1], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+            this.drawMask(images[1], maskCtx, maskNum, parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
         }
     }
 
-    drawSit(ctx, drawPos) {
+    drawSit(ctx, drawPos, maskCtx, maskNum) {
         let images = this.images[this.status][this.direction/2];
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x), parseInt(drawPos.y-6));
-        if (images.length === 1){
+        if (images.length === 1 || this.animFrame < 240){
             ctx.drawImage(images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY+15));
+            this.drawMask(images[0], maskCtx, maskNum, parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY+15));
         }
         else {
-            if (this.animFrame < 240) ctx.drawImage(images[0], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY+15));
-            else ctx.drawImage(images[1], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY+15));
+            ctx.drawImage(images[1], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY+15));
+            this.drawMask(images[1], maskCtx, maskNum, parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY+15));
         }
     }
 
-    drawWalk(ctx, drawPos) {
+    drawWalk(ctx, drawPos, maskCtx, maskNum) {
         let images = this.images[this.status][this.direction];
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x+this.walkd.x), parseInt(drawPos.y-6+this.walkd.y));
         let img = images[parseInt(this.animFrame/params.framesPerImgWalk)];
         ctx.drawImage(img, parseInt(drawPos.x+params.adjustX+this.walkd.x), parseInt(drawPos.y+params.adjustY+this.walkd.y));
+        this.drawMask(img, maskCtx, maskNum, parseInt(drawPos.x+params.adjustX+this.walkd.x), parseInt(drawPos.y+params.adjustY+this.walkd.y));
     }
 
-    drawWave(ctx, drawPos) {
+    drawWave(ctx, drawPos, maskCtx, maskNum) {
         let images = this.images[this.status][this.direction];
         let shadow = Assets.getImage('shadow');
         ctx.drawImage(shadow, parseInt(drawPos.x), parseInt(drawPos.y-6));
         let f = parseInt((this.animFrame%10) / 5);
         ctx.drawImage(images[f], parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+        this.drawMask(images[f], maskCtx, maskNum, parseInt(drawPos.x+params.adjustX), parseInt(drawPos.y+params.adjustY));
+    }
+
+    drawMask(img, maskCtx, maskNum, posX, posY) {
+        let playerMask = this.createPlayerMask(img, maskNum);
+        maskCtx.drawImage(playerMask, posX, posY);
+    }
+
+    createPlayerMask(img, maskNum){
+        let auxCanvas = document.createElement('canvas');
+        auxCanvas.width = img.width;
+        auxCanvas.height = img.height;
+        let auxCtx = auxCanvas.getContext('2d');
+        auxCtx.fillStyle = "rgba(0,0,0,0)";
+        auxCtx.fillRect(0, 0, auxCanvas.width, auxCanvas.height);
+        auxCtx.drawImage(img, 0, 0);
+
+        let id = auxCtx.getImageData(0, 0, auxCanvas.width, auxCanvas.height);
+        for (let i=0; i<id.data.length; i+=4){
+            if (id.data[i+3] === 255){
+                id.data[i] = 0;
+                id.data[i+1] = 0;
+                id.data[i+2] = maskNum;
+            }
+        }
+        auxCtx.putImageData(id, 0, 0);
+
+        return auxCanvas;
     }
 
 }

@@ -94,7 +94,7 @@ class Room {
             this.players[p].updateLogic(this);
     }
 
-    draw(ctx) {
+    draw(ctx, maskCtx) {
         // Draw room
         let drawO = Grid.drawOrdered;
         for (let tile of drawO){
@@ -107,12 +107,14 @@ class Room {
         }
         
         // Draw players of the room
+        let playerNames = Object.keys(this.players);
         for (let tile of drawO){
             let cell = this.array[tile.y][tile.x];
             if (cell !== null && cell.players.length > 0){
                 let drawPos = Grid.drawPos[tile.y][tile.x];
                 for (let player of cell.players){
-                    this.players[player].draw(ctx, drawPos);
+                    let maskNum = playerNames.indexOf(player);
+                    this.players[player].draw(ctx, drawPos, maskCtx, maskNum);
                 }
             }
         }

@@ -63,6 +63,7 @@ class Game {
         this.frame = null;
         this.fpsSpan.innerHTML = 'fps: 0';
         Chat.remove();
+        this.hidePlayerInfo();
         let app = document.getElementById('app');
         let maskCanvas = document.getElementsByClassName('game-canvas')[0];
         let canvas = document.getElementsByClassName('game-canvas')[1];
@@ -118,18 +119,21 @@ class Game {
 
     draw() {
         let ctx = this.canvasCtx;
+        let maskCtx = this.maskCanvasCtx;
 
         // Draw background
         ctx.fillStyle = '#010101';
         ctx.fillRect(0, 0, 
             ctx.canvas.width, ctx.canvas.height);
+        maskCtx.fillStyle = '#ffffff';
+        maskCtx.fillRect(0, 0, 
+            maskCtx.canvas.width, maskCtx.canvas.height);
 
         // Draw room
         if (this.room !== null) {
-            this.room.draw(ctx);
+            this.room.draw(ctx, maskCtx);
             CanvasChat.draw();
         }
-    
     }
 
     bindEvents() {
@@ -206,8 +210,20 @@ class Game {
 
         canvas.onclick = (e) => {
             if (!this.disableClick){
-                let c = Grid.cellAt(e.clientX, e.clientY);
-                if (c!==null) this.socket.emit('click', c);
+                // Check player
+                let p = this.playerAt(e.clientX, e.clientY);
+                if (p!==null) {
+                    this.socket.emit('click', p.pos);
+                    this.showPlayerInfo(p);
+                }
+                // Check cell
+                else {
+                    let c = Grid.cellAt(e.clientX, e.clientY);
+                    if (c!==null) {
+                        this.socket.emit('click', c);
+                        this.hidePlayerInfo();
+                    }
+                }
             }
             this.disableClick = false;
         };
@@ -231,6 +247,18 @@ class Game {
             }
         };
 
+    }
+
+    playerAt(x, y){
+        let mask = this.maskCanvasCtx;
+        let pixel = mask.getImageData(x, y, 1, 1);
+        if (pixel.data[0]===0){
+            let index = pixel.data[2];
+            let playerNames = Object.keys(this.room.players);
+            let player = this.room.players[playerNames[index]];
+            return player;
+        }
+        return null;
     }
 
     createCanvas() {
@@ -314,7 +342,6 @@ class Game {
                     Grid.createDrawOrder();
                     // Clear canvas chat
                     CanvasChat.clear();
-                    
                 }
                 else this.room.update(room);
                 // Update canvas chat players
@@ -330,6 +357,34 @@ class Game {
             Chat.addInfoMsg(name+' left the room');
         });
 
+    }
+
+    showPlayerInfo(player){
+        this.hidePlayerInfo();
+        let app = document.getElementById('app');
+        let pi = document.createElement('div');
+        pi.className = 'game-playerInfo';
+        let p = document.createElement('p');
+        p.innerHTML = player.name;
+        let di = document.createElement('div');
+        let img = document.createElement('img');
+        let storedImg = player.images['stand'][6][0];
+        img.src = storedImg.src;
+        img.onload = () => {
+            pi.appendChild(p);
+            di.appendChild(img);
+            pi.appendChild(di);
+            app.appendChild(pi);
+        }
+    }
+
+    hidePlayerInfo() {
+        let pis = document.getElementsByClassName('game-playerInfo');
+        if (pis.length > 0){
+            let pi = pis[0];
+            let app = document.getElementById('app');
+            app.removeChild(pi);
+        }
     }
 
     createRoomsWindow() {
