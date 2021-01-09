@@ -2,7 +2,10 @@ let express = require('express');
 let app = express();
 let http = require('http');
 let httpServer = http.Server(app);
-let io = require('socket.io')(httpServer);
+let io = require('socket.io')(httpServer, {
+    // Change Chat.js value too if modifying file size
+    maxHttpBufferSize: 300 * 1024 * 1024, // 300MB
+});
 let Server = require('./server/Server');
 
 // Client

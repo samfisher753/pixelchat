@@ -4,6 +4,7 @@ let Chat = {
     playerName: null,
     maxMsgLength: 136,
     minChatWidth: 150,
+    // Change server index.js value too if modifying file size
     maxFileSize: 300 * 1024 * 1024, // 300MB
     allowedTypes: [
         'image',
