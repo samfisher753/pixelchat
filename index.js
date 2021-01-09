@@ -4,7 +4,7 @@ let http = require('http');
 let httpServer = http.Server(app);
 let io = require('socket.io')(httpServer, {
     cors: {
-        origin: "https://game753.herokuapp.com",
+        origin: ["http://localhost:3000", "https://game753.herokuapp.com"],
         methods: ["GET", "POST"]
     },
     // Change Chat.js value too if modifying file size
