@@ -39,7 +39,7 @@ let CanvasChat = {
 
         msg.dy = -msg.height;
         msg.dx = this.adjustX - (msg.width/2);
-        msg.pos = this.players[msg.player].pos;
+        msg.pos = this.players[msg.player.id].pos;
         delete msg.player;
         delete msg.text;
 

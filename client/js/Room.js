@@ -54,39 +54,39 @@ class Room {
     }
 
     join(player) {
-        this.players[player.name] = player;
+        this.players[player.id] = player;
         player.room = this.name;
         player.pos = this.spawn;
         player.changeAnim(this.spawnDirection, 'stand');
         // Add to this.array.players
         let tile = this.array[this.spawn.y][this.spawn.x];
-        tile.players.push(player.name);
+        tile.players.push(player.id);
         this.array[this.spawn.y][this.spawn.x] = tile;
     }
 
-    leave(playerName) {
+    leave(playerId) {
         // Delete from this.array.players
-        let p = this.players[playerName];
+        let p = this.players[playerId];
         let tile = this.array[p.pos.y][p.pos.x];
-        let i = tile.players.indexOf(playerName);
+        let i = tile.players.indexOf(playerId);
         tile.players.splice(i, 1);
         this.array[p.pos.y][p.pos.x] = tile;
-        this.players[playerName].reset();
-        delete this.players[playerName];
+        this.players[playerId].reset();
+        delete this.players[playerId];
     }
 
     clear() {
-        for(let player in this.players){
-            this.leave(player);
+        for(let playerId in this.players){
+            this.leave(playerId);
         }
     }
 
-    updatePlayerCell(a, b, name) {
+    updatePlayerCell(a, b, id) {
         let cell = this.array[a.y][a.x];
-        let i = cell.players.indexOf(name);
+        let i = cell.players.indexOf(id);
         cell.players.splice(i, 1);
         cell = this.array[b.y][b.x];
-        cell.players.push(name);
+        cell.players.push(id);
     }
 
     updateLogic(){
@@ -107,13 +107,13 @@ class Room {
         }
         
         // Draw players of the room
-        let playerNames = Object.keys(this.players);
+        let playerIds = Object.keys(this.players);
         for (let tile of drawO){
             let cell = this.array[tile.y][tile.x];
             if (cell !== null && cell.players.length > 0){
                 let drawPos = Grid.drawPos[tile.y][tile.x];
                 for (let player of cell.players){
-                    let maskNum = playerNames.indexOf(player);
+                    let maskNum = playerIds.indexOf(player);
                     this.players[player].draw(ctx, drawPos, maskCtx, maskNum);
                 }
             }

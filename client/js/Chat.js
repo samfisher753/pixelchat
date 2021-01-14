@@ -89,7 +89,10 @@ let Chat = {
                 msg = msg.slice(0,this.maxMsgLength);
                 let m = { type: 'text', text: msg };
                 this.socket.emit('chat message', m);
-                m.player = this.playerName;
+                m.player = { 
+                    name: this.playerName,
+                    id: this.playerId
+                };
                 this.addMsg(m);
             }
         };
@@ -171,7 +174,7 @@ let Chat = {
             let type = data.substring(5,20).split(';')[0];
             let msg = { type: type, data: data, filename: file.name };
             this.socket.emit('file message', msg);
-            msg.player = this.playerName;
+            msg.player = { name: this.playerName, id: this.playerId };
             this.addFileMsg(msg);
         };
         fr.readAsDataURL(file);
@@ -199,7 +202,7 @@ let Chat = {
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
         nameSpan.style.float = 'left';
-        nameSpan.textContent = msg.player + ':';
+        nameSpan.textContent = msg.player.name + ':';
 
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
 
@@ -251,7 +254,7 @@ let Chat = {
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
         nameSpan.style.float = 'left';
-        nameSpan.textContent = msg.player + ':';
+        nameSpan.textContent = msg.player.name + ':';
 
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
 
@@ -308,7 +311,7 @@ let Chat = {
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
         nameSpan.style.float = 'left';
-        nameSpan.textContent = msg.player + ':';
+        nameSpan.textContent = msg.player.name + ':';
 
         let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
 
@@ -368,7 +371,7 @@ let Chat = {
         msgD.className = 'game-chatMessage';
         let nameSpan = document.createElement('span');
         nameSpan.className = 'game-boldText';
-        nameSpan.textContent = msg.player + ':';
+        nameSpan.textContent = msg.player.name + ':';
 
         // Check for urls
         let msgSpan = document.createElement('span');

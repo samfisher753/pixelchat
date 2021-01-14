@@ -11,6 +11,7 @@ class Player {
 
     constructor(player){
         this.name = player.name;
+        this.id = player.id;
         this.room = player.room || null;
         this.pos = player.pos || null;
 
@@ -35,7 +36,7 @@ class Player {
 
         if (room !== null && this.pos !== null && 
             (this.pos.x !== player.pos.x || this.pos.y !== player.pos.y)){
-            room.updatePlayerCell(this.pos, player.pos, this.name);
+            room.updatePlayerCell(this.pos, player.pos, this.id);
             this.walkd = {x:0, y:0};
         }
 
@@ -221,7 +222,7 @@ class Player {
         if (r > 1) {
             this.walkd.x = 0;
             this.walkd.y = 0;
-            room.updatePlayerCell(this.pos,this.nextPos,this.name);
+            room.updatePlayerCell(this.pos,this.nextPos,this.id);
             this.pos = this.nextPos;
 
             let moved = false;

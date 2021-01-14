@@ -285,8 +285,9 @@ class Game {
         // Check player name
         this.socket.on('check name', (b) => {
             if (b.res){
-                this.player = new Player({ name: b.name, client: true });
+                this.player = new Player({ name: b.name, id: this.socket.id, client: true });
                 Chat.playerName = this.player.name;
+                Chat.playerId = this.player.id;
                 let app = document.getElementById('app');
                 app.innerHTML = '';
                 this.createInfoSpans();
@@ -298,10 +299,7 @@ class Game {
             else {
                 if (b.errno === 1) 
                     alert('Name must be 4 to 15 characters long.');
-                else if (b.errno === 2) 
-                    alert('Your name can only contain characters: a-Z, 0-9, '
-                        + '- , _ , : and .');
-                else if (b.errno === 3)
+                else if (b.errno === 2)
                     alert('Your name is being used by another player.');
             }
         });
@@ -335,7 +333,7 @@ class Game {
                 if (this.room===null || room.name !== this.room.name) {
                     this.room = new Room({client: true});
                     this.room.update(room);
-                    this.player = this.room.players[this.player.name];
+                    this.player = this.room.players[this.player.id];
                     // Update Grid
                     Grid.size = this.room.size;
                     Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
@@ -469,7 +467,8 @@ class Game {
         nickInput.onkeydown = (e) => {
             let nick = nickInput.value.trim();
             if (nick.length >= this.maxNickLength &&
-                e.keyCode !== 46 && e.keyCode !== 8 && e.keyCode !== 13){
+                e.code !== 'Delete' && e.code !== 'Backspace' && 
+                e.code !== 'Enter' && e.code !== 'NumpadEnter'){
                 e.preventDefault();
             }
         };
@@ -485,7 +484,7 @@ class Game {
         };
 
         menu.onkeydown = (e) => {
-            if (e.keyCode === 13) {
+            if (e.code === 'Enter' || e.code === 'NumpadEnter') {
                 button.onclick();
             }
         };

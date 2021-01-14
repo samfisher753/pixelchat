@@ -155,15 +155,13 @@ class Server {
                 let b = {name: plName, res: null, errno: 0};
                 b.res = (plName.length >= 4 && plName.length <= 15);
                 if (b.res) {
-                    let reg = new RegExp('[^\\w:.-]+');
-                    b.res = !reg.test(plName);
-                    if (b.res) {
-                        b.res = (typeof this.players[plName] === 'undefined');
-                        if (!b.res) b.errno = 3;
+                    for (let id in this.players) {
+                        if (this.players[id].name === plName){
+                            b.res = false;
+                            break;
+                        }
                     }
-                    else {
-                        b.errno = 2;
-                    }
+                    if (!b.res) b.errno = 2;
                 }
                 else {
                     b.errno = 1;
@@ -174,9 +172,9 @@ class Server {
             // Add player once he sends his name.
             // Client will send player name immediately after connect and check.
             socket.on('new player', (playerName) => {
-                player = new Player({ name: playerName });
-                this.players[player.name] = player;
-                this.sockets[player.name] = socket;
+                player = new Player({ name: playerName, id: socket.id });
+                this.players[player.id] = player;
+                this.sockets[player.id] = socket;
 
                 // Server side terminal msgs
                 console.log(player.name + ' joined.');
@@ -187,32 +185,36 @@ class Server {
             });
 
             socket.on('chat message', (msg) => {
-                msg.player = player.name;
+                msg.player = {
+                    name: player.name,
+                    id: player.id
+                };
 
                 // Server side terminal msgs
-                console.log(msg.player + ': ' + msg.text);
+                console.log(msg.player.name + ': ' + msg.text);
 
                 this.checkCmd(msg, player);
 
                 // Send msg to room players
                 for (let p in room.players){
-                    let q = room.players[p];
-                    if (q.name !== msg.player)
-                        this.sockets[q.name].emit('chat message', msg);
+                    if (p !== msg.player.id)
+                        this.sockets[p].emit('chat message', msg);
                 }
                 
             });
 
             socket.on('file message', (msg) => {
-                msg.player = player.name;
+                msg.player = {
+                    name: player.name,
+                    id: player.id
+                };
 
                 // Server side terminal msgs
-                console.log(msg.player+' sent a/an '+msg.type+' file.');
+                console.log(msg.player.name+' sent a/an '+msg.type+' file.');
 
                 for (let p in room.players){
-                    let q = room.players[p];
-                    if (q.name !== msg.player)
-                        this.sockets[q.name].emit('file message', msg);
+                    if (p !== msg.player.id)
+                        this.sockets[p].emit('file message', msg);
                 }
             });
         
@@ -221,11 +223,11 @@ class Server {
                 // disconnected immediately without sending his name.
                 if (player !== null) {
                     if (room !== null){
-                        this.leave(room, player.name);
+                        this.leave(room, player);
                         room = null;
                     }
-                    delete this.players[player.name];
-                    delete this.sockets[player.name]
+                    delete this.players[player.id];
+                    delete this.sockets[player.id]
 
                     // Server side terminal msgs
                     console.log(player.name + ' left.');
@@ -252,25 +254,25 @@ class Server {
             socket.on('join room', (roomName) => {
                 // If player already on a room
                 if (room !== null) {
-                    this.leave(room, player.name);
+                    this.leave(room, player);
                 }
 
                 console.log(player.name+' joined '+roomName+'.');
                 
                 // Join room
-                this.rooms[roomName].join(this.players[player.name]);
+                this.rooms[roomName].join(this.players[player.id]);
                 room = this.rooms[roomName];
 
                 // Notify room players
                 for (let p in room.players){
                     let q = this.sockets[p];
-                    if (p !== player.name)
+                    if (p !== player.id)
                         q.emit('player join', player.name);
                 }
             });
 
             socket.on('leave room', () => {
-                this.leave(room, player.name);
+                this.leave(room, player);
                 room = null;
             });
 
@@ -292,14 +294,14 @@ class Server {
         }
     }
 
-    leave(room, playerName) {
-        console.log(playerName+' left '+room.name+'.');
-        room.leave(playerName);
+    leave(room, player) {
+        console.log(player.name+' left '+room.name+'.');
+        room.leave(player.id);
 
         // Notify room players
         for (let p in room.players){
             let q = this.sockets[p];
-            q.emit('player left', playerName);
+            q.emit('player left', player.name);
         }
     }
 
