@@ -68,7 +68,9 @@ let Assets = {
                         }
                     };
                     img.onerror = () => {
-                        delete this.avatars[playerName];
+                        if (playerName !== 'defaultAvatar') 
+                            this.avatars[playerName] = this.avatars['defaultAvatar'];
+                        if (player !== null) player.images = this.avatars[playerName];
                     };
                     this.avatars[playerName][status][i].push(img);
                 }
