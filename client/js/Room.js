@@ -94,7 +94,7 @@ class Room {
             this.players[p].updateLogic(this);
     }
 
-    draw(ctx, maskCtx) {
+    draw(ctx, maskCtx, mouseCell) {
         // Draw room
         let drawO = Grid.drawOrdered;
         for (let tile of drawO){
@@ -104,6 +104,13 @@ class Room {
                 let img = Assets.getImage(cell.material);
                 ctx.drawImage(img, parseInt(drawPos.x), parseInt(drawPos.y));
             }
+        }
+
+        // Draw mouse tile
+        if (mouseCell !== null && this.array[mouseCell.y][mouseCell.x] !== null){
+            let drawPos = Grid.drawPos[mouseCell.y][mouseCell.x];
+            let mouseTileImg = Assets.getImage('mouse-tile');
+            ctx.drawImage(mouseTileImg, parseInt(drawPos.x), parseInt(drawPos.y-3));
         }
         
         // Draw players of the room

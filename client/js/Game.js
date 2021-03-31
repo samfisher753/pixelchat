@@ -25,6 +25,7 @@ class Game {
         this.disableClick = false; 
         this.resizedown = false;
         this.inRoom = false;
+        this.mouseCell = null;
 
         this.configureSocket();
         Chat.socket = this.socket;
@@ -131,7 +132,7 @@ class Game {
 
         // Draw room
         if (this.room !== null) {
-            this.room.draw(ctx, maskCtx);
+            this.room.draw(ctx, maskCtx, this.mouseCell);
             CanvasChat.draw();
         }
     }
@@ -227,6 +228,11 @@ class Game {
             }
             this.disableClick = false;
         };
+
+        canvas.onmousemove = (e) => {
+            if (this.inRoom)
+                this.mouseCell = Grid.cellAt(e.clientX, e.clientY);
+        }
 
         // Drag files
         let app = document.getElementById('app');
@@ -331,6 +337,7 @@ class Game {
             if (this.inRoom){
                 // If join room or change room
                 if (this.room===null || room.name !== this.room.name) {
+                    this.mouseCell = null;
                     this.room = new Room({client: true});
                     this.room.update(room);
                     this.player = this.room.players[this.player.id];

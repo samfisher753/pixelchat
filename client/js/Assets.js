@@ -46,6 +46,7 @@ let Assets = {
 
         path = './textures/misc/';
         this.imgFiles.push(path+'shadow.png');
+        this.imgFiles.push(path+'mouse-tile.png');
     },
 
     loadAvatarImages(playerName, startGame, player) {
