@@ -274,6 +274,7 @@ class Server {
             socket.on('leave room', () => {
                 this.leave(room, player);
                 room = null;
+                socket.emit('left room');
             });
 
             socket.on('click', (pos) => {
@@ -295,8 +296,8 @@ class Server {
     }
 
     leave(room, player) {
-        console.log(player.name+' left '+room.name+'.');
         room.leave(player.id);
+        console.log(player.name+' left '+room.name+'.');
 
         // Notify room players
         for (let p in room.players){

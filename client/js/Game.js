@@ -24,7 +24,6 @@ class Game {
         this.mousedown = false;
         this.disableClick = false; 
         this.resizedown = false;
-        this.inRoom = false;
         this.mouseCell = null;
 
         this.configureSocket();
@@ -32,7 +31,7 @@ class Game {
         this.getPlayerName();
     }
 
-    joinRoom(name) {
+    joinRoom(room) {
         if (this.room === null) {
             Chat.create();
             this.createCanvas();
@@ -42,7 +41,6 @@ class Game {
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
             this.leaveB.style.display = 'inline-block';
-            this.inRoom = true;
 
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
@@ -50,14 +48,22 @@ class Game {
             Chat.addInfoMsg('You left '+this.room.name);
         }
 
+        this.mouseCell = null;
+        this.room = new Room({client: true});
+        this.room.update(room);
+        this.player = this.room.players[this.player.id];
+        // Update Grid
+        Grid.size = this.room.size;
+        Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
+        Grid.createDrawOrder();
+        // Clear canvas chat
+        CanvasChat.clear();
+
         Chat.chatInput.focus();
-        this.socket.emit('join room', name);
-        Chat.addInfoMsg('You joined '+name);
+        Chat.addInfoMsg('You joined '+this.room.name);
     }
 
     leaveRoom() {
-        this.socket.emit('leave room');
-        this.inRoom = false;
         this.room = null;
         this.leaveB.style.display = 'none';
         cancelAnimationFrame(this.frame);
@@ -142,7 +148,7 @@ class Game {
         let canvas = document.getElementsByClassName('game-canvas')[1];
         let body = document.getElementsByTagName('body')[0];
         body.onresize = () => {
-            if (this.inRoom){
+            if (this.room !== null){
                 // Resize Mask Canvas
                 maskCanvas.height = maskCanvas.clientHeight;
                 maskCanvas.width = maskCanvas.clientWidth;
@@ -175,7 +181,7 @@ class Game {
         };
         
         document.onmousemove = (e) => {
-            if (this.inRoom){
+            if (this.room !== null){
                 if (this.mousedown){
                     // Prevent from selecting text while dragging
                     //window.getSelection().removeAllRanges();
@@ -202,7 +208,7 @@ class Game {
         };
 
         document.onmouseup = (e) => {
-            if (this.inRoom) {
+            if (this.room !== null) {
                 this.mousedown = false;
                 this.resizedown = false;
                 Chat.chatInput.focus();
@@ -230,23 +236,22 @@ class Game {
         };
 
         canvas.onmousemove = (e) => {
-            if (this.inRoom)
-                this.mouseCell = Grid.cellAt(e.clientX, e.clientY);
+            this.mouseCell = Grid.cellAt(e.clientX, e.clientY);
         }
 
         // Drag files
         let app = document.getElementById('app');
         app.ondragover = (e) => {
-            if (this.inRoom) e.preventDefault();
+            e.preventDefault();
         };
 
         app.ondragend = (e) => {
-            if (this.inRoom) e.preventDefault();
+            e.preventDefault();
         };
 
         app.ondrop = (e) => {
-            if (this.inRoom) {
-                e.preventDefault();
+            e.preventDefault();
+            if (this.room !== null) {
                 // Just one file per drop to avoid spam
                 let file = e.dataTransfer.files[0];
                 Chat.checkAndReadFile(file);
@@ -333,25 +338,17 @@ class Game {
 
         // Event: Receive room info
         this.socket.on('room info', (room) => {
-            // If we already are in a room, joining or changing room
-            if (this.inRoom){
-                // If join room or change room
-                if (this.room===null || room.name !== this.room.name) {
-                    this.mouseCell = null;
-                    this.room = new Room({client: true});
-                    this.room.update(room);
-                    this.player = this.room.players[this.player.id];
-                    // Update Grid
-                    Grid.size = this.room.size;
-                    Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
-                    Grid.createDrawOrder();
-                    // Clear canvas chat
-                    CanvasChat.clear();
-                }
-                else this.room.update(room);
-                // Update canvas chat players
-                CanvasChat.players = this.room.players;
-            }
+            // If join room or change room
+            if (this.room===null || room.name !== this.room.name) this.joinRoom(room);
+            // If still in the same room
+            else this.room.update(room);
+            // Update canvas chat players
+            CanvasChat.players = this.room.players;
+        });
+
+        // Successfully left a room
+        this.socket.on('left room', () => {
+            this.leaveRoom();
         });
 
         this.socket.on('player join', (name) => {
@@ -408,7 +405,7 @@ class Game {
             let joinB = document.createElement('button');
             joinB.innerHTML = 'Join';
             joinB.onclick = (() => {
-                this.joinRoom(r.name);
+                this.socket.emit('join room', r.name);
                 app.removeChild(rw);
             }).bind(r);
             li.appendChild(s);
@@ -434,7 +431,7 @@ class Game {
         rImg.src = 'textures/icons/rooms.png';
 
         this.leaveB.onclick = () => {
-            this.leaveRoom();
+            this.socket.emit('leave room');
         };
         roomsB.onclick = () => {
             this.socket.emit('rooms list');
