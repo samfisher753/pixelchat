@@ -28,7 +28,29 @@ class Game {
 
         this.configureSocket();
         Chat.socket = this.socket;
+        this.setDragEvents();
         this.getPlayerName();
+    }
+
+    setDragEvents(){
+        // Drag files / Prevent default drag action
+        let app = document.getElementById('app');
+        app.ondragover = (e) => {
+            e.preventDefault();
+        };
+
+        app.ondragend = (e) => {
+            e.preventDefault();
+        };
+
+        app.ondrop = (e) => {
+            e.preventDefault();
+            if (this.room !== null) {
+                // Just one file per drop to avoid spam
+                let file = e.dataTransfer.files[0];
+                Chat.checkAndReadFile(file);
+            }
+        };
     }
 
     joinRoom(room) {
@@ -238,25 +260,6 @@ class Game {
         canvas.onmousemove = (e) => {
             this.mouseCell = Grid.cellAt(e.clientX, e.clientY);
         }
-
-        // Drag files
-        let app = document.getElementById('app');
-        app.ondragover = (e) => {
-            e.preventDefault();
-        };
-
-        app.ondragend = (e) => {
-            e.preventDefault();
-        };
-
-        app.ondrop = (e) => {
-            e.preventDefault();
-            if (this.room !== null) {
-                // Just one file per drop to avoid spam
-                let file = e.dataTransfer.files[0];
-                Chat.checkAndReadFile(file);
-            }
-        };
 
     }
 
