@@ -2,6 +2,12 @@
 
 A habbo-like web chat application made with Node.js, Express and Socket.IO.
 
-Watch it live now: https://open-chat.onrender.com/
+To use it:
+- Download or clone the project.
+- Navigate to the root folder.
+- Run "npm i".
+- Run "npm start".
 
-If the live version is not loading you may need to use the "Allow CORS: Access-Control-Allow-Origin" extension for Google Chrome in order to enable the browser to load the character images. Once installed you will need to activate it clicking on the grey C letter, it will turn to orange. Remember to deactivate it if a webpage is not loading. You can download it here: https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf
+Now you can see the app at http://localhost:3000
+
+If the app doesn't load properly you may need to use the "Allow CORS: Access-Control-Allow-Origin" extension for Google Chrome in order to enable the browser to load the character images. Once installed you will need to activate it clicking on the grey C letter, it will turn to orange. Remember to deactivate it if a webpage is not loading. You can download it here: https://chrome.google.com/webstore/detail/allow-cors-access-control/lhobafahddgcelffkeicbaginigeejlf
