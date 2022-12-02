@@ -22,9 +22,9 @@ httpServer.listen(port, () => {
     console.log('Listening on port: ' + port);
 });
 
-// Avoid heroku server idling
-if (typeof process.env.DIST !== 'undefined'){
+// Avoid server idling
+if (typeof process.env.DIST !== 'undefined' && typeof process.env.APP_URL !== 'undefined'){
     setInterval(() => {
-        http.get('http://game753.herokuapp.com/');
-    }, 1800000);
+        http.get(process.env.APP_URL);
+    }, 13 * 60 * 1000);
 }
