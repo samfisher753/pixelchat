@@ -1,8 +1,8 @@
 # Open Chat
 
-A habbo-like web chat application made with Node.js, Express and Socket.IO.
+A habbo-like web chat application made with Node.js, Express and Socket.IO. You can watch it live now here: https://open-chat-6a42ae5ab19c.herokuapp.com
 
-You can run it locally following these steps (assuming you have Node installed):
+Or you can run it locally following these steps (assuming you have Node installed):
 - Download or clone the project.
 - Navigate to the root folder.
 - Run "npm i".
