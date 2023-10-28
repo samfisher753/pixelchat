@@ -121,7 +121,7 @@ let Chat = {
 
         // Maintain focus over chat input
         this.chatInput.onblur = (e) => {
-            this.chatInput.focus();
+            this.chatInputFocus();
         }
 
         let b = document.getElementsByClassName('game-hideChatButton')[0];
@@ -145,6 +145,13 @@ let Chat = {
             }
         };
 
+    },
+
+    chatInputFocus() {
+        const ua = navigator.userAgent.toLowerCase()
+        const isAndroid = ua.includes('android')
+        const isIPhone = (navigator.userAgent.match(/iPhone/i)) ||(navigator.userAgent.match(/iPod/i))
+        if (!isAndroid && !isIPhone) this.chatInput.focus();
     },
 
     timeString() {
