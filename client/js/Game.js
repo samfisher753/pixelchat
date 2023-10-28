@@ -81,7 +81,7 @@ class Game {
         // Clear canvas chat
         CanvasChat.clear();
 
-        Chat.chatInput.focus();
+        Chat.chatInputFocus();
         Chat.addInfoMsg('You joined '+this.room.name);
     }
 
@@ -233,7 +233,7 @@ class Game {
             if (this.room !== null) {
                 this.mousedown = false;
                 this.resizedown = false;
-                Chat.chatInput.focus();
+                Chat.chatInputFocus();
             }
         };
 
