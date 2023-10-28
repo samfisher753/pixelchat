@@ -393,32 +393,57 @@ class Game {
     }
 
     createRoomsWindow() {
-        let app = document.getElementById('app');
-        let rw = document.createElement('div');
-        rw.className = 'game-window';
-        let closeB = document.createElement('button');
-        closeB.className = 'game-closeButton';
-        closeB.innerHTML = 'X';
-        closeB.onclick = ()=>{app.removeChild(rw);};
-        let ul = document.createElement('ul');
-        this.roomsList.forEach((r) => {
-            let li = document.createElement('li');
-            let s = document.createElement('span');
-            s.innerHTML = r.name + ' | Players: ' + r.players;
-            let joinB = document.createElement('button');
-            joinB.innerHTML = 'Join';
-            joinB.onclick = (() => {
-                this.socket.emit('join room', r.name);
-                app.removeChild(rw);
-            }).bind(r);
-            li.appendChild(s);
-            li.appendChild(joinB);
-            ul.appendChild(li);
-        })
+        let roomsWindow = document.getElementsByClassName('game-window');
+        if (roomsWindow.length === 0) {
+            let app = document.getElementById('app');
+            let rw = document.createElement('div');
+            rw.className = 'game-window';
+            let header = document.createElement('div');
+            header.className = 'game-window-header flex-center';
+            let title = document.createElement('span');
+            title.className = 'game-window-title';
+            title.innerHTML = 'Browser';
+            let closeB = document.createElement('span');
+            closeB.className = 'game-closeButton flex-center';
+            closeB.onclick = ()=>{app.removeChild(rw);};
+            let closeBLabel = document.createElement('span');
+            closeBLabel.innerHTML = 'X';
+            closeB.appendChild(closeBLabel);
+            header.appendChild(title);
+            header.appendChild(closeB);
+            let body = document.createElement('div');
+            body.className = 'game-window-body';
+            let rl = document.createElement('div');
+            rl.className = 'game-rooms-list';
+            let rowColor = 'background-soft-blue';
+            this.roomsList.forEach((r) => {
+                let row = document.createElement('div');
+                row.className = 'game-room-row';
+                row.className += ' ' + rowColor;
+                if (rowColor === 'background-soft-blue') rowColor = 'background-transparent';
+                else rowColor = 'background-soft-blue';
+                let numPlayers = document.createElement('span');
+                numPlayers.className = 'game-room-players';
+                if (r.players === 0) numPlayers.className += ' background-grey';
+                else numPlayers.className += ' background-green';
+                numPlayers.innerHTML = r.players;
+                let roomName = document.createElement('span');
+                roomName.className = 'game-room-name';
+                roomName.innerHTML = r.name;
+                row.appendChild(numPlayers);
+                row.appendChild(roomName);
+                row.onclick = (() => {
+                    this.socket.emit('join room', r.name);
+                    app.removeChild(rw);
+                }).bind(r);
+                rl.appendChild(row);
+            })
 
-        rw.appendChild(closeB);
-        rw.appendChild(ul);
-        app.appendChild(rw);
+            body.appendChild(rl);
+            rw.appendChild(header);
+            rw.appendChild(body);
+            app.appendChild(rw);
+        }
     }
 
     createMenu() {
@@ -430,6 +455,7 @@ class Game {
         let lImg = document.createElement('img');
         lImg.src = 'textures/icons/back.png';
         let roomsB = document.createElement('button');
+        roomsB.className = 'game-icon-flicker';
         let rImg = document.createElement('img');
         rImg.src = 'textures/icons/rooms.png';
 
@@ -437,6 +463,7 @@ class Game {
             this.socket.emit('leave room');
         };
         roomsB.onclick = () => {
+            roomsB.className = '';
             this.socket.emit('rooms list');
         };
 

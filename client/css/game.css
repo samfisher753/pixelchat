@@ -47,6 +47,24 @@
     cursor: pointer;
 }
 
+.game-icon-flicker {
+    animation-name: icon-flicker;
+    animation-duration: 2s;
+    animation-iteration-count: infinite;
+}
+
+@keyframes icon-flicker {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.4;
+    }
+    100% {
+        opacity: 1;
+    }
+  }
+
 .game-mic {
     position: relative;
     padding: 3px 3px 0 3px;
@@ -90,7 +108,9 @@
     z-index: 4;
     padding: 0;
     margin: 0;
-    background-color: #bbbbbb;
+    background-color: #ebe9df;
+    border: 1px solid black;
+    border-radius: 10px;
 }
 
 .game-window li {
@@ -104,7 +124,88 @@
 
 .game-closeButton {
     position: absolute;
-    right: 0;
+    right: 5px;
+    top: 5px;
+    border-radius: 5px;
+    background-color: #bd3b2f;
+    color: #ffffff;
+    width: 20px;
+    height: 20px;
+    border: 1px solid black;
+    cursor: pointer;
+}
+
+.game-window-header {
+    background-color: #367897;
+    height: 30px;
+    text-align: center;
+    color: white;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.game-window-title {
+
+}
+
+.game-window-body {
+    padding: 15px;
+}
+
+.game-rooms-list {
+    background-color: white;
+    padding: 5px;
+}
+
+.game-room-row {
+    box-sizing: border-box;
+    height: 20px;
+    padding: 1px 0;
+    cursor: pointer;
+    font-size: 13px;
+    border-radius: 5px;
+}
+
+.game-room-players {
+    display: inline-flex;
+    width: 40px;
+    height: 18px;
+    color: white;
+    border-radius: 5px;
+    justify-content: center;
+    align-items: center;
+}
+
+.background-grey {
+    background-color: #cac9c0;
+}
+
+.background-green {
+    background-color: #62b061;
+}
+
+.background-soft-blue {
+    background-color: #d5edff;
+}
+
+.background-transparent {
+    background-color: transparent;
+}
+
+.game-room-name {
+    color: black;
+    margin-left: 7px;
+}
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-vertical-center {
+    display: flex;
+    align-items: center;
 }
 
 .game-chat {
