@@ -43,6 +43,13 @@ let CanvasChat = {
         delete msg.player;
         delete msg.text;
 
+        // Add player reference to chat msg
+        let playerRef = Assets.getImage('msg-pos');
+        playerRef = playerRef.cloneNode(true);
+        playerRef.style.position = 'absolute';
+        msg.html.appendChild(playerRef);
+        msg.playerRef = playerRef;
+
         if (this.msgs.length > 0){
             this.move(msg, -1);
             this.clean();
@@ -111,6 +118,8 @@ let CanvasChat = {
                 let dp = Grid.drawPos[msg.pos.y][msg.pos.x];
                 msg.html.style.left = (dp.x+msg.dx) + 'px';
                 msg.html.style.top = (this.defaultY+msg.dy) + 'px';
+                msg.playerRef.style.left = (msg.width/2)-4 + 'px';
+                msg.playerRef.style.top = msg.height-1 + 'px';
             }
         }
     },
