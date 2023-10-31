@@ -362,6 +362,9 @@ class Game {
             Chat.addInfoMsg(name+' left the room');
         });
 
+        this.socket.on('disconnect', () => {
+            alert('Disconnected from the server.');
+        });
     }
 
     showPlayerInfo(player){
