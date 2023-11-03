@@ -281,7 +281,7 @@ class Game {
         // Mask Canvas
         let maskCanvas = document.createElement('canvas');
         maskCanvas.className = 'game-canvas';
-        this.maskCanvasCtx = maskCanvas.getContext('2d');
+        this.maskCanvasCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
         app.appendChild(maskCanvas);
         maskCanvas.height = maskCanvas.clientHeight;
         maskCanvas.width = maskCanvas.clientWidth;
@@ -399,6 +399,8 @@ class Game {
         let roomsWindow = document.getElementsByClassName('game-window');
         if (roomsWindow.length === 0) {
             let app = document.getElementById('app');
+            let rwc = document.createElement('div');
+            rwc.className = 'game-window-container';
             let rw = document.createElement('div');
             rw.className = 'game-window';
             let header = document.createElement('div');
@@ -408,7 +410,7 @@ class Game {
             title.innerHTML = 'Browser';
             let closeB = document.createElement('span');
             closeB.className = 'game-closeButton flex-center';
-            closeB.onclick = ()=>{app.removeChild(rw);};
+            closeB.onclick = ()=>{app.removeChild(rwc);};
             let closeBLabel = document.createElement('span');
             closeBLabel.innerHTML = 'X';
             closeB.appendChild(closeBLabel);
@@ -437,7 +439,7 @@ class Game {
                 row.appendChild(roomName);
                 row.onclick = (() => {
                     this.socket.emit('join room', r.name);
-                    app.removeChild(rw);
+                    app.removeChild(rwc);
                 }).bind(r);
                 rl.appendChild(row);
             })
@@ -445,7 +447,8 @@ class Game {
             body.appendChild(rl);
             rw.appendChild(header);
             rw.appendChild(body);
-            app.appendChild(rw);
+            rwc.appendChild(rw);
+            app.appendChild(rwc);
         }
     }
 
@@ -494,6 +497,9 @@ class Game {
     getPlayerName(){
         let app = document.getElementById('app');
 
+        let glc = document.createElement('div');
+        glc.className = 'game-login-container';
+
         let menu = document.createElement('div');
         menu.className = 'game-login';
 
@@ -530,7 +536,8 @@ class Game {
         buttonC.appendChild(button);
         menu.appendChild(nickContainer);
         menu.appendChild(buttonC);
-        app.appendChild(menu);
+        glc.appendChild(menu);
+        app.appendChild(glc);
 
         nickInput.focus();
     }
