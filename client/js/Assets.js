@@ -82,6 +82,10 @@ let Assets = {
     },
 
     createAvatarFilesObject(playerName) {
+        if (playerName === "base") {
+            return this.createBaseCharacterFilesObject();
+        }
+
         let av = {};
         av['stand'] = [
             ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=6&head_direction=6'],
@@ -128,6 +132,56 @@ let Assets = {
                 av['wave'][i].push(s);
             }
             d = (d+1)%8;
+        }
+
+        return av;
+    },
+
+    createBaseCharacterFilesObject() {
+        let av = {};
+        let path = "./textures/character/";
+
+        av['stand'] = [
+            [path+"bc-stand-0.png"],
+            [path+"bc-stand-1.png"],
+            [path+"bc-stand-2.png"],
+            [path+"bc-stand-3.png",
+            path+"bc-stand-3.png"],
+            [path+"bc-stand-4.png",
+            path+"bc-stand-4.png"],
+            [path+"bc-stand-5.png",
+            path+"bc-stand-5.png"],
+            [path+"bc-stand-6.png",
+            path+"bc-stand-6.png"],
+            [path+"bc-stand-7.png",
+            path+"bc-stand-7.png"]
+        ];
+
+        av['walk'] = [];
+        for (let i=0; i<8; ++i){
+            av['walk'].push([]);
+            for (let f=0; f<4; ++f){
+                let s = path+"bc-stand-"+i+".png";
+                av['walk'][i].push(s);
+            }
+        }
+
+        av['sit'] = [
+            [path+"bc-stand-0.png"],
+            [path+"bc-stand-2.png"],
+            [path+"bc-stand-4.png",
+            path+"bc-stand-4.png"],
+            [path+"bc-stand-6.png",
+            path+"bc-stand-6.png"]
+        ];
+
+        av['wave'] = [];
+        for (let i=0; i<8; ++i){
+            av['wave'].push([]);
+            for (let f=0; f<2; ++f){
+                let s = path+"bc-stand-"+i+".png";
+                av['wave'][i].push(s);
+            }
         }
 
         return av;
