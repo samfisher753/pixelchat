@@ -140,46 +140,48 @@ let Assets = {
     createBaseCharacterFilesObject() {
         let av = {};
         let path = "./textures/character/";
+        let pathStand = path + "stand/";
 
         av['stand'] = [
-            [path+"bc-stand-0.png"],
-            [path+"bc-stand-1.png"],
-            [path+"bc-stand-2.png"],
-            [path+"bc-stand-3.png",
-            path+"bc-stand-3.png"],
-            [path+"bc-stand-4.png",
-            path+"bc-stand-4.png"],
-            [path+"bc-stand-5.png",
-            path+"bc-stand-5.png"],
-            [path+"bc-stand-6.png",
-            path+"bc-stand-6.png"],
-            [path+"bc-stand-7.png",
-            path+"bc-stand-7.png"]
+            [pathStand+"bc-stand-0.png"],
+            [pathStand+"bc-stand-1.png"],
+            [pathStand+"bc-stand-2.png"],
+            [pathStand+"bc-stand-3.png",
+            pathStand+"bc-stand-3.png"],
+            [pathStand+"bc-stand-4.png",
+            pathStand+"bc-stand-4.png"],
+            [pathStand+"bc-stand-5.png",
+            pathStand+"bc-stand-5.png"],
+            [pathStand+"bc-stand-6.png",
+            pathStand+"bc-stand-6.png"],
+            [pathStand+"bc-stand-7.png",
+            pathStand+"bc-stand-7.png"]
         ];
 
+        let pathWalk = path + "walk/";
         av['walk'] = [];
         for (let i=0; i<8; ++i){
             av['walk'].push([]);
             for (let f=0; f<4; ++f){
-                let s = path+"bc-stand-"+i+".png";
+                let s = pathWalk+"bc-walk-"+i+"-"+f+".png";
                 av['walk'][i].push(s);
             }
         }
 
         av['sit'] = [
-            [path+"bc-stand-0.png"],
-            [path+"bc-stand-2.png"],
-            [path+"bc-stand-4.png",
-            path+"bc-stand-4.png"],
-            [path+"bc-stand-6.png",
-            path+"bc-stand-6.png"]
+            [pathStand+"bc-stand-0.png"],
+            [pathStand+"bc-stand-2.png"],
+            [pathStand+"bc-stand-4.png",
+            pathStand+"bc-stand-4.png"],
+            [pathStand+"bc-stand-6.png",
+            pathStand+"bc-stand-6.png"]
         ];
 
         av['wave'] = [];
         for (let i=0; i<8; ++i){
             av['wave'].push([]);
             for (let f=0; f<2; ++f){
-                let s = path+"bc-stand-"+i+".png";
+                let s = pathStand+"bc-stand-"+i+".png";
                 av['wave'][i].push(s);
             }
         }
