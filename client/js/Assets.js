@@ -82,7 +82,7 @@ let Assets = {
     },
 
     createAvatarFilesObject(playerName) {
-        if (playerName.includes("base")) {
+        if (playerName.toLowerCase().includes("base")) {
             return this.createBaseCharacterFilesObject();
         }
 
@@ -178,11 +178,12 @@ let Assets = {
             pathSit+"bc-sit-6.png"]
         ];
 
+        let pathWave = path + "wave/";
         av['wave'] = [];
         for (let i=0; i<8; ++i){
             av['wave'].push([]);
             for (let f=0; f<2; ++f){
-                let s = pathStand+"bc-stand-"+i+".png";
+                let s = pathWave+"bc-wave-"+i+"-"+f+".png";
                 av['wave'][i].push(s);
             }
         }
