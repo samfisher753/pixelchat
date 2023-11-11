@@ -10,6 +10,9 @@ COPY . /app
 # Install project dependencies
 RUN npm install
 
+# Create dist folder with build files
+RUN npm run build
+
 # Set the environment variable
 ENV DIST=1
 
