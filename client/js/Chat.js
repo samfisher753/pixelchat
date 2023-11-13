@@ -107,7 +107,7 @@ let Chat = {
         app.onmouseup = (e) => {
             if (WavRecorder.recording) {
                 let file = WavRecorder.stop();
-                file.name = 'OpenChat-'+this.playerName+this.timeString()+'.wav';
+                file.name = 'PixelChat-'+this.playerName+this.timeString()+'.wav';
                 this.readFile(file);
             }
         };

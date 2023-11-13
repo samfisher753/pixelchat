@@ -1,4 +1,4 @@
-# Open Chat
+# Pixel Chat
 
 A habbo-like web chat application made with Node.js, Express and Socket.IO. You can watch it live now here: https://www.pixelchat.es
 
