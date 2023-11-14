@@ -67,7 +67,7 @@ class Game {
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
         else {
-            Chat.addInfoMsg('You left '+this.room.name);
+            Chat.addInfoMsg('Saliste de '+this.room.name);
         }
 
         this.mouseCell = null;
@@ -82,7 +82,7 @@ class Game {
         CanvasChat.clear();
 
         Chat.chatInputFocus();
-        Chat.addInfoMsg('You joined '+this.room.name);
+        Chat.addInfoMsg('Te uniste a '+this.room.name);
     }
 
     leaveRoom() {
@@ -312,9 +312,9 @@ class Game {
             }
             else {
                 if (b.errno === 1) 
-                    alert('Name must be 4 to 15 characters long.');
+                    alert('El nombre debe tener una longitud de entre 4 y 15 carácteres.');
                 else if (b.errno === 2)
-                    alert('Your name is being used by another player.');
+                    alert('El nombre está siendo usado por otro jugador.');
             }
         });
 
@@ -355,15 +355,15 @@ class Game {
         });
 
         this.socket.on('player join', (name) => {
-            Chat.addInfoMsg(name+' joined the room');
+            Chat.addInfoMsg(name+' se ha unido a la sala');
         });
 
         this.socket.on('player left', (name) => {
-            Chat.addInfoMsg(name+' left the room');
+            Chat.addInfoMsg(name+' abandonó la sala');
         });
 
         this.socket.on('disconnect', () => {
-            alert('Disconnected from the server.');
+            alert('Desconectado del servidor.');
         });
     }
 
@@ -407,7 +407,7 @@ class Game {
             header.className = 'game-window-header flex-center';
             let title = document.createElement('span');
             title.className = 'game-window-title';
-            title.innerHTML = 'Browser';
+            title.innerHTML = 'Navegador';
             let closeB = document.createElement('span');
             closeB.className = 'game-closeButton flex-center';
             closeB.onclick = ()=>{app.removeChild(rwc);};
@@ -420,13 +420,13 @@ class Game {
             body.className = 'game-window-body';
             let rl = document.createElement('div');
             rl.className = 'game-rooms-list';
-            let rowColor = 'background-soft-blue';
+            let rowColor = 'background-soft-grey';
             this.roomsList.forEach((r) => {
                 let row = document.createElement('div');
                 row.className = 'game-room-row';
                 row.className += ' ' + rowColor;
-                if (rowColor === 'background-soft-blue') rowColor = 'background-transparent';
-                else rowColor = 'background-soft-blue';
+                if (rowColor === 'background-soft-grey') rowColor = 'background-transparent';
+                else rowColor = 'background-soft-grey';
                 let numPlayers = document.createElement('span');
                 numPlayers.className = 'game-room-players';
                 if (r.players === 0) numPlayers.className += ' background-grey';
@@ -506,7 +506,7 @@ class Game {
         let nickContainer = document.createElement('div');
         let nickInput = document.createElement('input');
         nickInput.type = 'text';
-        nickInput.placeholder = 'Nickname'
+        nickInput.placeholder = 'Apodo'
         nickInput.onkeydown = (e) => {
             let nick = nickInput.value.trim();
             if (nick.length >= this.maxNickLength &&
@@ -518,7 +518,7 @@ class Game {
 
         let buttonC = document.createElement('div');
         let button = document.createElement('button');
-        button.innerHTML = '<span>PLAY</span>';
+        button.innerHTML = 'Entrar';
         button.onclick = () => {
             let nick = nickInput.value.trim();
             if (nick !== '') {

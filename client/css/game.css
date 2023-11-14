@@ -5,7 +5,7 @@
     position: absolute;
     width: 100%;
     height: 100%;
-    background-color: #10436f;
+    background-color: #2e2e2c;
     min-width: 650px;
     min-height: 400px;
     overflow: hidden;
@@ -134,12 +134,12 @@
 
 .game-window-header {
     position: relative;
-    background-color: #367897;
+    background-color: #24292a;
     height: 30px;
     text-align: center;
     color: white;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
 }
 
 .game-window-title {
@@ -184,6 +184,10 @@
 
 .background-soft-blue {
     background-color: #d5edff;
+}
+
+.background-soft-grey {
+    background-color: #ededec;
 }
 
 .background-transparent {
@@ -332,9 +336,9 @@
 }
 
 .game-login {
-    background-color: #0b6395;
+    background-color: #ebe9df;
     color: #ffffec;
-    border: 3px solid #2685bc;
+    border: 1px solid black;
     border-radius: 10px;   
     width: 300px;
     padding: 5px;
@@ -350,17 +354,17 @@
     height: 19px;
     padding: 5px 12px;
     border-radius: 5px;
-    border: 3px solid #275d8e;
+    border: 1px solid black;
     font-size: 16px;
-    color: #444;
+    color: black;
     font-weight: bold;
 }
 
 .game-login button {
     position: relative;
-    background-color: rgb(0, 129, 62);
-    border: 2px solid #8eda55;
-    color: #ffffec;
+    background-color: #24292a;
+    border: 1px solid black;
+    color: #ffffff;
     border-radius: 5px;
     margin-top: 25px;
     margin-bottom: 30px;
@@ -368,14 +372,13 @@
     padding: 5px 0;
     cursor: pointer;
     font-size: 16px;
-    font-weight: 400;
     left: 50%;
     width: 230px;
     margin-left: -115px;
 }
 
 .game-login button:hover {
-    background-color: #00ab54;
+
 }
 
 a:link {

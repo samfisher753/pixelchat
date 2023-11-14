@@ -122,7 +122,7 @@ class Server {
         };
         this.rooms[name] = new Room(room);
 
-        name = 'Club Habbo Garito +18';
+        name = 'Garito';
         size = 15;
         array = [];
         for (let i=0; i<size; ++i){
