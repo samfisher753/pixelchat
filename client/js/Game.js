@@ -100,7 +100,7 @@ class Game {
         app.removeChild(canvas);
         app.removeChild(CanvasChat.chat);
         app.style.backgroundImage = 'url("../textures/misc/background.jpg")';
-        app.style.backgroundColor = '#10436f';
+        app.style.backgroundColor = '#2e2e2c';
     }
 
     startGame(){
