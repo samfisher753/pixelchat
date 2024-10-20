@@ -129,6 +129,4 @@ class Room {
 
 }
 
-if (typeof module !== 'undefined') {
-    module.exports = Room;
-}
+module.exports = Room;

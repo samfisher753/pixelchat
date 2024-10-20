@@ -10,13 +10,7 @@ let io = require('socket.io')(httpServer, {
         methods: ["GET", "POST"]
     }
 });
-let Server = require('./server/Server');
-
-// Client
-// Serve contents of "client" or "dist" folder
-let client_path = (typeof process.env.DIST !== 'undefined') ? 'dist' : 'client';
-console.log('Client path: ' + client_path);
-app.use(express.static(client_path));
+let Server = require('./src/Server');
 
 // Server
 let server = new Server(io);
@@ -27,7 +21,7 @@ httpServer.listen(port, () => {
 });
 
 // Avoid server idling
-if (typeof process.env.DIST !== 'undefined' && typeof process.env.APP_URL !== 'undefined'){
+if (typeof process.env.APP_URL !== 'undefined'){
     setInterval(() => {
         http.get(process.env.APP_URL);
     }, 13 * 60 * 1000);

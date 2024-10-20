@@ -1,5 +1,5 @@
-let Player = require('../client/js/Player');
-let Room = require('../client/js/Room');
+const Player = require('./model/Player');
+const Room = require('./model/Room');
 
 class Server {
     
