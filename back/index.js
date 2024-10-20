@@ -6,7 +6,7 @@ let io = require('socket.io')(httpServer, {
     // Change Chat.js value too if modifying file size
     maxHttpBufferSize: 300 * 1024 * 1024, // 300MB
     cors: {
-        origin: "http://localhost:5173",  // Replace with your client’s address
+        origin: ["http://localhost:5173","https://www.pixelchat.es"],  // Replace with your client’s address
         methods: ["GET", "POST"]
     }
 });

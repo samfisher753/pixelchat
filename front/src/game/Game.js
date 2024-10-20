@@ -25,7 +25,7 @@ export default class Game {
         this.frame = null;
 
         // Misc
-        this.socket = io("http://localhost:3000", { reconnection: false });
+        this.socket = io(import.meta.env.VITE_SOCKETIO_BACKEND, { reconnection: false });
         this.canvasCtx = null;
         this.maskCanvasCtx = null;
         this.d = { x:0, y:0 };
