@@ -1,48 +1,38 @@
 import { useCallback, useEffect, useState } from "react";
 import Login from "@/components/Login";
-import { useGame } from '@/contexts/GameContext';
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
-import Test from "./components/Test";
 
 function App() {
 
+  const [startUI, setStartUI] = useState(false);
   const [isLogged, setIsLogged] = useState(false);
-  const [isComponentVisible, setIsComponentVisible] = useState(false);
 
-  const showPlayerInfo = useCallback(() => {
-    console.log(gameEventEmitter);
-    setIsComponentVisible(true);
+  const handleStartUI = useCallback(() => {
+    setStartUI(true);
   }, []);
 
-  const hidePlayerInfo = useCallback(() => {
-    console.log(gameEventEmitter);
-    setIsComponentVisible(false);
+  const handleLogin = useCallback(() => {
+    setIsLogged(true);
   }, []);
 
   useEffect(() => {
-    gameEventEmitter.on("showPlayerInfo", showPlayerInfo);
-    gameEventEmitter.on("hidePlayerInfo", hidePlayerInfo);
+    gameEventEmitter.on("startUI", handleStartUI);
+    gameEventEmitter.on("playerLoggedIn", handleLogin);
 
     return () => {
-      gameEventEmitter.off("showPlayerInfo", showPlayerInfo);
-      gameEventEmitter.off("hidePlayerInfo", hidePlayerInfo);
+      gameEventEmitter.off("startUI", handleLogin);
+      gameEventEmitter.off("playerLoggedIn", handleLogin);
     };
-  }, []);
-
-  const game = useGame();
-
-  const handleClick = () => {
-    if (game) {
-      game.directLogin();
-      setIsLogged(true);
-    }
-  };
+  }, []);  
 
   return (
-    <div className="absolute z-10">
-      {!isLogged && <Login onClick={handleClick} />}
-      {isComponentVisible && <p>Showing player info</p>}
-      <Test></Test>
+    <div className="absolute z-10 w-full h-full pointer-events-none">
+      {
+        startUI && 
+        <div className="absolute w-full h-full pointer-events-none">
+          {!isLogged && <Login />}
+        </div>
+      }
     </div>
   )
 }

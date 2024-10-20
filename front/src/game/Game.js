@@ -39,7 +39,7 @@ export default class Game {
         this.configureSocket();
         Chat.socket = this.socket;
         this.setDragEvents();
-        this.getPlayerName();
+        gameEventEmitter.emit("startUI");
     }
 
     setDragEvents(){
@@ -312,6 +312,7 @@ export default class Game {
                 this.player = new Player({ name: b.name, id: this.socket.id, client: true });
                 Chat.playerName = this.player.name;
                 Chat.playerId = this.player.id;
+                gameEventEmitter.emit("playerLoggedIn");
                 let app = document.getElementById('app');
                 app.innerHTML = '';
                 this.createInfoSpans();
@@ -321,10 +322,7 @@ export default class Game {
                 this.socket.emit('new player', this.player.name);
             }
             else {
-                if (b.errno === 1) 
-                    alert('El nombre debe tener una longitud de entre 4 y 15 carácteres.');
-                else if (b.errno === 2)
-                    alert('El nombre está siendo usado por otro jugador.');
+                gameEventEmitter.emit("errorOnPlayerLogin", b.errno)
             }
         });
 
@@ -394,9 +392,6 @@ export default class Game {
             pi.appendChild(di);
             app.appendChild(pi);
         }
-
-        gameEventEmitter.emit("showPlayerInfo");
-        console.log("showing");
     }
 
     hidePlayerInfo() {
@@ -406,9 +401,6 @@ export default class Game {
             let app = document.getElementById('app');
             app.removeChild(pi);
         }
-
-        gameEventEmitter.emit("hidePlayerInfo");
-        console.log("hiding");
     }
 
     createRoomsWindow() {
@@ -510,56 +502,8 @@ export default class Game {
         app.appendChild(this.playersSpan);
     }
 
-    getPlayerName(){
-        let app = document.getElementById('app');
-
-        let glc = document.createElement('div');
-        glc.className = 'game-login-container';
-
-        let menu = document.createElement('div');
-        menu.className = 'game-login';
-
-        let nickContainer = document.createElement('div');
-        let nickInput = document.createElement('input');
-        nickInput.type = 'text';
-        nickInput.placeholder = 'Apodo'
-        nickInput.onkeydown = (e) => {
-            let nick = nickInput.value.trim();
-            if (nick.length >= this.maxNickLength &&
-                e.code !== 'Delete' && e.code !== 'Backspace' && 
-                e.code !== 'Enter' && e.code !== 'NumpadEnter'){
-                e.preventDefault();
-            }
-        };
-
-        let buttonC = document.createElement('div');
-        let button = document.createElement('button');
-        button.innerHTML = 'Entrar';
-        button.onclick = () => {
-            let nick = nickInput.value.trim();
-            if (nick !== '') {
-                this.socket.emit('check name', nick);
-            }
-        };
-
-        menu.onkeydown = (e) => {
-            if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-                button.onclick();
-            }
-        };
-
-        nickContainer.appendChild(nickInput);
-        buttonC.appendChild(button);
-        menu.appendChild(nickContainer);
-        menu.appendChild(buttonC);
-        glc.appendChild(menu);
-        app.appendChild(glc);
-
-        nickInput.focus();
-    }
-
-    directLogin() {
-        this.socket.emit('check name', "SamFisher753");
-    }
+    login(nickname) {
+        this.socket.emit('check name', nickname);
+    } 
 
 }

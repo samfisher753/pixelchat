@@ -4,10 +4,10 @@
 
 body {
   margin: 0;
+  font-family: "Arial", verdana, sans-serif;
 }
 
 #app {
-  font-family: "Arial", verdana, sans-serif;
   font-size: 16px;
   color: #333333;
   position: absolute;
@@ -332,61 +332,6 @@ body {
   position: absolute;
   width: 100%;
   height: 100%;
-}
-
-.game-login-container {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.game-login {
-  background-color: #ebe9df;
-  color: #ffffec;
-  border: 1px solid black;
-  border-radius: 10px;   
-  width: 300px;
-  padding: 5px;
-}
-
-.game-login input {
-  position: relative;
-  text-align: center;
-  left: 50%;
-  width: 190px;
-  margin-top: 30px;
-  margin-left: -110px;
-  height: 19px;
-  padding: 5px 12px;
-  border-radius: 5px;
-  border: 1px solid black;
-  font-size: 16px;
-  color: black;
-  font-weight: bold;
-}
-
-.game-login button {
-  position: relative;
-  background-color: #24292a;
-  border: 1px solid black;
-  color: #ffffff;
-  border-radius: 5px;
-  margin-top: 25px;
-  margin-bottom: 30px;
-  height: 47px;
-  padding: 5px 0;
-  cursor: pointer;
-  font-size: 16px;
-  left: 50%;
-  width: 230px;
-  margin-left: -115px;
-}
-
-.game-login button:hover {
-
 }
 
 a:link {
