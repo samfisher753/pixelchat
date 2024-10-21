@@ -64,7 +64,7 @@ let Chat = {
             this.micB.setAttribute('disabled','');
         }
         let micBimg = document.createElement('img');
-        micBimg.src = new URL('../assets/textures/icons/mic.png', import.meta.url).href;
+        micBimg.src = '/assets/icons/mic.png';
         this.micB.appendChild(micBimg);
 
         let chatInputC = document.createElement('div');

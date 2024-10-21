@@ -109,7 +109,7 @@ export default class Game {
         app.removeChild(maskCanvas);
         app.removeChild(canvas);
         app.removeChild(CanvasChat.chat);
-        app.style.backgroundImage = 'url("' + new URL("../assets/textures/misc/background.jpg", import.meta.url).href + '")';
+        app.style.backgroundImage = 'url("/assets/misc/background.jpg")';
         app.style.backgroundColor = '#2e2e2c';
     }
 
@@ -467,11 +467,11 @@ export default class Game {
         this.leaveB = document.createElement('button');
         this.leaveB.style.display = 'none';
         let lImg = document.createElement('img');
-        lImg.src = new URL('../assets/textures/icons/back.png', import.meta.url).href;
+        lImg.src = '/assets/icons/back.png';
         let roomsB = document.createElement('button');
         roomsB.className = 'game-icon-flicker';
         let rImg = document.createElement('img');
-        rImg.src = new URL('../assets/textures/icons/rooms.png', import.meta.url).href;
+        rImg.src = '/assets/icons/rooms.png';
 
         this.leaveB.onclick = () => {
             this.socket.emit('leave room');

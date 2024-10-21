@@ -17,7 +17,7 @@ body {
   min-width: 650px;
   min-height: 400px;
   overflow: hidden;
-  background-image: url("@/assets/textures/misc/background.jpg");
+  background-image: url("/assets/misc/background.jpg");
   background-size: 100%;
   background-repeat: no-repeat;
   background-position: center;

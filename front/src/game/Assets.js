@@ -15,7 +15,7 @@ let Assets = {
     loadImages(game) {
         let tile = new Image();
         tile.crossOrigin = 'Anonymous';
-        tile.src = new URL(this.imgFiles[this.imgLoaded], import.meta.url).href;
+        tile.src = this.imgFiles[this.imgLoaded];
         tile.onload = () => {
             let s = tile.src.split('/');
             let name = s[s.length-1].split('.')[0];
@@ -41,11 +41,11 @@ let Assets = {
 
     fillFileArrays(){
         // Floors
-        let path = '../assets/textures/floor/';
+        let path = '/assets/floor/';
         this.imgFiles.push(path+'grass.png');
         this.imgFiles.push(path+'default.png');
 
-        path = '../assets/textures/misc/';
+        path = '/assets/misc/';
         this.imgFiles.push(path+'shadow.png');
         this.imgFiles.push(path+'mouse-tile.png');
         this.imgFiles.push(path+'msg-pos.png');
@@ -62,7 +62,7 @@ let Assets = {
                 for (let frame of dir){
                     let img = new Image();
                     img.crossOrigin = 'Anonymous';
-                    img.src = new URL(frame, import.meta.url).href;
+                    img.src = frame;
                     img.onload = () => {
                         this.avatars[playerName].num_loaded++;
                         if (this.avatars[playerName].num_loaded === this.imagesToLoad){
@@ -140,7 +140,7 @@ let Assets = {
 
     createBaseCharacterFilesObject() {
         let av = {};
-        let path = "../assets/textures/character/";
+        let path = "/assets/character/";
         let pathStand = path + "stand/";
 
         av['stand'] = [
