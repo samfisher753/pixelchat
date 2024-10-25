@@ -1,45 +1,66 @@
+import { ImageCollection } from "@/types/ImageCollection";
+import { PlayerAnimations, PlayerAnimationsCollection } from "@/types/PlayerAnimations";
+import Player from "../entities/Player";
+import { DEFAULT_AVATAR } from "@/constants/constants";
+import { PlayerStatus } from "@/enums/PlayerStatus";
 
-let Assets = {
+class Assets {
 
-    images: {},
-    imgLoaded: 0,
-    imgFiles: [],
-    avatars: {},
-    imagesToLoad: 67,
+    images: ImageCollection;
+    imgFiles: string[];
+    avatars: PlayerAnimationsCollection;
 
-    load(game) {
+    constructor() {
+        this.images = {};
+        this.imgFiles = [];
+        this.avatars = {};
+    }
+    
+    async load(player: Player): Promise<void> {
         this.fillFileArrays();
-        this.loadImages(game);
-    },
+        await this.loadImages();
+        await this.loadAvatarImages(DEFAULT_AVATAR, null);
+        await this.loadAvatarImages(player.name, player);
+    }
 
-    loadImages(game) {
-        let tile = new Image();
-        tile.crossOrigin = 'Anonymous';
-        tile.src = this.imgFiles[this.imgLoaded];
-        tile.onload = () => {
-            let s = tile.src.split('/');
-            let name = s[s.length-1].split('.')[0];
-            this.images[name] = tile;
-            ++this.imgLoaded;
-
-            if (this.imgLoaded < this.imgFiles.length){
-                this.loadImages(game);
+    loadImages(): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            const promises: Promise<void>[] = [];
+            for (const imgUrl of this.imgFiles) {
+                const promise: Promise<void> = new Promise<void>((resolve2, reject2) => {
+                    const tile: HTMLImageElement = new Image();
+                    tile.crossOrigin = 'Anonymous';
+                    tile.src = imgUrl
+                    tile.onload = () => {
+                        const s: string[] = tile.src.split('/');
+                        const name: string = s[s.length-1].split('.')[0];
+                        this.images[name] = tile;
+                        resolve2();
+                    };
+                    tile.onerror = () => {
+                        reject2();
+                    };
+                });
+                promises.push(promise);
             }
-            else {
-                this.loadAvatarImages('defaultAvatar', true, null, game);
-            }
-        };
-    },
+            
+            Promise.all(promises).then(() => {
+                resolve();
+            }).catch(() => {
+                reject();
+            });
+        });
+    }
 
-    getImage(img){
+    getImage(img: string): HTMLImageElement {
         return this.images[img];
-    },
+    }
 
-    getImgArray(player, status, direction){
+    getImgArray(player: string, status: PlayerStatus, direction: number){
         return this.avatars[player][status][direction];
-    },
+    }
 
-    fillFileArrays(){
+    fillFileArrays(): void {
         // Floors
         let path = '/assets/floor/';
         this.imgFiles.push(path+'grass.png');
@@ -49,45 +70,65 @@ let Assets = {
         this.imgFiles.push(path+'shadow.png');
         this.imgFiles.push(path+'mouse-tile.png');
         this.imgFiles.push(path+'msg-pos.png');
-    },
+    }
 
-    loadAvatarImages(playerName, startGame, player, game) {
-        this.avatars[playerName] = { num_loaded: 0 };
-        let av = this.createAvatarFilesObject(playerName);
-        for (let status in av){
-            this.avatars[playerName][status] = [];
-            let i = 0;
-            for (let dir of av[status]){
-                this.avatars[playerName][status].push([]);
-                for (let frame of dir){
-                    let img = new Image();
-                    img.crossOrigin = 'Anonymous';
-                    img.src = frame;
-                    img.onload = () => {
-                        this.avatars[playerName].num_loaded++;
-                        if (this.avatars[playerName].num_loaded === this.imagesToLoad){
-                            if (player !== null) player.images = this.avatars[playerName];
-                            if (startGame) game.startGame();
-                        }
-                    };
-                    img.onerror = () => {
-                        if (playerName !== 'defaultAvatar') 
-                            this.avatars[playerName] = this.avatars['defaultAvatar'];
-                        if (player !== null) player.images = this.avatars[playerName];
-                    };
-                    this.avatars[playerName][status][i].push(img);
+    createPlayerAnimationsObject(): PlayerAnimations {
+        return {
+            stand: [[], [], [], [], [], [], [], []],
+            walk: [[], [], [], [], [], [], [], []],
+            sit: [[], [], [], []],
+            wave: [[], [], [], [], [], [], [], []],
+        };
+    }
+
+    loadAvatarImages(playerName: string, player: Player | null): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
+            this.avatars[playerName] = this.createPlayerAnimationsObject();
+            const av: PlayerAnimations = this.createAvatarFilesObject(playerName);
+            const promises: Promise<void>[] = [];
+            for (const status in av){
+                this.avatars[playerName][status] = [];
+                let i = 0;
+                for (const dir of av[status]){
+                    this.avatars[playerName][status].push([]);
+                    for (const frame of dir){
+                        const promise: Promise<void> = new Promise<void>((resolve2, reject2) => {
+                            const img: HTMLImageElement = new Image();
+                            img.crossOrigin = 'Anonymous';
+                            img.src = frame;
+                            img.onload = () => {
+                                resolve2();
+                            };
+                            img.onerror = () => {
+                                reject2();
+                            };
+                            this.avatars[playerName][status][i].push(img);
+                        });
+                        promises.push(promise);
+                    }
+                    i++;
                 }
-                i++;
             }
-        }
-    },
+    
+            Promise.all(promises).then(() => {
+                if (player !== null) player.images = this.avatars[playerName];
+                resolve();
+            }).catch(() => {
+                if (playerName !== DEFAULT_AVATAR) 
+                    this.avatars[playerName] = this.avatars[DEFAULT_AVATAR];
+                if (player !== null) player.images = this.avatars[playerName];
+                reject();
+            });
+        });
+    }
 
-    createAvatarFilesObject(playerName) {
+    createAvatarFilesObject(playerName): PlayerAnimations {
         if (playerName.toLowerCase().includes("base")) {
             return this.createBaseCharacterFilesObject();
         }
 
-        let av = {};
+        const av: any = {}; 
+
         av['stand'] = [
             ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=6&head_direction=6'],
             ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=7&head_direction=7'],
@@ -136,12 +177,12 @@ let Assets = {
         }
 
         return av;
-    },
+    }
 
-    createBaseCharacterFilesObject() {
-        let av = {};
-        let path = "/assets/character/";
-        let pathStand = path + "stand/";
+    createBaseCharacterFilesObject(): PlayerAnimations {
+        const av: any = {};
+        const path: string = "/assets/character/";
+        const pathStand: string = path + "stand/";
 
         av['stand'] = [
             [pathStand+"bc-stand-0.png"],
@@ -159,17 +200,17 @@ let Assets = {
             pathStand+"bc-stand-7.png"]
         ];
 
-        let pathWalk = path + "walk/";
+        const pathWalk: string = path + "walk/";
         av['walk'] = [];
         for (let i=0; i<8; ++i){
             av['walk'].push([]);
             for (let f=0; f<4; ++f){
-                let s = pathWalk+"bc-walk-"+i+"-"+f+".png";
+                const s: string = pathWalk+"bc-walk-"+i+"-"+f+".png";
                 av['walk'][i].push(s);
             }
         }
 
-        let pathSit = path + "sit/";
+        const pathSit: string = path + "sit/";
         av['sit'] = [
             [pathSit+"bc-sit-0.png"],
             [pathSit+"bc-sit-2.png"],
@@ -179,12 +220,12 @@ let Assets = {
             pathSit+"bc-sit-6.png"]
         ];
 
-        let pathWave = path + "wave/";
+        const pathWave: string = path + "wave/";
         av['wave'] = [];
         for (let i=0; i<8; ++i){
             av['wave'].push([]);
             for (let f=0; f<2; ++f){
-                let s = pathWave+"bc-wave-"+i+"-"+f+".png";
+                const s: string = pathWave+"bc-wave-"+i+"-"+f+".png";
                 av['wave'][i].push(s);
             }
         }
@@ -194,4 +235,4 @@ let Assets = {
 
 }
 
-export default Assets;
+export const assets = new Assets();

@@ -1,6 +1,7 @@
 import { useGame } from '@/contexts/GameContext';
 import { gameEventEmitter } from '@/emitters/GameEventEmitter';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { GameEvent } from '@/enums/GameEvent';
 
 const Login = () => {
 
@@ -10,14 +11,14 @@ const Login = () => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    gameEventEmitter.on("errorOnPlayerLogin", handleErrorOnPlayerLogin);
+    gameEventEmitter.on(GameEvent.ErrorOnPlayerLogin, handleErrorOnPlayerLogin);
 
     if (inputRef.current) {
       inputRef.current.focus();
     }
 
     return () => {
-      gameEventEmitter.off("errorOnPlayerLogin", handleErrorOnPlayerLogin);
+      gameEventEmitter.off(GameEvent.ErrorOnPlayerLogin, handleErrorOnPlayerLogin);
     };
   }, []);
 

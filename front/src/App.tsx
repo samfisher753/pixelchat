@@ -1,14 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import Login from "@/components/Login";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
+import NavBar from "@/components/NavBar";
+import { GameEvent } from "@/enums/GameEvent";
 
 function App() {
 
-  const [startUI, setStartUI] = useState(false);
+  const [startUi, setStartUi] = useState(false);
   const [isLogged, setIsLogged] = useState(false);
 
-  const handleStartUI = useCallback(() => {
-    setStartUI(true);
+  const handleStartUi = useCallback(() => {
+    setStartUi(true);
   }, []);
 
   const handleLogin = useCallback(() => {
@@ -16,21 +18,22 @@ function App() {
   }, []);
 
   useEffect(() => {
-    gameEventEmitter.on("startUI", handleStartUI);
-    gameEventEmitter.on("playerLoggedIn", handleLogin);
+    gameEventEmitter.on(GameEvent.StartUi, handleStartUi);
+    gameEventEmitter.on(GameEvent.PlayerLoggedIn, handleLogin);
 
     return () => {
-      gameEventEmitter.off("startUI", handleLogin);
-      gameEventEmitter.off("playerLoggedIn", handleLogin);
+      gameEventEmitter.off(GameEvent.StartUi, handleStartUi);
+      gameEventEmitter.off(GameEvent.PlayerLoggedIn, handleLogin);
     };
   }, []);  
 
   return (
     <div className="absolute z-10 w-full h-full pointer-events-none">
       {
-        startUI && 
+        startUi && 
         <div className="absolute w-full h-full pointer-events-none">
           {!isLogged && <Login />}
+          { false && <NavBar />}
         </div>
       }
     </div>

@@ -1,33 +1,42 @@
 /* Thanks to Thibault Imbert article https://typedarray.org/from-microphone-to-wav-with-getusermedia-and-web-audio/
 and the Wave File Format specification http://tiny.systems/software/soundProgrammer/WavFormatDocs.pdf */
 
-let WavRecorder = {
+class WavRecorder {
 
-    available: false,
-    sampleRate: null,
-    volume: 1,
-    leftchannel: [],
-    rightchannel: [],
-    recordingLength: 0,
-    recording: false,
+    available: boolean;
+    sampleRate: number | null;
+    volume: number;
+    leftchannel: Float32Array[];
+    rightchannel: Float32Array[];
+    recordingLength: number;
+    recording: boolean;
+
+    constructor() {
+        this.available = false;
+        this.sampleRate = null;
+        this.volume = 1;
+        this.leftchannel = [];
+        this.rightchannel = [];
+        this.recordingLength = 0;
+        this.recording = false;
+    }
+    
 
     init() {
         navigator.mediaDevices.getUserMedia({audio: true, video: false})
-            .then(WavRecorder.success)
-            .catch((e) => {
+            .then(stream => this.success(stream))
+            .catch(() => {
                 alert('Audio capture not supported in this browser.')
             });
-    },
+    }
 
     success(stream) {
         // creates the audio context
-        window.AudioContext = window.AudioContext || window.webKitAudioContext;
-        let wr = WavRecorder;
-        wr.available = true;
+        this.available = true;
         let audioCtx = new AudioContext();
 
         // we query the context sample rate (varies depending on platforms)
-        wr.sampleRate = audioCtx.sampleRate;
+        this.sampleRate = audioCtx.sampleRate;
 
         /* From the spec: This value controls how frequently the audioprocess event is 
         dispatched and how many sample-frames need to be processed each call. 
@@ -37,13 +46,13 @@ let WavRecorder = {
         let recorder = audioCtx.createScriptProcessor(bufferSize, 2, 2);
 
         recorder.onaudioprocess = (e) => {
-            if (!wr.recording) return;
+            if (!this.recording) return;
             let left = e.inputBuffer.getChannelData(0);
             let right = e.inputBuffer.getChannelData(1);
             // we clone the samples
-            wr.leftchannel.push(new Float32Array(left));
-            wr.rightchannel.push(new Float32Array(right));
-            wr.recordingLength += bufferSize;
+            this.leftchannel.push(new Float32Array(left));
+            this.rightchannel.push(new Float32Array(right));
+            this.recordingLength += bufferSize;
         }
 
         // creates an audio node from the microphone incoming stream
@@ -51,7 +60,7 @@ let WavRecorder = {
         // we connect the recorder
         audioInput.connect(recorder);
         recorder.connect(audioCtx.destination);
-    },
+    }
 
     start() {
         this.recording = true;
@@ -59,11 +68,11 @@ let WavRecorder = {
         this.leftchannel = [];
         this.rightchannel = [];
         this.recordingLength = 0;
-    },
+    }
 
     cancel() {
         this.recording = false;
-    },
+    }
 
     stop() {
         // we stop recording
@@ -93,9 +102,9 @@ let WavRecorder = {
         // stereo (2 channels)
         view.setUint16(22, 2, true);
         // sample rate
-        view.setUint32(24, this.sampleRate, true);
+        view.setUint32(24, this.sampleRate!, true);
         // byte rate = sample rate * num channels(2) * bitsPerSample(16)/8
-        view.setUint32(28, this.sampleRate * 4, true);
+        view.setUint32(28, this.sampleRate! * 4, true);
         // block align = num channels * bitsPerSample/8
         view.setUint16(32, 4, true);
         // bits per sample
@@ -116,7 +125,7 @@ let WavRecorder = {
         // our final binary blob
         let blob = new Blob([view], {type: 'audio/wav'});
         return blob;
-    },
+    }
 
     mergeBuffers(channelBuffer, recordingLength) {
         let result = new Float32Array(recordingLength);
@@ -128,7 +137,7 @@ let WavRecorder = {
             offset += buffer.length;
         }
         return result;
-    },
+    }
 
     interleave(leftChannel, rightChannel) {
         let length = leftChannel.length + rightChannel.length;
@@ -140,7 +149,7 @@ let WavRecorder = {
             res[index++] = rightChannel[i];
         }
         return res;
-    },
+    }
       
     writeUTFBytes(view, offset, string) { 
         let lng = string.length;
@@ -151,4 +160,4 @@ let WavRecorder = {
 
 }
 
-export default WavRecorder;
+export const wavRecorder: WavRecorder = new WavRecorder();

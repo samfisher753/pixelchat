@@ -1,21 +1,47 @@
-import { io } from 'socket.io-client'
-import Chat from '@/game/Chat'
-import Player from '@/game/Player'
-import Assets from '@/game/Assets'
-import CanvasChat from '@/game/CanvasChat'
-import Room from '@/game/Room'
-import Grid from '@/game/Grid'
+import { io, Socket } from 'socket.io-client'
+import { chat } from '@/models/logic/Chat'
+import Player from '@/models/entities/Player'
+import { assets } from '@/models/others/Assets'
+import { canvasChat } from '@/models/logic/CanvasChat'
+import Room from '@/models/entities/Room'
+import { grid } from '@/models/logic/Grid'
 
 import { gameEventEmitter } from '@/emitters/GameEventEmitter'
+import { GameEvent } from '@/enums/GameEvent'
+import { Pos } from '@/types/Pos'
 
 export default class Game {
+
+    player: any;
+    room: any;
+    roomsList: any;
+
+    delta: number;
+    fps: number;
+    timestep: number;
+    lastFrameTimeMs: number;
+    frame: number | null;
+
+    socket: Socket;
+    canvasCtx: CanvasRenderingContext2D | null;
+    maskCanvasCtx: CanvasRenderingContext2D | null;
+    d: { x: number, y: number };
+    initialPos: { x: number, y: number };
+    mouse: any;
+    mousedown: boolean;
+    disableClick: boolean;
+    resizedown: boolean;
+    mouseCell: any;
+    leaveB: HTMLButtonElement | undefined;
+    fpsSpan: HTMLSpanElement | undefined;
+    playersSpan: HTMLSpanElement | undefined;
+    xIni: number | undefined;
 
     constructor() {
         // Vars
         this.player = null;
         this.room = null;
         this.roomsList = null;
-        this.maxNickLength = 15;
 
         // Game loop
         this.delta = 0;
@@ -37,14 +63,14 @@ export default class Game {
         this.mouseCell = null;
 
         this.configureSocket();
-        Chat.socket = this.socket;
+        chat.socket = this.socket;
         this.setDragEvents();
-        gameEventEmitter.emit("startUI");
+        gameEventEmitter.emit(GameEvent.StartUi);
     }
 
     setDragEvents(){
         // Drag files / Prevent default drag action
-        let app = document.getElementById('app');
+        let app = document.getElementById('app')!;
         app.ondragover = (e) => {
             e.preventDefault();
         };
@@ -55,67 +81,70 @@ export default class Game {
 
         app.ondrop = (e) => {
             e.preventDefault();
-            if (this.room !== null) {
+            if (this.room !== null && e.dataTransfer) {
                 // Just one file per drop to avoid spam
-                let file = e.dataTransfer.files[0];
-                Chat.checkAndReadFile(file);
+                const file: File = e.dataTransfer.files[0];
+                chat.checkAndReadFile(file);
             }
         };
     }
 
     joinRoom(room) {
+        gameEventEmitter.emit(GameEvent.RoomJoined);
+
         if (this.room === null) {
-            Chat.create();
+            chat.create();
             this.createCanvas();
             this.bindEvents();
-            CanvasChat.init();
-            let app = document.getElementById('app');
+            canvasChat.init();
+            let app = document.getElementById('app')!;
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
-            this.leaveB.style.display = 'inline-block';
+            this.leaveB!.style.display = 'inline-block';
 
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
         else {
-            Chat.addInfoMsg('Saliste de '+this.room.name);
+            chat.addInfoMsg('Saliste de '+this.room.name);
         }
 
         this.mouseCell = null;
-        this.room = new Room({client: true});
+        this.room = new Room();
         this.room.update(room);
         this.player = this.room.players[this.player.id];
         // Update Grid
-        Grid.size = this.room.size;
-        Grid.center(this.canvasCtx.canvas.width,this.canvasCtx.canvas.height);
-        Grid.createDrawOrder();
+        grid.size = this.room.size;
+        grid.center(this.canvasCtx!.canvas.width,this.canvasCtx!.canvas.height);
+        grid.createDrawOrder();
         // Clear canvas chat
-        CanvasChat.clear();
+        canvasChat.clear();
 
-        Chat.chatInputFocus();
-        Chat.addInfoMsg('Te uniste a '+this.room.name);
+        chat.chatInputFocus();
+        chat.addInfoMsg('Te uniste a '+this.room.name);
     }
 
     leaveRoom() {
         this.room = null;
-        this.leaveB.style.display = 'none';
-        cancelAnimationFrame(this.frame);
+        this.leaveB!.style.display = 'none';
+        gameEventEmitter.emit(GameEvent.RoomLeft);
+        cancelAnimationFrame(this.frame!);
         this.frame = null;
-        this.fpsSpan.innerHTML = 'fps: 0';
-        Chat.remove();
+        this.fpsSpan!.innerHTML = 'fps: 0';
+        chat.remove();
         this.hidePlayerInfo();
-        let app = document.getElementById('app');
+        let app = document.getElementById('app')!;
         let maskCanvas = document.getElementsByClassName('game-canvas')[0];
         let canvas = document.getElementsByClassName('game-canvas')[1];
         app.removeChild(maskCanvas);
         app.removeChild(canvas);
-        app.removeChild(CanvasChat.chat);
+        app.removeChild(canvasChat.chat!);
         app.style.backgroundImage = 'url("/assets/misc/background.jpg")';
         app.style.backgroundColor = '#2e2e2c';
     }
 
     startGame(){
         this.createMenu();
-        Chat.init();
+        chat.init();
     }
 
     gameLoop(timeStamp) {
@@ -125,7 +154,7 @@ export default class Game {
 
         if (this.delta >= this.timestep) {
             let fps = 1000 / t;
-            this.fpsSpan.innerHTML = 'fps: ' + parseInt(fps);
+            this.fpsSpan!.innerHTML = 'fps: ' + Math.floor(fps);
             while (this.delta >= this.timestep){
                 this.update();
                 this.delta -= this.timestep;
@@ -139,7 +168,7 @@ export default class Game {
     update() {
         if (this.room !== null){
             this.room.updateLogic();
-            CanvasChat.update();
+            canvasChat.update();
         }
 
         this.d = {x:0, y:0};
@@ -148,8 +177,8 @@ export default class Game {
         if (this.mouse !== null) {
             this.d.x += this.mouse.clientX - this.initialPos.x;
             this.d.y += this.mouse.clientY - this.initialPos.y;
-            Grid.move(this.d);
-            Grid.createDrawOrder();
+            grid.move(this.d);
+            grid.createDrawOrder();
             this.initialPos.x = this.mouse.clientX;
             this.initialPos.y = this.mouse.clientY;
             this.mouse = null;
@@ -157,8 +186,8 @@ export default class Game {
     }
 
     draw() {
-        let ctx = this.canvasCtx;
-        let maskCtx = this.maskCanvasCtx;
+        let ctx = this.canvasCtx!;
+        let maskCtx = this.maskCanvasCtx!;
 
         // Draw background
         ctx.fillStyle = '#010101';
@@ -171,13 +200,13 @@ export default class Game {
         // Draw room
         if (this.room !== null) {
             this.room.draw(ctx, maskCtx, this.mouseCell);
-            CanvasChat.draw();
+            canvasChat.draw();
         }
     }
 
     bindEvents() {
-        let maskCanvas = document.getElementsByClassName('game-canvas')[0];
-        let canvas = document.getElementsByClassName('game-canvas')[1];
+        let maskCanvas = document.getElementsByClassName('game-canvas')[0] as HTMLCanvasElement;
+        let canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
         let body = document.getElementsByTagName('body')[0];
         body.onresize = () => {
             if (this.room !== null){
@@ -188,19 +217,19 @@ export default class Game {
                 canvas.height = canvas.clientHeight;
                 canvas.width = canvas.clientWidth;
                 // Update Grid
-                Grid.center(canvas.width,canvas.height);
-                Grid.createDrawOrder();
+                grid.center(canvas.width,canvas.height);
+                grid.createDrawOrder();
                 // Resize over canvas chat
-                CanvasChat.chat.height = canvas.height;
-                CanvasChat.chat.width = canvas.width;
-                CanvasChat.defaultY = canvas.height/3;
+                canvasChat.chat!.style.height = canvas.height + 'px';; 
+                canvasChat.chat!.style.width = canvas.width + 'px';;
+                canvasChat.defaultY = canvas.height/3;
             }
         };
 
-        let r = document.getElementsByClassName('game-chatResize')[0];
-        let c = document.getElementsByClassName('game-chat')[0];
-        let b = document.getElementsByClassName('game-hideChatButton')[0];
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
+        let r = document.getElementsByClassName('game-chatResize')[0] as HTMLDivElement;
+        let c = document.getElementsByClassName('game-chat')[0] as HTMLDivElement;
+        let b = document.getElementsByClassName('game-hideChatButton')[0] as HTMLButtonElement;
+        let chatC = document.getElementsByClassName('game-chatMessagesContainer')[0] as HTMLDivElement;
         r.onmousedown = (e) => {
             this.resizedown = true;
             this.xIni = e.clientX;
@@ -225,25 +254,25 @@ export default class Game {
                     c.style.transition = 'none';
                     b.style.transition = 'none';
                     //window.getSelection().removeAllRanges();
-                    let rdx = e.clientX - this.xIni;
+                    let rdx = e.clientX - this.xIni!;
                     let pc = c.getBoundingClientRect().width + rdx;
-                    if (pc < Chat.minChatWidth) pc = Chat.minChatWidth;
+                    if (pc < chat.minChatWidth) pc = chat.minChatWidth;
                     else if (pc+5 > body.clientWidth) pc = body.clientWidth-5;
                     let pr = pc - 5;
                     c.style.width = pc + 'px';
                     r.style.left = pr + 'px';
                     b.style.left = pc + 'px';
-                    chat.scrollTop = chat.scrollHeight;
+                    chatC.scrollTop = chatC.scrollHeight;
                     this.xIni = e.clientX;
                 }
             }
         };
 
-        document.onmouseup = (e) => {
+        document.onmouseup = () => {
             if (this.room !== null) {
                 this.mousedown = false;
                 this.resizedown = false;
-                Chat.chatInputFocus();
+                chat.chatInputFocus();
             }
         };
 
@@ -257,7 +286,7 @@ export default class Game {
                 }
                 // Check cell
                 else {
-                    let c = Grid.cellAt(e.clientX, e.clientY);
+                    const c: Pos | null = grid.cellAt(e.clientX, e.clientY);
                     if (c!==null) {
                         this.socket.emit('click', c);
                         this.hidePlayerInfo();
@@ -268,13 +297,13 @@ export default class Game {
         };
 
         canvas.onmousemove = (e) => {
-            this.mouseCell = Grid.cellAt(e.clientX, e.clientY);
+            this.mouseCell = grid.cellAt(e.clientX, e.clientY);
         }
 
     }
 
     playerAt(x, y){
-        let mask = this.maskCanvasCtx;
+        let mask = this.maskCanvasCtx!;
         let pixel = mask.getImageData(x, y, 1, 1);
         if (pixel.data[0]===0){
             let index = pixel.data[2];
@@ -286,7 +315,7 @@ export default class Game {
     }
 
     createCanvas() {
-        let app = document.getElementById('app');
+        let app = document.getElementById('app')!;
 
         // Mask Canvas
         let maskCanvas = document.createElement('canvas');
@@ -307,38 +336,39 @@ export default class Game {
 
     configureSocket() {
         // Check player name
-        this.socket.on('check name', (b) => {
+        this.socket.on('check name', async (b) => {
             if (b.res){
-                this.player = new Player({ name: b.name, id: this.socket.id, client: true });
-                Chat.playerName = this.player.name;
-                Chat.playerId = this.player.id;
-                gameEventEmitter.emit("playerLoggedIn");
-                let app = document.getElementById('app');
+                this.player = new Player({ name: b.name as string, id: this.socket.id! } as Player);
+                chat.playerName = this.player.name;
+                chat.playerId = this.player.id;
+                gameEventEmitter.emit(GameEvent.PlayerLoggedIn);
+                let app = document.getElementById('app')!;
                 app.innerHTML = '';
                 this.createInfoSpans();
-                Assets.load(this);
-                Assets.loadAvatarImages(this.player.name, false, this.player, null);
+                assets.load(this.player);
                 // Send player name
                 this.socket.emit('new player', this.player.name);
+                this.startGame();
+                this.openRoomsList();
             }
             else {
-                gameEventEmitter.emit("errorOnPlayerLogin", b.errno)
+                gameEventEmitter.emit(GameEvent.ErrorOnPlayerLogin, b.errno)
             }
         });
 
         // Event: Receive chat message
         this.socket.on('chat message', (msg) => {
-            Chat.addMsg(msg);
+            chat.addMsg(msg);
         });
 
         // Event: Receive file message
         this.socket.on('file message', (msg) => {
-            Chat.addFileMsg(msg);
+            chat.addFileMsg(msg);
         });
 
         // Event: Receive number of players
         this.socket.on('online players', (num_players) => {
-            this.playersSpan.innerHTML = 'online: ' + num_players;
+            this.playersSpan!.innerHTML = 'online: ' + num_players;
         });
 
         // Event: Receive rooms list
@@ -354,7 +384,7 @@ export default class Game {
             // If still in the same room
             else this.room.update(room);
             // Update canvas chat players
-            CanvasChat.players = this.room.players;
+            canvasChat.players = this.room.players;
         });
 
         // Successfully left a room
@@ -363,11 +393,11 @@ export default class Game {
         });
 
         this.socket.on('player join', (name) => {
-            Chat.addInfoMsg(name+' se ha unido a la sala');
+            chat.addInfoMsg(name+' se ha unido a la sala');
         });
 
         this.socket.on('player left', (name) => {
-            Chat.addInfoMsg(name+' abandonó la sala');
+            chat.addInfoMsg(name+' abandonó la sala');
         });
 
         this.socket.on('disconnect', () => {
@@ -377,7 +407,7 @@ export default class Game {
 
     showPlayerInfo(player){
         this.hidePlayerInfo();
-        let app = document.getElementById('app');
+        let app = document.getElementById('app')!;
         let pi = document.createElement('div');
         pi.className = 'game-playerInfo';
         let p = document.createElement('p');
@@ -398,7 +428,7 @@ export default class Game {
         let pis = document.getElementsByClassName('game-playerInfo');
         if (pis.length > 0){
             let pi = pis[0];
-            let app = document.getElementById('app');
+            let app = document.getElementById('app')!;
             app.removeChild(pi);
         }
     }
@@ -406,7 +436,7 @@ export default class Game {
     createRoomsWindow() {
         let roomsWindow = document.getElementsByClassName('game-window');
         if (roomsWindow.length === 0) {
-            let app = document.getElementById('app');
+            let app = document.getElementById('app')!;
             let rwc = document.createElement('div');
             rwc.className = 'game-window-container';
             let rw = document.createElement('div');
@@ -461,7 +491,7 @@ export default class Game {
     }
 
     createMenu() {
-        let app = document.getElementById('app');
+        let app = document.getElementById('app')!;
         let menuBar = document.createElement('div');
         menuBar.className = 'game-menu';
         this.leaveB = document.createElement('button');
@@ -488,8 +518,12 @@ export default class Game {
         app.appendChild(menuBar);
     }
 
+    openRoomsList() {
+        this.socket.emit('rooms list');
+    }
+
     createInfoSpans() {
-        let app = document.getElementById('app');
+        let app = document.getElementById('app')!;
         this.fpsSpan = document.createElement('span');
         this.fpsSpan.className = 'game-infoSpan';
         this.fpsSpan.innerHTML = 'fps: 0';
@@ -505,5 +539,9 @@ export default class Game {
     login(nickname) {
         this.socket.emit('check name', nickname);
     } 
+
+    sendLeaveRoom() {
+        this.socket.emit('leave room');
+    }
 
 }

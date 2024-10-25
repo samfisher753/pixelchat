@@ -9,6 +9,8 @@ export default {
       colors: {
         lightGrey: '#ebe9df',
         darkGrey: '#24292a',
+        barGrey: '#2e2e2c',
+        barBorderGrey: '#53524f'
       },
     },
   },
