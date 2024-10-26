@@ -32,7 +32,6 @@ export default class Game {
     disableClick: boolean;
     resizedown: boolean;
     mouseCell: any;
-    leaveB: HTMLButtonElement | undefined;
     fpsSpan: HTMLSpanElement | undefined;
     playersSpan: HTMLSpanElement | undefined;
     xIni: number | undefined;
@@ -100,7 +99,6 @@ export default class Game {
             let app = document.getElementById('app')!;
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
-            this.leaveB!.style.display = 'inline-block';
 
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
@@ -119,13 +117,11 @@ export default class Game {
         // Clear canvas chat
         canvasChat.clear();
 
-        chat.chatInputFocus();
         chat.addInfoMsg('Te uniste a '+this.room.name);
     }
 
     leaveRoom() {
         this.room = null;
-        this.leaveB!.style.display = 'none';
         gameEventEmitter.emit(GameEvent.RoomLeft);
         cancelAnimationFrame(this.frame!);
         this.frame = null;
@@ -143,7 +139,6 @@ export default class Game {
     }
 
     startGame(){
-        this.createMenu();
         chat.init();
     }
 
@@ -272,7 +267,6 @@ export default class Game {
             if (this.room !== null) {
                 this.mousedown = false;
                 this.resizedown = false;
-                chat.chatInputFocus();
             }
         };
 
@@ -488,34 +482,6 @@ export default class Game {
             rwc.appendChild(rw);
             app.appendChild(rwc);
         }
-    }
-
-    createMenu() {
-        let app = document.getElementById('app')!;
-        let menuBar = document.createElement('div');
-        menuBar.className = 'game-menu';
-        this.leaveB = document.createElement('button');
-        this.leaveB.style.display = 'none';
-        let lImg = document.createElement('img');
-        lImg.src = '/assets/icons/back.png';
-        let roomsB = document.createElement('button');
-        roomsB.className = 'game-icon-flicker';
-        let rImg = document.createElement('img');
-        rImg.src = '/assets/icons/rooms.png';
-
-        this.leaveB.onclick = () => {
-            this.socket.emit('leave room');
-        };
-        roomsB.onclick = () => {
-            roomsB.className = '';
-            this.socket.emit('rooms list');
-        };
-
-        this.leaveB.appendChild(lImg);
-        roomsB.appendChild(rImg);
-        menuBar.appendChild(this.leaveB);
-        menuBar.appendChild(roomsB);
-        app.appendChild(menuBar);
     }
 
     openRoomsList() {

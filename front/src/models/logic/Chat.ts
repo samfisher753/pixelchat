@@ -1,7 +1,7 @@
 import { wavRecorder } from '@/models/others/WavRecorder'
 import { canvasChat } from '@/models/logic/CanvasChat'
 import { Socket } from 'socket.io-client';
-import { MAX_FILE_SIZE_BYTES, MAX_MSG_LENGTH } from '@/constants/constants';
+import { MAX_FILE_SIZE_BYTES } from '@/constants/constants';
 import { Msg } from '@/types/Msg';
 
 class Chat {
@@ -11,8 +11,6 @@ class Chat {
     playerId: string | undefined;
     minChatWidth: number;
     allowedTypes: string[];
-    micB: HTMLButtonElement | undefined;
-    chatInput: HTMLInputElement | undefined;
 
     constructor() {
         this.socket = null;
@@ -39,12 +37,9 @@ class Chat {
         let chat = document.getElementsByClassName('game-chat')[0];
         let chatR = document.getElementsByClassName('game-chatResize')[0];
         let hideB = document.getElementsByClassName('game-hideChatButton')[0];
-        let menu = document.getElementsByClassName('game-menu')[0];
-        let chatIn = document.getElementsByClassName('game-chatInput')[0];
         app.removeChild(chat);
         app.removeChild(chatR);
         app.removeChild(hideB);
-        menu.removeChild(chatIn);
     }
 
     createChatPanel() {
@@ -63,80 +58,24 @@ class Chat {
         app.appendChild(chatC);
         app.appendChild(chatR);
         app.appendChild(chatB);
+    }
 
-        // Add chat input to menu bar
-        let menuBar = document.getElementsByClassName('game-menu')[0];
+    sendMsg(msgText: string): void {
+        const msg: Msg = { type: 'text', text: msgText };
+        this.socket!.emit('chat message', msg);
+        msg.player = { 
+            name: this.playerName!,
+            id: this.playerId!
+        };
+        this.addMsg(msg);
+    }
 
-        this.micB = document.createElement('button');
-        this.micB.className = 'game-mic';
-        if (!wavRecorder.available){
-            this.micB.className += ' game-disabled';
-            this.micB.setAttribute('disabled','');
-        }
-        let micBimg = document.createElement('img');
-        micBimg.src = '/assets/icons/mic.png';
-        this.micB.appendChild(micBimg);
-
-        let chatInputC = document.createElement('div');
-        chatInputC.className = 'game-chatInput';
-        this.chatInput = document.createElement('input');
-        this.chatInput.type = 'text';
-        this.chatInput.maxLength = MAX_MSG_LENGTH;
-
-        chatInputC.appendChild(this.micB);
-        chatInputC.appendChild(this.chatInput);
-
-        menuBar.appendChild(chatInputC);
+    sendVoiceNote(file: any): void {
+        file.name = 'PixelChat-'+this.playerName+this.timeString()+'.wav';
+        this.readFile(file);
     }
 
     bindChatEvents() {
-        // More chat events on Game.bindEvents()
-        this.chatInput!.onkeypress = (e) => {
-            let msg = this.chatInput!.value.trim();
-            if (msg.length >= MAX_MSG_LENGTH &&
-                e.keyCode !== 46 && e.keyCode !== 8 && e.keyCode !== 13){
-                e.preventDefault();
-            }
-            else if (e.keyCode === 13 && msg !== ''){
-                this.chatInput!.value = '';
-                msg = msg.slice(0,MAX_MSG_LENGTH);
-                let m: Msg = { type: 'text', text: msg };
-                this.socket!.emit('chat message', m);
-                m.player = { 
-                    name: this.playerName!,
-                    id: this.playerId!
-                };
-                this.addMsg(m);
-            }
-        };
-
-        // Record voice note
-        this.micB!.onmousedown = () => {
-            wavRecorder.start();
-        };
-
-        // Stop recording and send voice note
-        let app = document.getElementById('app')!;
-        app.onmouseup = () => {
-            if (wavRecorder.recording) {
-                let file: any = wavRecorder.stop();
-                file.name = 'PixelChat-'+this.playerName+this.timeString()+'.wav';
-                this.readFile(file);
-            }
-        };
-
-        // Cancel voice note
-        app.onkeydown = (e) => {
-            if (e.keyCode === 27 && wavRecorder.recording){
-                wavRecorder.cancel();
-            }
-        };
-
-        // Maintain focus over chat input
-        this.chatInput!.onblur = () => {
-            this.chatInputFocus();
-        }
-
         let b = document.getElementsByClassName('game-hideChatButton')[0] as HTMLButtonElement;
         let c = document.getElementsByClassName('game-chat')[0] as HTMLDivElement;
         let r = document.getElementsByClassName('game-chatResize')[0] as HTMLDivElement;
@@ -157,14 +96,6 @@ class Chat {
                 r.style.display = 'none';
             }
         };
-
-    }
-
-    chatInputFocus() {
-        const ua = navigator.userAgent.toLowerCase()
-        const isAndroid = ua.includes('android')
-        const isIPhone = (navigator.userAgent.match(/iPhone/i)) ||(navigator.userAgent.match(/iPod/i))
-        if (!isAndroid && !isIPhone) this.chatInput!.focus();
     }
 
     timeString() {
@@ -383,7 +314,7 @@ class Chat {
         return link;
     }
 
-    addMsg(msg: Msg) {
+    addMsg(msg: Msg): void {
         let msgC = document.createElement('div');
         msgC.className = 'game-chatMessageC';
 
@@ -428,7 +359,7 @@ class Chat {
         canvasChat.add(msg);
     }
 
-    addInfoMsg(msg: string) {
+    addInfoMsg(msg: string): void {
         let msgC = document.createElement('div');
         msgC.className = 'game-chatMessageC';
 
@@ -442,7 +373,7 @@ class Chat {
         chat.scrollTop = chat.scrollHeight;
     }
 
-    allowedFile(file: File) {
+    allowedFile(file: File): boolean {
         if (file.size > MAX_FILE_SIZE_BYTES) return false;
 
         for (let i=0; i<this.allowedTypes.length; ++i)
@@ -452,8 +383,8 @@ class Chat {
         return false;
     }
 
-    dataURItoBlob(msg) {
-        let byteString = atob(msg.data.split(',')[1]);
+    dataURItoBlob(msg: Msg): Blob {
+        let byteString = atob(msg.data!.split(',')[1]);
 
         let ab = new ArrayBuffer(byteString.length);
         let ua = new Uint8Array(ab);
