@@ -5,4 +5,5 @@ export enum GameEvent {
     ErrorOnPlayerLogin = "error_on_player_login",
     RoomJoined = "room_joined",
     RoomLeft = "room_left",
+    OpenRoomsList = "open_rooms_list"
 }

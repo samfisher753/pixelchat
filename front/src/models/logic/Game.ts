@@ -12,9 +12,8 @@ import { Pos } from '@/types/Pos'
 
 export default class Game {
 
-    player: any;
-    room: any;
-    roomsList: any;
+    player: Player | null;
+    room: Room | null;
 
     delta: number;
     fps: number;
@@ -25,13 +24,13 @@ export default class Game {
     socket: Socket;
     canvasCtx: CanvasRenderingContext2D | null;
     maskCanvasCtx: CanvasRenderingContext2D | null;
-    d: { x: number, y: number };
-    initialPos: { x: number, y: number };
-    mouse: any;
+    d: Pos;
+    initialPos: Pos;
+    mouse: MouseEvent | null;
     mousedown: boolean;
     disableClick: boolean;
     resizedown: boolean;
-    mouseCell: any;
+    mouseCell: Pos | null;
     fpsSpan: HTMLSpanElement | undefined;
     playersSpan: HTMLSpanElement | undefined;
     xIni: number | undefined;
@@ -40,7 +39,6 @@ export default class Game {
         // Vars
         this.player = null;
         this.room = null;
-        this.roomsList = null;
 
         // Game loop
         this.delta = 0;
@@ -109,7 +107,7 @@ export default class Game {
         this.mouseCell = null;
         this.room = new Room();
         this.room.update(room);
-        this.player = this.room.players[this.player.id];
+        this.player = this.room.players[this.player!.id];
         // Update Grid
         grid.size = this.room.size;
         grid.center(this.canvasCtx!.canvas.width,this.canvasCtx!.canvas.height);
@@ -194,7 +192,7 @@ export default class Game {
 
         // Draw room
         if (this.room !== null) {
-            this.room.draw(ctx, maskCtx, this.mouseCell);
+            this.room.draw(ctx, maskCtx, this.mouseCell!);
             canvasChat.draw();
         }
     }
@@ -301,8 +299,8 @@ export default class Game {
         let pixel = mask.getImageData(x, y, 1, 1);
         if (pixel.data[0]===0){
             let index = pixel.data[2];
-            let playerNames = Object.keys(this.room.players);
-            let player = this.room.players[playerNames[index]];
+            let playerNames = Object.keys(this.room!.players);
+            let player = this.room!.players[playerNames[index]];
             return player;
         }
         return null;
@@ -367,8 +365,7 @@ export default class Game {
 
         // Event: Receive rooms list
         this.socket.on('rooms list', (rooms) => {
-            this.roomsList = rooms;
-            this.createRoomsWindow();
+            gameEventEmitter.emit(GameEvent.OpenRoomsList, rooms);
         });
 
         // Event: Receive room info
@@ -378,7 +375,7 @@ export default class Game {
             // If still in the same room
             else this.room.update(room);
             // Update canvas chat players
-            canvasChat.players = this.room.players;
+            canvasChat.players = this.room!.players;
         });
 
         // Successfully left a room
@@ -427,61 +424,8 @@ export default class Game {
         }
     }
 
-    createRoomsWindow() {
-        let roomsWindow = document.getElementsByClassName('game-window');
-        if (roomsWindow.length === 0) {
-            let app = document.getElementById('app')!;
-            let rwc = document.createElement('div');
-            rwc.className = 'game-window-container';
-            let rw = document.createElement('div');
-            rw.className = 'game-window';
-            let header = document.createElement('div');
-            header.className = 'game-window-header flex-center';
-            let title = document.createElement('span');
-            title.className = 'game-window-title';
-            title.innerHTML = 'Navegador';
-            let closeB = document.createElement('span');
-            closeB.className = 'game-closeButton flex-center';
-            closeB.onclick = ()=>{app.removeChild(rwc);};
-            let closeBLabel = document.createElement('span');
-            closeBLabel.innerHTML = 'X';
-            closeB.appendChild(closeBLabel);
-            header.appendChild(title);
-            header.appendChild(closeB);
-            let body = document.createElement('div');
-            body.className = 'game-window-body';
-            let rl = document.createElement('div');
-            rl.className = 'game-rooms-list';
-            let rowColor = 'background-soft-grey';
-            this.roomsList.forEach((r) => {
-                let row = document.createElement('div');
-                row.className = 'game-room-row';
-                row.className += ' ' + rowColor;
-                if (rowColor === 'background-soft-grey') rowColor = 'background-transparent';
-                else rowColor = 'background-soft-grey';
-                let numPlayers = document.createElement('span');
-                numPlayers.className = 'game-room-players';
-                if (r.players === 0) numPlayers.className += ' background-grey';
-                else numPlayers.className += ' background-green';
-                numPlayers.innerHTML = r.players;
-                let roomName = document.createElement('span');
-                roomName.className = 'game-room-name';
-                roomName.innerHTML = r.name;
-                row.appendChild(numPlayers);
-                row.appendChild(roomName);
-                row.onclick = (() => {
-                    this.socket.emit('join room', r.name);
-                    app.removeChild(rwc);
-                }).bind(r);
-                rl.appendChild(row);
-            })
-
-            body.appendChild(rl);
-            rw.appendChild(header);
-            rw.appendChild(body);
-            rwc.appendChild(rw);
-            app.appendChild(rwc);
-        }
+    sendJoinRoom(roomName: string): void {
+        this.socket.emit('join room', roomName);
     }
 
     openRoomsList() {

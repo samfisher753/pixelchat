@@ -38,7 +38,7 @@ const NavBar = () => {
   }, []);
 
   return (
-    <div className="absolute bottom-0 w-full h-[50px] p-0 m-0 pl-[20px] bg-barGrey game-navbar-border pointer-events-auto">
+    <div className="grow-0 w-full h-[50px] p-0 m-0 pl-[20px] bg-barGrey border-t-2 border-b border-barBorderGrey pointer-events-auto">
       { roomJoined && 
         <NavBarItem onClick={leaveRoom} imgSrc="/assets/icons/back.png" />
       }
