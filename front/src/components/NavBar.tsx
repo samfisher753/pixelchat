@@ -1,36 +1,19 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import NavBarItem from "@/components/NavBarItem";
 import { useGame } from "@/contexts/GameContext";
-import { gameEventEmitter } from "@/emitters/GameEventEmitter";
-import { GameEvent } from "@/enums/GameEvent";
 import Game from "@/models/logic/Game";
 import ChatInput from "@/components/ChatInput";
 
-const NavBar = () => {
+const NavBar = ({ roomJoined } : 
+  {
+    roomJoined: boolean
+  }
+) => {
 
   const game: Game = useGame();
-  const [roomJoined, setRoomJoined] = useState(false);
 
-  useEffect(() => {
-    gameEventEmitter.on(GameEvent.RoomJoined, handleRoomJoined);
-    gameEventEmitter.on(GameEvent.RoomLeft, handleRoomLeft);
-
-    return () => {
-      gameEventEmitter.off(GameEvent.RoomJoined, handleRoomJoined);
-      gameEventEmitter.off(GameEvent.RoomLeft, handleRoomLeft);
-    };
-  }, []);
-
-  const handleRoomJoined = useCallback(() => {
-    setRoomJoined(true);
-  }, []);
-
-  const handleRoomLeft = useCallback(() => {
-    setRoomJoined(false);
-  }, []);
-
-  const openRoomsList = useCallback(() => {
-    game.openRoomsList();
+  const toggleRoomsList = useCallback(() => {
+    game.toggleRoomsListWindow();
   }, []);
 
   const leaveRoom = useCallback(() => {
@@ -42,7 +25,7 @@ const NavBar = () => {
       { roomJoined && 
         <NavBarItem onClick={leaveRoom} imgSrc="/assets/icons/back.png" />
       }
-      <NavBarItem onClick={openRoomsList} imgSrc="/assets/icons/rooms.png" />
+      <NavBarItem onClick={toggleRoomsList} imgSrc="/assets/icons/rooms.png" />
       { roomJoined &&
         <ChatInput />
       }

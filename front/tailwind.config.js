@@ -19,6 +19,11 @@ export default {
         roomListWindow: '#ebe9df',
         roomListWindowHeader: '#24292a',
         closeButtonRed: '#bd3b2f',
+        chatPanel: 'rgba(46,46,44,0.85)',
+        infoMessage: '#dbdbdb',
+        fullWinImg: 'rgba(46,46,44,0.95)',
+        hideChatButtonDarkGrey: '#3a3832',
+        hideChatButtonLightGrey: '#9c9791'
       },
     },
   },

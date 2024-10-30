@@ -3,6 +3,8 @@ import { canvasChat } from '@/models/logic/CanvasChat'
 import { Socket } from 'socket.io-client';
 import { MAX_FILE_SIZE_BYTES } from '@/constants/constants';
 import { Msg } from '@/types/Msg';
+import { gameEventEmitter } from '@/emitters/GameEventEmitter';
+import { GameEvent } from '@/enums/GameEvent';
 
 class Chat {
 
@@ -27,39 +29,6 @@ class Chat {
         wavRecorder.init();
     }
 
-    create() {
-        this.createChatPanel(); 
-        this.bindChatEvents();
-    }
-
-    remove() {
-        let app = document.getElementById('app')!;
-        let chat = document.getElementsByClassName('game-chat')[0];
-        let chatR = document.getElementsByClassName('game-chatResize')[0];
-        let hideB = document.getElementsByClassName('game-hideChatButton')[0];
-        app.removeChild(chat);
-        app.removeChild(chatR);
-        app.removeChild(hideB);
-    }
-
-    createChatPanel() {
-        let app = document.getElementById('app')!;
-        let chatC = document.createElement('div');
-        chatC.className = 'game-chat';
-        let chatMessagesC = document.createElement('div');
-        chatMessagesC.className = 'game-chatMessagesContainer';
-        let chatR = document.createElement('div');
-        chatR.className = 'game-chatResize';
-        let chatB = document.createElement('button');
-        chatB.className = 'game-hideChatButton';
-        chatB.innerHTML = '<';
-
-        chatC.appendChild(chatMessagesC);
-        app.appendChild(chatC);
-        app.appendChild(chatR);
-        app.appendChild(chatB);
-    }
-
     sendMsg(msgText: string): void {
         const msg: Msg = { type: 'text', text: msgText };
         this.socket!.emit('chat message', msg);
@@ -73,29 +42,6 @@ class Chat {
     sendVoiceNote(file: any): void {
         file.name = 'PixelChat-'+this.playerName+this.timeString()+'.wav';
         this.readFile(file);
-    }
-
-    bindChatEvents() {
-        let b = document.getElementsByClassName('game-hideChatButton')[0] as HTMLButtonElement;
-        let c = document.getElementsByClassName('game-chat')[0] as HTMLDivElement;
-        let r = document.getElementsByClassName('game-chatResize')[0] as HTMLDivElement;
-        b.onclick = () => {
-            c.style.transition = '0.5s';
-            b.style.transition = '0.5s';
-            let pc = c.getBoundingClientRect();
-            if (pc.left < 0){
-                b.innerHTML = '<';
-                c.style.left = '0';
-                b.style.left = pc.width + 'px';
-                r.style.display = 'block';
-            }
-            else {
-                b.innerHTML = '>';
-                c.style.left = -pc.width + 'px';
-                b.style.left = '0';
-                r.style.display = 'none';
-            }
-        };
     }
 
     timeString() {
@@ -131,8 +77,10 @@ class Chat {
         fr.readAsDataURL(file);
     }
 
-    addFileMsg(msg) {
-        let type = msg.type.split('/')[0];
+    addFileMsg(msg: Msg): void {
+        gameEventEmitter.emit(GameEvent.AddMessage, msg);
+
+        let type = msg.type!.split('/')[0];
         if (type === 'image'){
             this.addImageMsg(msg);
         }
@@ -155,16 +103,11 @@ class Chat {
         nameSpan.style.float = 'left';
         nameSpan.textContent = msg.player.name + ':';
 
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-
         let file = document.createElement('div');
         let img = new Image();
         img.className = 'game-file';
         this.addFullWindow(img);
         img.onload = () => {
-            chat.appendChild(msgC);
-            chat.scrollTop = chat.scrollHeight;
-            delete msg.data;
             msg.html = msgC.cloneNode(true);
             let img2 = msg.html.getElementsByTagName('img')[0];
             this.addFullWindow(img2);
@@ -207,18 +150,12 @@ class Chat {
         nameSpan.style.float = 'left';
         nameSpan.textContent = msg.player.name + ':';
 
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-
         let file;
         if (msg.type === 'video/mp4'){
             file = document.createElement('div');
             let vid = document.createElement('video');
             vid.setAttribute('controls','');
             vid.className = 'game-file';
-            vid.onloadeddata = () => {
-                chat.appendChild(msgC);
-                chat.scrollTop = chat.scrollHeight;
-            };
             vid.src = msg.data;
             let vid2 = vid.cloneNode(true) as HTMLVideoElement; 
             vid2.onloadeddata = () => {
@@ -246,8 +183,6 @@ class Chat {
         msgC.appendChild(msgD);
 
         if (msg.type !== 'video/mp4'){
-            chat.appendChild(msgC);
-            chat.scrollTop = chat.scrollHeight;
             msg.html = msgC.cloneNode(true);
             canvasChat.add(msg);
         }
@@ -264,8 +199,6 @@ class Chat {
         nameSpan.style.float = 'left';
         nameSpan.textContent = msg.player.name + ':';
 
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-
         let file;
         if (msg.type === 'audio/mpeg' || msg.type === 'audio/wav' ||
             msg.type === 'audio/mp3'){
@@ -274,9 +207,6 @@ class Chat {
             audio.setAttribute('controls','');
             audio.className = 'game-file';
             audio.onloadeddata = () => {
-                chat.appendChild(msgC);
-                chat.scrollTop = chat.scrollHeight;
-                delete msg.data;
                 msg.html = msgC.cloneNode(true);
                 canvasChat.add(msg);
             };
@@ -296,8 +226,6 @@ class Chat {
 
         if (msg.type !== 'audio/mpeg' && msg.type !== 'audio/wav' &&
             msg.type !== 'audio/mp3'){
-            chat.appendChild(msgC);
-            chat.scrollTop = chat.scrollHeight;
             msg.html = msgC.cloneNode(true);
             canvasChat.add(msg);
         }
@@ -351,26 +279,15 @@ class Chat {
         msgD.appendChild(nameSpan);
         msgD.appendChild(msgSpan);
         msgC.appendChild(msgD);
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-        chat.appendChild(msgC);
-        chat.scrollTop = chat.scrollHeight;
 
         msg.html = msgC.cloneNode(true) as HTMLDivElement;
+        gameEventEmitter.emit(GameEvent.AddMessage, msg);
         canvasChat.add(msg);
     }
 
-    addInfoMsg(msg: string): void {
-        let msgC = document.createElement('div');
-        msgC.className = 'game-chatMessageC';
-
-        let msgD = document.createElement('div');
-        msgD.className = 'game-chatMessage game-chatInfoMessage game-boldText';
-        msgD.textContent = msg;
-
-        msgC.appendChild(msgD);
-        let chat = document.getElementsByClassName('game-chatMessagesContainer')[0];
-        chat.appendChild(msgC);
-        chat.scrollTop = chat.scrollHeight;
+    addInfoMsg(text: string): void {
+        const msg: Msg = { type: "info", text: text };
+        gameEventEmitter.emit(GameEvent.AddMessage, msg);
     }
 
     allowedFile(file: File): boolean {

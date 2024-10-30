@@ -9,6 +9,9 @@ import { grid } from '@/models/logic/Grid'
 import { gameEventEmitter } from '@/emitters/GameEventEmitter'
 import { GameEvent } from '@/enums/GameEvent'
 import { Pos } from '@/types/Pos'
+import { CheckNameResponse } from '@/types/CheckNameResponse'
+import { Msg } from '@/types/Msg'
+import { RoomListItem } from '@/types/RoomListItem'
 
 export default class Game {
 
@@ -29,11 +32,11 @@ export default class Game {
     mouse: MouseEvent | null;
     mousedown: boolean;
     disableClick: boolean;
-    resizedown: boolean;
     mouseCell: Pos | null;
     fpsSpan: HTMLSpanElement | undefined;
     playersSpan: HTMLSpanElement | undefined;
     xIni: number | undefined;
+    roomsWindowOpen: boolean;
 
     constructor() {
         // Vars
@@ -55,9 +58,10 @@ export default class Game {
         this.initialPos = { x:0, y:0 };
         this.mouse = null;
         this.mousedown = false;
-        this.disableClick = false; 
-        this.resizedown = false;
+        this.disableClick = false;
         this.mouseCell = null;
+
+        this.roomsWindowOpen = false;
 
         this.configureSocket();
         chat.socket = this.socket;
@@ -65,18 +69,17 @@ export default class Game {
         gameEventEmitter.emit(GameEvent.StartUi);
     }
 
-    setDragEvents(){
+    setDragEvents(): void {
         // Drag files / Prevent default drag action
-        let app = document.getElementById('app')!;
-        app.ondragover = (e) => {
+        window.ondragover = (e) => {
             e.preventDefault();
         };
 
-        app.ondragend = (e) => {
+        window.ondragend = (e) => {
             e.preventDefault();
         };
 
-        app.ondrop = (e) => {
+        window.ondrop = (e) => {
             e.preventDefault();
             if (this.room !== null && e.dataTransfer) {
                 // Just one file per drop to avoid spam
@@ -86,15 +89,14 @@ export default class Game {
         };
     }
 
-    joinRoom(room) {
+    joinRoom(room: Room): void {
         gameEventEmitter.emit(GameEvent.RoomJoined);
 
         if (this.room === null) {
-            chat.create();
             this.createCanvas();
             this.bindEvents();
             canvasChat.init();
-            let app = document.getElementById('app')!;
+            const app = document.getElementById('app')! as HTMLDivElement;
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
 
@@ -118,17 +120,18 @@ export default class Game {
         chat.addInfoMsg('Te uniste a '+this.room.name);
     }
 
-    leaveRoom() {
+    leaveRoom(): void {
+        chat.addInfoMsg('Saliste de '+this.room!.name);
         this.room = null;
         gameEventEmitter.emit(GameEvent.RoomLeft);
         cancelAnimationFrame(this.frame!);
         this.frame = null;
         this.fpsSpan!.innerHTML = 'fps: 0';
-        chat.remove();
+        // chat.remove();
         this.hidePlayerInfo();
-        let app = document.getElementById('app')!;
-        let maskCanvas = document.getElementsByClassName('game-canvas')[0];
-        let canvas = document.getElementsByClassName('game-canvas')[1];
+        const app = document.getElementById('app')! as HTMLDivElement;
+        const maskCanvas = document.getElementsByClassName('game-canvas')[0] as HTMLCanvasElement;
+        const canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
         app.removeChild(maskCanvas);
         app.removeChild(canvas);
         app.removeChild(canvasChat.chat!);
@@ -136,17 +139,17 @@ export default class Game {
         app.style.backgroundColor = '#2e2e2c';
     }
 
-    startGame(){
+    startGame(): void {
         chat.init();
     }
 
-    gameLoop(timeStamp) {
-        let t = timeStamp - this.lastFrameTimeMs;
+    gameLoop(timeStamp: number): void {
+        const t: number = timeStamp - this.lastFrameTimeMs;
         this.delta += t;
         this.lastFrameTimeMs = timeStamp;
 
         if (this.delta >= this.timestep) {
-            let fps = 1000 / t;
+            const fps: number = 1000 / t;
             this.fpsSpan!.innerHTML = 'fps: ' + Math.floor(fps);
             while (this.delta >= this.timestep){
                 this.update();
@@ -158,7 +161,7 @@ export default class Game {
         this.frame = requestAnimationFrame(this.gameLoop.bind(this));
     }
 
-    update() {
+    update(): void {
         if (this.room !== null){
             this.room.updateLogic();
             canvasChat.update();
@@ -178,9 +181,9 @@ export default class Game {
         }
     }
 
-    draw() {
-        let ctx = this.canvasCtx!;
-        let maskCtx = this.maskCanvasCtx!;
+    draw(): void {
+        const ctx = this.canvasCtx!;
+        const maskCtx = this.maskCanvasCtx!;
 
         // Draw background
         ctx.fillStyle = '#010101';
@@ -197,10 +200,10 @@ export default class Game {
         }
     }
 
-    bindEvents() {
-        let maskCanvas = document.getElementsByClassName('game-canvas')[0] as HTMLCanvasElement;
-        let canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
-        let body = document.getElementsByTagName('body')[0];
+    bindEvents(): void {
+        const maskCanvas = document.getElementsByClassName('game-canvas')[0] as HTMLCanvasElement;
+        const canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
+        const body = document.getElementsByTagName('body')[0] as HTMLBodyElement;
         body.onresize = () => {
             if (this.room !== null){
                 // Resize Mask Canvas
@@ -219,15 +222,6 @@ export default class Game {
             }
         };
 
-        let r = document.getElementsByClassName('game-chatResize')[0] as HTMLDivElement;
-        let c = document.getElementsByClassName('game-chat')[0] as HTMLDivElement;
-        let b = document.getElementsByClassName('game-hideChatButton')[0] as HTMLButtonElement;
-        let chatC = document.getElementsByClassName('game-chatMessagesContainer')[0] as HTMLDivElement;
-        r.onmousedown = (e) => {
-            this.resizedown = true;
-            this.xIni = e.clientX;
-        };
-        
         canvas.onmousedown = (e) => {
             this.mousedown = true;
             this.initialPos.x = e.clientX;
@@ -243,35 +237,19 @@ export default class Game {
                     // Disable click event after dragging
                     this.disableClick = true;  
                 }
-                else if (this.resizedown){
-                    c.style.transition = 'none';
-                    b.style.transition = 'none';
-                    //window.getSelection().removeAllRanges();
-                    let rdx = e.clientX - this.xIni!;
-                    let pc = c.getBoundingClientRect().width + rdx;
-                    if (pc < chat.minChatWidth) pc = chat.minChatWidth;
-                    else if (pc+5 > body.clientWidth) pc = body.clientWidth-5;
-                    let pr = pc - 5;
-                    c.style.width = pc + 'px';
-                    r.style.left = pr + 'px';
-                    b.style.left = pc + 'px';
-                    chatC.scrollTop = chatC.scrollHeight;
-                    this.xIni = e.clientX;
-                }
             }
         };
 
         document.onmouseup = () => {
             if (this.room !== null) {
                 this.mousedown = false;
-                this.resizedown = false;
             }
         };
 
         canvas.onclick = (e) => {
             if (!this.disableClick){
                 // Check player
-                let p = this.playerAt(e.clientX, e.clientY);
+                const p: Player | null = this.playerAt(e.clientX, e.clientY);
                 if (p!==null) {
                     this.socket.emit('click', p.pos);
                     this.showPlayerInfo(p);
@@ -294,23 +272,23 @@ export default class Game {
 
     }
 
-    playerAt(x, y){
-        let mask = this.maskCanvasCtx!;
-        let pixel = mask.getImageData(x, y, 1, 1);
+    playerAt(x: number, y: number): Player | null {
+        const mask: CanvasRenderingContext2D = this.maskCanvasCtx!;
+        const pixel: ImageData = mask.getImageData(x, y, 1, 1);
         if (pixel.data[0]===0){
-            let index = pixel.data[2];
-            let playerNames = Object.keys(this.room!.players);
-            let player = this.room!.players[playerNames[index]];
+            const index: number = pixel.data[2];
+            const playerNames: string[] = Object.keys(this.room!.players);
+            const player: Player = this.room!.players[playerNames[index]];
             return player;
         }
         return null;
     }
 
-    createCanvas() {
-        let app = document.getElementById('app')!;
+    createCanvas(): void {
+        const app = document.getElementById('app')! as HTMLDivElement;
 
         // Mask Canvas
-        let maskCanvas = document.createElement('canvas');
+        const maskCanvas = document.createElement('canvas');
         maskCanvas.className = 'game-canvas';
         this.maskCanvasCtx = maskCanvas.getContext('2d', { willReadFrequently: true });
         app.appendChild(maskCanvas);
@@ -318,7 +296,7 @@ export default class Game {
         maskCanvas.width = maskCanvas.clientWidth;
 
         //Game Canvas
-        let canvas = document.createElement('canvas');
+        const canvas = document.createElement('canvas');
         canvas.className = 'game-canvas';
         this.canvasCtx = canvas.getContext('2d');
         app.appendChild(canvas);
@@ -326,22 +304,21 @@ export default class Game {
         canvas.width = canvas.clientWidth;
     }
 
-    configureSocket() {
+    configureSocket(): void {
         // Check player name
-        this.socket.on('check name', async (b) => {
+        this.socket.on('check name', async (b: CheckNameResponse) => {
             if (b.res){
-                this.player = new Player({ name: b.name as string, id: this.socket.id! } as Player);
+                this.player = new Player({ name: b.name, id: this.socket.id! } as Player);
                 chat.playerName = this.player.name;
                 chat.playerId = this.player.id;
                 gameEventEmitter.emit(GameEvent.PlayerLoggedIn);
-                let app = document.getElementById('app')!;
+                const app = document.getElementById('app')! as HTMLDivElement;
                 app.innerHTML = '';
                 this.createInfoSpans();
                 assets.load(this.player);
                 // Send player name
                 this.socket.emit('new player', this.player.name);
                 this.startGame();
-                this.openRoomsList();
             }
             else {
                 gameEventEmitter.emit(GameEvent.ErrorOnPlayerLogin, b.errno)
@@ -349,27 +326,27 @@ export default class Game {
         });
 
         // Event: Receive chat message
-        this.socket.on('chat message', (msg) => {
+        this.socket.on('chat message', (msg: Msg) => {
             chat.addMsg(msg);
         });
 
         // Event: Receive file message
-        this.socket.on('file message', (msg) => {
+        this.socket.on('file message', (msg: Msg) => {
             chat.addFileMsg(msg);
         });
 
         // Event: Receive number of players
-        this.socket.on('online players', (num_players) => {
-            this.playersSpan!.innerHTML = 'online: ' + num_players;
+        this.socket.on('online players', (numPlayers: number) => {
+            this.playersSpan!.innerHTML = 'online: ' + numPlayers;
         });
 
         // Event: Receive rooms list
-        this.socket.on('rooms list', (rooms) => {
-            gameEventEmitter.emit(GameEvent.OpenRoomsList, rooms);
+        this.socket.on('rooms list', (rooms: RoomListItem[]) => {
+            gameEventEmitter.emit(GameEvent.UpdateRoomsList, rooms);
         });
 
         // Event: Receive room info
-        this.socket.on('room info', (room) => {
+        this.socket.on('room info', (room: Room) => {
             // If join room or change room
             if (this.room===null || room.name !== this.room.name) this.joinRoom(room);
             // If still in the same room
@@ -383,11 +360,11 @@ export default class Game {
             this.leaveRoom();
         });
 
-        this.socket.on('player join', (name) => {
+        this.socket.on('player join', (name: string) => {
             chat.addInfoMsg(name+' se ha unido a la sala');
         });
 
-        this.socket.on('player left', (name) => {
+        this.socket.on('player left', (name: string) => {
             chat.addInfoMsg(name+' abandonó la sala');
         });
 
@@ -396,30 +373,30 @@ export default class Game {
         });
     }
 
-    showPlayerInfo(player){
+    showPlayerInfo(player: Player): void {
         this.hidePlayerInfo();
-        let app = document.getElementById('app')!;
-        let pi = document.createElement('div');
+        const app = document.getElementById('app')! as HTMLDivElement;
+        const pi = document.createElement('div');
         pi.className = 'game-playerInfo';
-        let p = document.createElement('p');
+        const p = document.createElement('p');
         p.innerHTML = player.name;
-        let di = document.createElement('div');
-        let img = document.createElement('img');
-        let storedImg = player.images['stand'][6][0];
+        const di = document.createElement('div');
+        const img = document.createElement('img');
+        const storedImg = player.images!['stand'][6][0] as HTMLImageElement;
         img.src = storedImg.src;
         img.onload = () => {
             pi.appendChild(p);
             di.appendChild(img);
             pi.appendChild(di);
             app.appendChild(pi);
-        }
+        };
     }
 
-    hidePlayerInfo() {
-        let pis = document.getElementsByClassName('game-playerInfo');
+    hidePlayerInfo(): void {
+        const pis = document.getElementsByClassName('game-playerInfo');
         if (pis.length > 0){
-            let pi = pis[0];
-            let app = document.getElementById('app')!;
+            const pi = pis[0] as HTMLDivElement;
+            const app = document.getElementById('app')! as HTMLDivElement;
             app.removeChild(pi);
         }
     }
@@ -428,12 +405,17 @@ export default class Game {
         this.socket.emit('join room', roomName);
     }
 
-    openRoomsList() {
+    toggleRoomsListWindow(): void {
+        this.roomsWindowOpen = !this.roomsWindowOpen;
+        gameEventEmitter.emit(GameEvent.ToggleRoomsListWindow, this.roomsWindowOpen);
+    }
+
+    requestRoomsList(): void {
         this.socket.emit('rooms list');
     }
 
-    createInfoSpans() {
-        let app = document.getElementById('app')!;
+    createInfoSpans(): void {
+        const app = document.getElementById('app')! as HTMLDivElement;
         this.fpsSpan = document.createElement('span');
         this.fpsSpan.className = 'game-infoSpan';
         this.fpsSpan.innerHTML = 'fps: 0';
@@ -446,11 +428,11 @@ export default class Game {
         app.appendChild(this.playersSpan);
     }
 
-    login(nickname) {
+    login(nickname: string): void {
         this.socket.emit('check name', nickname);
     } 
 
-    sendLeaveRoom() {
+    sendLeaveRoom(): void {
         this.socket.emit('leave room');
     }
 

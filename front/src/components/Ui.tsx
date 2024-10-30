@@ -4,11 +4,11 @@ import NavBar from "@/components/NavBar";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
 import { GameEvent } from "@/enums/GameEvent";
 import RoomListWindow from "./RoomListWindow";
-import { RoomListItem } from "@/types/RoomListItem";
+import ChatPanel from "./ChatPanel";
 
 const Ui = () => {
   const [isLogged, setIsLogged] = useState(false);
-  const [rooms, setRooms] = useState<RoomListItem[] | null>(null);
+  const [roomJoined, setRoomJoined] = useState(false);
 
   const handleLogin = useCallback(() => {
     setIsLogged(true);
@@ -16,19 +16,22 @@ const Ui = () => {
 
   useEffect(() => {
     gameEventEmitter.on(GameEvent.PlayerLoggedIn, handleLogin);
-    gameEventEmitter.on(GameEvent.OpenRoomsList, onOpenRoomsList);
+    gameEventEmitter.on(GameEvent.RoomJoined, handleRoomJoined);
+    gameEventEmitter.on(GameEvent.RoomLeft, handleRoomLeft);
+    
     return () => {
       gameEventEmitter.off(GameEvent.PlayerLoggedIn, handleLogin);
-      gameEventEmitter.off(GameEvent.OpenRoomsList, onOpenRoomsList);
+      gameEventEmitter.off(GameEvent.RoomJoined, handleRoomJoined);
+      gameEventEmitter.off(GameEvent.RoomLeft, handleRoomLeft);
     };
   }, []);
 
-  const onOpenRoomsList = useCallback((rooms: RoomListItem[]) => {
-    setRooms(rooms);
+  const handleRoomJoined = useCallback(() => {
+    setRoomJoined(true);
   }, []);
 
-  const onCloseRoomsList = useCallback(() => {
-    setRooms(null);
+  const handleRoomLeft = useCallback(() => {
+    setRoomJoined(false);
   }, []);
 
   return (
@@ -37,9 +40,10 @@ const Ui = () => {
       {isLogged && 
         <div className="flex flex-col w-full h-full pointer-events-none">
           <div className="relative grow pointer-events-none">
-            { rooms && <RoomListWindow rooms={rooms} onClose={onCloseRoomsList} /> }
+            <RoomListWindow />
+            <ChatPanel show={roomJoined} />
           </div>
-          <NavBar />
+          <NavBar roomJoined={roomJoined} />
         </div>    
       }
     </div>
