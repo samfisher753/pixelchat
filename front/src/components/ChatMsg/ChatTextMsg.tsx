@@ -1,9 +1,8 @@
-import { useCallback } from 'react';
 import { ChatMsgProps } from '@/components/ChatMsg/ChatMsg';
 
 const ChatTextMsg = ({ msg }: ChatMsgProps) => {
 
-  const parseTextWithLinks = useCallback((text: string): JSX.Element[] => {
+  const parseTextWithLinks = (text: string): JSX.Element[] => {
     const reg = new RegExp('(https?:\/\/[^<>\\s]+)', 'gi');
     const elements: JSX.Element[] = [];
     let lastIndex: number = 0;
@@ -26,7 +25,7 @@ const ChatTextMsg = ({ msg }: ChatMsgProps) => {
     }
 
     return elements;
-  }, []);
+  };
 
   return (
     <div className="relative max-w-full break-words rounded-md bg-white m-0 text-sm p-[2px_8px] border border-black inline-block text-black">

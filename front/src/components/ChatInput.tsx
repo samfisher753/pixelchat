@@ -1,6 +1,6 @@
 import { MAX_MSG_LENGTH } from "@/constants/constants";
 import { wavRecorder } from "@/models/others/WavRecorder";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import { chat } from "@/models/logic/Chat";
 
@@ -12,6 +12,21 @@ const ChatInput = () => {
 
   useEffect(() => {
     focusInput();
+
+    const stopAndSendRecording = () => {
+      if (wavRecorder.recording) {
+        const file: any = wavRecorder.stop();
+        chat.sendVoiceNote(file);
+        setRecording(false);
+      }
+    };
+  
+    const onKeyDown = function (this: Window, e: KeyboardEvent) {
+      if (wavRecorder.recording && e.key === "Escape") {
+        wavRecorder.cancel();
+        setRecording(false);
+      }
+    };
 
     window.addEventListener("mouseup", stopAndSendRecording);
     window.addEventListener("keydown", onKeyDown);
@@ -31,36 +46,21 @@ const ChatInput = () => {
     }
   };
 
-  const handleMsgChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMsgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMsg(e.target.value);
-  }, []);
+  };
 
-  const handleSendMsg = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleSendMsg = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && msg !== "") {
       chat.sendMsg(msg);
       setMsg("");
     }
-  }, [msg]);
+  };
 
-  const startRecording = useCallback(() => {
+  const startRecording = () => {
     wavRecorder.start();
     setRecording(true);
-  }, []);
-
-  const stopAndSendRecording = useCallback(() => {
-    if (wavRecorder.recording) {
-      const file: any = wavRecorder.stop();
-      chat.sendVoiceNote(file);
-      setRecording(false);
-    }
-  }, []);
-
-  const onKeyDown = useCallback(function (this: Window, e: KeyboardEvent) {
-    if (wavRecorder.recording && e.key === "Escape") {
-      wavRecorder.cancel();
-      setRecording(false);
-    }
-  }, []);
+  };
 
   return (
     <div className="absolute left-1/3 bottom-0">
@@ -77,7 +77,7 @@ const ChatInput = () => {
 
       <input ref={inputRef} type="text" value={msg} onChange={handleMsgChange}
         maxLength={MAX_MSG_LENGTH}
-        className="absolute text-left bottom-[10px] w-[500px] h-[25px] bg-white text-black rounded"
+        className="absolute text-left bottom-[10px] w-[500px] h-[25px] bg-white text-black rounded outline-none"
         onBlur={focusInput}
         onKeyDown={handleSendMsg}
         ></input>

@@ -1,6 +1,6 @@
 import { RoomListItem } from "@/types/RoomListItem";
 import { useGame } from "@/contexts/GameContext";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import RoomListWindowLine from "./RoomListWindowLine";
 import clsx from "clsx";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
@@ -20,6 +20,10 @@ const RoomListWindow = () => {
   useEffect(() => {
     setInitialPos();
 
+    const onUpdateRoomsList = (rooms: RoomListItem[]) => {
+      setRooms(rooms);
+    };
+
     gameEventEmitter.on(GameEvent.UpdateRoomsList, onUpdateRoomsList);
     gameEventEmitter.on(GameEvent.ToggleRoomsListWindow, setOpen);
 
@@ -37,12 +41,15 @@ const RoomListWindow = () => {
       idInterval = setInterval(() => {
         game.requestRoomsList();
       }, 10000);
-    } else if (idInterval) {
-      clearInterval(idInterval);
+    } else { 
+      if (idInterval) {
+        clearInterval(idInterval);
+      }
+      setRooms(null);
     }
   }, [open]);
 
-  const setInitialPos = useCallback(() => {
+  const setInitialPos = () => {
     const parent = parentRef.current!.getBoundingClientRect();
     const element = draggableRef.current!.getBoundingClientRect();
 
@@ -51,16 +58,12 @@ const RoomListWindow = () => {
 
     draggableRef.current!.style.left = `${x}px`;
     draggableRef.current!.style.top = `${y}px`;
-  }, []);
+  };
 
-  const onUpdateRoomsList = useCallback((rooms: RoomListItem[]) => {
-    setRooms(rooms);
-  }, []);
-
-  const handleMouseDown = useCallback((e) => {
+  const handleMouseDown = (e) => {
     setIsDragging(true);
     e.preventDefault();
-  }, []);
+  };
 
   const handleMouseMove = (e) => {
     if (!isDragging || !parentRef.current || !draggableRef.current) return;
@@ -81,18 +84,18 @@ const RoomListWindow = () => {
     draggableRef.current.style.top = `${newY}px`;
   };
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = () => {
     setIsDragging(false);
-  }, []);
+  };
 
-  const joinRoom = useCallback((roomName: string) => {
+  const joinRoom = (roomName: string) => {
     game.sendJoinRoom(roomName);
     onClose();
-  }, []);
+  };
 
-  const onClose = useCallback(() => {
+  const onClose = () => {
     game.toggleRoomsListWindow();
-  },[]);
+  };
 
   return (
     <div ref={parentRef} 

@@ -118,14 +118,6 @@ a:visited {
   color: #1884ff;
 }
 
-input:focus {
-  outline: none;
-}
-
-button:focus {
-  outline: none;
-}
-
 .game-file {
   display: block;
   max-height: 150px;

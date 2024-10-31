@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Login from "@/components/Login";
 import NavBar from "@/components/NavBar";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
@@ -10,11 +10,20 @@ const Ui = () => {
   const [isLogged, setIsLogged] = useState(false);
   const [roomJoined, setRoomJoined] = useState(false);
 
-  const handleLogin = useCallback(() => {
-    setIsLogged(true);
-  }, []);
-
   useEffect(() => {
+
+    const handleLogin = () => {
+      setIsLogged(true);
+    };
+
+    const handleRoomJoined = () => {
+      setRoomJoined(true);
+    };
+  
+    const handleRoomLeft = () => {
+      setRoomJoined(false);
+    };
+
     gameEventEmitter.on(GameEvent.PlayerLoggedIn, handleLogin);
     gameEventEmitter.on(GameEvent.RoomJoined, handleRoomJoined);
     gameEventEmitter.on(GameEvent.RoomLeft, handleRoomLeft);
@@ -24,14 +33,6 @@ const Ui = () => {
       gameEventEmitter.off(GameEvent.RoomJoined, handleRoomJoined);
       gameEventEmitter.off(GameEvent.RoomLeft, handleRoomLeft);
     };
-  }, []);
-
-  const handleRoomJoined = useCallback(() => {
-    setRoomJoined(true);
-  }, []);
-
-  const handleRoomLeft = useCallback(() => {
-    setRoomJoined(false);
   }, []);
 
   return (
