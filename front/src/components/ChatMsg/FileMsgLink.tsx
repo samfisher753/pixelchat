@@ -8,7 +8,10 @@ const FileMsgLink = ({ msg }: ChatMsgProps) => {
   const url: string = URL.createObjectURL(blob);
 
   return (
-    <a href={url} download={msg.filename} target="_blank">{text}</a>
+    <a href={url} download={msg.filename} target="_blank"
+      className='text-linkBlue'>
+      {text}
+    </a>
   );
 
 };

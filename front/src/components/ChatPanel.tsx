@@ -75,7 +75,7 @@ const ChatPanel = ({ show }: {
   };
 
   return (
-    <div ref={containerRef} className={clsx("absolute w-full h-full pointer-events-none",
+    <div ref={containerRef} className={clsx("absolute w-full h-full pointer-events-none z-10",
       {"invisible": !show})}>
       <div
         ref={panelRef}

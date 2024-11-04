@@ -4,7 +4,8 @@ import NavBar from "@/components/NavBar";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
 import { GameEvent } from "@/enums/GameEvent";
 import RoomListWindow from "./RoomListWindow";
-import ChatPanel from "./ChatPanel";
+import ChatPanel from "@/components/ChatPanel";
+import OverlayChat from "@/components/OverlayChat";
 
 const Ui = () => {
   const [isLogged, setIsLogged] = useState(false);
@@ -43,6 +44,7 @@ const Ui = () => {
           <div className="relative grow pointer-events-none">
             <RoomListWindow />
             <ChatPanel show={roomJoined} />
+            {roomJoined && <OverlayChat />}
           </div>
           <NavBar roomJoined={roomJoined} />
         </div>    

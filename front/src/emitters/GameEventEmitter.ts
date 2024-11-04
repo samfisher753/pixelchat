@@ -21,6 +21,12 @@ class GameEventEmitter {
       (listener) => listener !== listenerToRemove
     );
   }
+
+  offAll(event: string) {
+    if (!this.events[event]) return;
+
+    this.events[event] = [];
+  }
 }
 
 export const gameEventEmitter = new GameEventEmitter();

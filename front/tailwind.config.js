@@ -23,7 +23,8 @@ export default {
         infoMessage: '#dbdbdb',
         fullWinImg: 'rgba(46,46,44,0.95)',
         hideChatButtonDarkGrey: '#3a3832',
-        hideChatButtonLightGrey: '#9c9791'
+        hideChatButtonLightGrey: '#9c9791',
+        linkBlue: '#1884ff'
       },
     },
   },

@@ -1,8 +1,6 @@
 import { io, Socket } from 'socket.io-client'
-import { chat } from '@/models/logic/Chat'
 import Player from '@/models/entities/Player'
 import { assets } from '@/models/others/Assets'
-import { canvasChat } from '@/models/logic/CanvasChat'
 import Room from '@/models/entities/Room'
 import { grid } from '@/models/logic/Grid'
 
@@ -12,6 +10,9 @@ import { Pos } from '@/types/Pos'
 import { CheckNameResponse } from '@/types/CheckNameResponse'
 import { Msg } from '@/types/Msg'
 import { RoomListItem } from '@/types/RoomListItem'
+import { wavRecorder } from '@/models/others/WavRecorder'
+import { MAX_FILE_SIZE_BYTES } from '@/constants/constants'
+import { timeString } from '@/utils/Utils'
 
 export default class Game {
 
@@ -37,6 +38,8 @@ export default class Game {
     playersSpan: HTMLSpanElement | undefined;
     xIni: number | undefined;
     roomsWindowOpen: boolean;
+    defaultY?: number;
+    allowedTypes: string[];
 
     constructor() {
         // Vars
@@ -51,7 +54,9 @@ export default class Game {
         this.frame = null;
 
         // Misc
-        this.socket = io(import.meta.env.VITE_SOCKETIO_BACKEND, { reconnection: false });
+        this.socket = io(import.meta.env.VITE_SOCKETIO_BACKEND, { 
+            reconnection: false
+        });
         this.canvasCtx = null;
         this.maskCanvasCtx = null;
         this.d = { x:0, y:0 };
@@ -62,9 +67,16 @@ export default class Game {
         this.mouseCell = null;
 
         this.roomsWindowOpen = false;
+        let app = document.getElementById('app')!;
+        this.defaultY = Math.floor(app.clientHeight/3);
+
+        this.allowedTypes = [
+            'image',
+            'video',
+            'audio',
+        ];
 
         this.configureSocket();
-        chat.socket = this.socket;
         this.setDragEvents();
         gameEventEmitter.emit(GameEvent.StartUi);
     }
@@ -84,7 +96,7 @@ export default class Game {
             if (this.room !== null && e.dataTransfer) {
                 // Just one file per drop to avoid spam
                 const file: File = e.dataTransfer.files[0];
-                chat.checkAndReadFile(file);
+                this.checkAndReadFile(file);
             }
         };
     }
@@ -95,7 +107,6 @@ export default class Game {
         if (this.room === null) {
             this.createCanvas();
             this.bindEvents();
-            canvasChat.init();
             const app = document.getElementById('app')! as HTMLDivElement;
             app.style.backgroundImage = 'none';
             app.style.backgroundColor = '#010101';
@@ -103,7 +114,7 @@ export default class Game {
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
         else {
-            chat.addInfoMsg('Saliste de '+this.room.name);
+            this.addInfoMsg('Saliste de '+this.room.name);
         }
 
         this.mouseCell = null;
@@ -114,33 +125,29 @@ export default class Game {
         grid.size = this.room.size;
         grid.center(this.canvasCtx!.canvas.width,this.canvasCtx!.canvas.height);
         grid.createDrawOrder();
-        // Clear canvas chat
-        canvasChat.clear();
 
-        chat.addInfoMsg('Te uniste a '+this.room.name);
+        this.addInfoMsg('Te uniste a '+this.room.name);
     }
 
     leaveRoom(): void {
-        chat.addInfoMsg('Saliste de '+this.room!.name);
+        this.addInfoMsg('Saliste de '+this.room!.name);
         this.room = null;
         gameEventEmitter.emit(GameEvent.RoomLeft);
         cancelAnimationFrame(this.frame!);
         this.frame = null;
         this.fpsSpan!.innerHTML = 'fps: 0';
-        // chat.remove();
         this.hidePlayerInfo();
         const app = document.getElementById('app')! as HTMLDivElement;
         const maskCanvas = document.getElementsByClassName('game-canvas')[0] as HTMLCanvasElement;
         const canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
         app.removeChild(maskCanvas);
         app.removeChild(canvas);
-        app.removeChild(canvasChat.chat!);
         app.style.backgroundImage = 'url("/assets/misc/background.jpg")';
         app.style.backgroundColor = '#2e2e2c';
     }
 
     startGame(): void {
-        chat.init();
+        wavRecorder.init();
     }
 
     gameLoop(timeStamp: number): void {
@@ -164,7 +171,7 @@ export default class Game {
     update(): void {
         if (this.room !== null){
             this.room.updateLogic();
-            canvasChat.update();
+            gameEventEmitter.emit(GameEvent.UpdateOverlayChat);
         }
 
         this.d = {x:0, y:0};
@@ -196,7 +203,7 @@ export default class Game {
         // Draw room
         if (this.room !== null) {
             this.room.draw(ctx, maskCtx, this.mouseCell!);
-            canvasChat.draw();
+            gameEventEmitter.emit(GameEvent.DrawOverlayChat);
         }
     }
 
@@ -215,10 +222,8 @@ export default class Game {
                 // Update Grid
                 grid.center(canvas.width,canvas.height);
                 grid.createDrawOrder();
-                // Resize over canvas chat
-                canvasChat.chat!.style.height = canvas.height + 'px';; 
-                canvasChat.chat!.style.width = canvas.width + 'px';;
-                canvasChat.defaultY = canvas.height/3;
+                // Update defaultY used by OverlayChat
+                this.defaultY = Math.floor(canvas.height/3);
             }
         };
 
@@ -309,8 +314,6 @@ export default class Game {
         this.socket.on('check name', async (b: CheckNameResponse) => {
             if (b.res){
                 this.player = new Player({ name: b.name, id: this.socket.id! } as Player);
-                chat.playerName = this.player.name;
-                chat.playerId = this.player.id;
                 gameEventEmitter.emit(GameEvent.PlayerLoggedIn);
                 const app = document.getElementById('app')! as HTMLDivElement;
                 app.innerHTML = '';
@@ -327,12 +330,12 @@ export default class Game {
 
         // Event: Receive chat message
         this.socket.on('chat message', (msg: Msg) => {
-            chat.addMsg(msg);
+            this.addMsg(msg);
         });
 
         // Event: Receive file message
         this.socket.on('file message', (msg: Msg) => {
-            chat.addFileMsg(msg);
+            this.addMsg(msg);
         });
 
         // Event: Receive number of players
@@ -351,8 +354,6 @@ export default class Game {
             if (this.room===null || room.name !== this.room.name) this.joinRoom(room);
             // If still in the same room
             else this.room.update(room);
-            // Update canvas chat players
-            canvasChat.players = this.room!.players;
         });
 
         // Successfully left a room
@@ -361,11 +362,11 @@ export default class Game {
         });
 
         this.socket.on('player join', (name: string) => {
-            chat.addInfoMsg(name+' se ha unido a la sala');
+            this.addInfoMsg(name+' se ha unido a la sala');
         });
 
         this.socket.on('player left', (name: string) => {
-            chat.addInfoMsg(name+' abandonó la sala');
+            this.addInfoMsg(name+' abandonó la sala');
         });
 
         this.socket.on('disconnect', () => {
@@ -434,6 +435,58 @@ export default class Game {
 
     sendLeaveRoom(): void {
         this.socket.emit('leave room');
+    }
+
+    allowedFile(file: File): boolean {
+        if (file.size > MAX_FILE_SIZE_BYTES) return false;
+
+        for (let i=0; i<this.allowedTypes.length; ++i)
+            if (file.type.split('/')[0] === this.allowedTypes[i])
+                return true;
+
+        return false;
+    }
+
+    checkAndReadFile(file: File) {
+        if (this.allowedFile(file))
+            this.readFile(file);
+    }
+
+    readFile(file: File) {
+        let fr = new FileReader();
+        fr.onload = (e) => {
+            let data = e.target!.result as string;
+            let type = data.substring(5,20).split(';')[0];
+            let msg: Msg = { type: type, data: data, filename: file.name };
+            this.socket!.emit('file message', msg);
+            msg.player = { name: this.player!.name, id: this.player!.id };
+            this.addMsg(msg);
+        };
+        fr.readAsDataURL(file);
+    }
+
+    addMsg(msg: Msg): void {
+        gameEventEmitter.emit(GameEvent.AddMessage, msg);
+    }
+
+    addInfoMsg(text: string): void {
+        const msg: Msg = { type: "info", text: text };
+        this.addMsg(msg);
+    }
+
+    sendMsg(msgText: string): void {
+        const msg: Msg = { type: 'text', text: msgText };
+        this.socket!.emit('chat message', msg);
+        msg.player = { 
+            name: this.player!.name,
+            id: this.player!.id
+        };
+        this.addMsg(msg);
+    }
+
+    sendVoiceNote(file: any): void {
+        file.name = 'PixelChat-'+this.player!.name+timeString()+'.wav';
+        this.readFile(file);
     }
 
 }

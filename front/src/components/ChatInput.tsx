@@ -2,13 +2,14 @@ import { MAX_MSG_LENGTH } from "@/constants/constants";
 import { wavRecorder } from "@/models/others/WavRecorder";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
-import { chat } from "@/models/logic/Chat";
+import { useGame } from "@/contexts/GameContext";
 
 const ChatInput = () => {
 
   const [msg, setMsg] = useState<string>("");
   const inputRef: React.RefObject<HTMLInputElement> = useRef<HTMLInputElement>(null);
   const [recording, setRecording] = useState<boolean>(false);
+  const game = useGame();
 
   useEffect(() => {
     focusInput();
@@ -16,7 +17,7 @@ const ChatInput = () => {
     const stopAndSendRecording = () => {
       if (wavRecorder.recording) {
         const file: any = wavRecorder.stop();
-        chat.sendVoiceNote(file);
+        game.sendVoiceNote(file);
         setRecording(false);
       }
     };
@@ -52,7 +53,7 @@ const ChatInput = () => {
 
   const handleSendMsg = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && msg !== "") {
-      chat.sendMsg(msg);
+      game.sendMsg(msg);
       setMsg("");
     }
   };

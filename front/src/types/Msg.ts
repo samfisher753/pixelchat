@@ -1,3 +1,4 @@
+import Player from "@/models/entities/Player";
 import { Pos } from "@/types/Pos";
 
 export type Msg = {
@@ -5,17 +6,19 @@ export type Msg = {
     data?: string;
     filename?: string;
     player?: MsgPlayer;
-    html?: HTMLDivElement;
     width?: number;
     height?: number;
     dy?: number;
     dx?: number;
     pos?: Pos;
     text?: string;
-    playerRef?: HTMLImageElement;
+    loaded?: boolean;
+    left?: number;
+    top?: number;
+    playerObject?: Player;
 };
 
-type MsgPlayer = {
+export type MsgPlayer = {
     name: string;
     id: string;
 };
