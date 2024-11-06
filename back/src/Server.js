@@ -1,5 +1,7 @@
 const Player = require('./model/Player');
 const Room = require('./model/Room');
+const common = require('oci-common');
+const objectstorage = require('oci-objectstorage');
 
 class Server {
     
@@ -24,11 +26,61 @@ class Server {
         this.createMockRooms();
         this.bindEvents(io);
 
+        this.ociClient = this.ociInit();
+
         // Start server loop
         this.lastFrameTimeMs = Date.now();
         setImmediate(this.gameLoop.bind(this));
         this.lastFrameTimeMs2 = Date.now();
         setImmediate(this.sendLoop.bind(this));
+    }
+
+    ociInit() {
+        const configurationFilePath = "./oci-config";
+        const provider = new common.ConfigFileAuthenticationDetailsProvider(configurationFilePath);
+        return new objectstorage.ObjectStorageClient({ authenticationDetailsProvider: provider });
+    }
+
+    async getParUploadUrl(fileName) {
+        const expireDate = new Date();
+        expireDate.setHours(expireDate.getHours() + 1);
+
+        const createPreauthenticatedRequestDetails = {
+            name: "upload-"+fileName,
+            objectName: fileName,
+            accessType: objectstorage.models.CreatePreauthenticatedRequestDetails.AccessType.ObjectWrite,
+            timeExpires: expireDate,
+        }
+    
+        const createPreauthenticatedRequestRequest = { 
+            namespaceName: "axyrawf9bk3a",
+            bucketName: "pixelchat-files",
+            createPreauthenticatedRequestDetails: createPreauthenticatedRequestDetails
+        }; 
+    
+        const createPreauthenticatedRequestResponse = await this.ociClient.createPreauthenticatedRequest(createPreauthenticatedRequestRequest);
+        return createPreauthenticatedRequestResponse.preauthenticatedRequest.fullPath;
+    }
+
+    async getParDownloadUrl(fileName) {
+        const expireDate = new Date();
+        expireDate.setHours(expireDate.getHours() + 1);
+
+        const createPreauthenticatedRequestDetails = {
+            name: "download-"+fileName,
+            objectName: fileName,
+            accessType: objectstorage.models.CreatePreauthenticatedRequestDetails.AccessType.ObjectRead,
+            timeExpires: expireDate,
+        }
+    
+        const createPreauthenticatedRequestRequest = { 
+            namespaceName: "axyrawf9bk3a",
+            bucketName: "pixelchat-files",
+            createPreauthenticatedRequestDetails: createPreauthenticatedRequestDetails
+        }; 
+    
+        const createPreauthenticatedRequestResponse = await this.ociClient.createPreauthenticatedRequest(createPreauthenticatedRequestRequest);
+        return createPreauthenticatedRequestResponse.preauthenticatedRequest.fullPath;
     }
 
     gameLoop() {
@@ -203,18 +255,17 @@ class Server {
                 
             });
 
-            socket.on('file message', (msg) => {
-                msg.player = {
-                    name: player.name,
-                    id: player.id
-                };
+            socket.on('par upload', async (fileName) => {
+                console.log(player.name+' is requesting a PAR to upload the file:\n'+fileName);
+                const url = await this.getParUploadUrl(fileName);
+                socket.emit('par upload', {fileName, url});
+            });
 
-                // Server side terminal msgs
-                console.log(msg.player.name+' sent a/an '+msg.type+' file.');
-
+            socket.on('par download', async (fileName) => {
+                const url = await this.getParDownloadUrl(fileName);
+                const sender = { name: player.name, id: player.id };
                 for (let p in room.players){
-                    if (p !== msg.player.id)
-                        this.sockets[p].emit('file message', msg);
+                    this.sockets[p].emit('par download', {fileName, url, player: sender});
                 }
             });
         

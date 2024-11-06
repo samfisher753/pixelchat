@@ -26,3 +26,16 @@ export const twoDigitString = (n: number) => {
   if (n<10) result = '0'+result;
   return result;
 }
+
+export const appendBeforeExtension = (fileName: string, stringToAdd: string) => {
+  const lastDotIndex = fileName.lastIndexOf('.');
+  
+  if (lastDotIndex === -1) {
+      return fileName + stringToAdd;
+  }
+
+  const nameWithoutExtension = fileName.substring(0, lastDotIndex);
+  const extension = fileName.substring(lastDotIndex);
+
+  return nameWithoutExtension + stringToAdd + extension;
+}

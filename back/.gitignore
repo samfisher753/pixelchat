@@ -1,2 +1,4 @@
 node_modules
 dist
+oci-config
+oci-key.pem

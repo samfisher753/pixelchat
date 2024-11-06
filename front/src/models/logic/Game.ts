@@ -12,7 +12,8 @@ import { Msg } from '@/types/Msg'
 import { RoomListItem } from '@/types/RoomListItem'
 import { wavRecorder } from '@/models/others/WavRecorder'
 import { MAX_FILE_SIZE_BYTES } from '@/constants/constants'
-import { timeString } from '@/utils/Utils'
+import { appendBeforeExtension, timeString } from '@/utils/Utils'
+import ociObjectStorageService from '@/services/ociObjectStorageService'
 
 export default class Game {
 
@@ -40,6 +41,7 @@ export default class Game {
     roomsWindowOpen: boolean;
     defaultY?: number;
     allowedTypes: string[];
+    filesToUpload: Map<string, File>;
 
     constructor() {
         // Vars
@@ -54,13 +56,13 @@ export default class Game {
         this.frame = null;
 
         // Misc
-        this.socket = io(import.meta.env.VITE_SOCKETIO_BACKEND, { 
+        this.socket = io(import.meta.env.VITE_SOCKETIO_BACKEND, {
             reconnection: false
         });
         this.canvasCtx = null;
         this.maskCanvasCtx = null;
-        this.d = { x:0, y:0 };
-        this.initialPos = { x:0, y:0 };
+        this.d = { x: 0, y: 0 };
+        this.initialPos = { x: 0, y: 0 };
         this.mouse = null;
         this.mousedown = false;
         this.disableClick = false;
@@ -68,13 +70,15 @@ export default class Game {
 
         this.roomsWindowOpen = false;
         let app = document.getElementById('app')!;
-        this.defaultY = Math.floor(app.clientHeight/3);
+        this.defaultY = Math.floor(app.clientHeight / 3);
 
         this.allowedTypes = [
             'image',
             'video',
             'audio',
         ];
+
+        this.filesToUpload = new Map();
 
         this.configureSocket();
         this.setDragEvents();
@@ -96,7 +100,7 @@ export default class Game {
             if (this.room !== null && e.dataTransfer) {
                 // Just one file per drop to avoid spam
                 const file: File = e.dataTransfer.files[0];
-                this.checkAndReadFile(file);
+                this.checkFileAndRequestParUpload(file);
             }
         };
     }
@@ -114,7 +118,7 @@ export default class Game {
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
         else {
-            this.addInfoMsg('Saliste de '+this.room.name);
+            this.addInfoMsg('Saliste de ' + this.room.name);
         }
 
         this.mouseCell = null;
@@ -123,14 +127,14 @@ export default class Game {
         this.player = this.room.players[this.player!.id];
         // Update Grid
         grid.size = this.room.size;
-        grid.center(this.canvasCtx!.canvas.width,this.canvasCtx!.canvas.height);
+        grid.center(this.canvasCtx!.canvas.width, this.canvasCtx!.canvas.height);
         grid.createDrawOrder();
 
-        this.addInfoMsg('Te uniste a '+this.room.name);
+        this.addInfoMsg('Te uniste a ' + this.room.name);
     }
 
     leaveRoom(): void {
-        this.addInfoMsg('Saliste de '+this.room!.name);
+        this.addInfoMsg('Saliste de ' + this.room!.name);
         this.room = null;
         gameEventEmitter.emit(GameEvent.RoomLeft);
         cancelAnimationFrame(this.frame!);
@@ -158,23 +162,23 @@ export default class Game {
         if (this.delta >= this.timestep) {
             const fps: number = 1000 / t;
             this.fpsSpan!.innerHTML = 'fps: ' + Math.floor(fps);
-            while (this.delta >= this.timestep){
+            while (this.delta >= this.timestep) {
                 this.update();
                 this.delta -= this.timestep;
             }
             this.draw();
         }
-        
+
         this.frame = requestAnimationFrame(this.gameLoop.bind(this));
     }
 
     update(): void {
-        if (this.room !== null){
+        if (this.room !== null) {
             this.room.updateLogic();
             gameEventEmitter.emit(GameEvent.UpdateOverlayChat);
         }
 
-        this.d = {x:0, y:0};
+        this.d = { x: 0, y: 0 };
 
         // If canvas has been dragged
         if (this.mouse !== null) {
@@ -194,10 +198,10 @@ export default class Game {
 
         // Draw background
         ctx.fillStyle = '#010101';
-        ctx.fillRect(0, 0, 
+        ctx.fillRect(0, 0,
             ctx.canvas.width, ctx.canvas.height);
         maskCtx.fillStyle = '#ffffff';
-        maskCtx.fillRect(0, 0, 
+        maskCtx.fillRect(0, 0,
             maskCtx.canvas.width, maskCtx.canvas.height);
 
         // Draw room
@@ -212,7 +216,7 @@ export default class Game {
         const canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
         const body = document.getElementsByTagName('body')[0] as HTMLBodyElement;
         body.onresize = () => {
-            if (this.room !== null){
+            if (this.room !== null) {
                 // Resize Mask Canvas
                 maskCanvas.height = maskCanvas.clientHeight;
                 maskCanvas.width = maskCanvas.clientWidth;
@@ -220,10 +224,10 @@ export default class Game {
                 canvas.height = canvas.clientHeight;
                 canvas.width = canvas.clientWidth;
                 // Update Grid
-                grid.center(canvas.width,canvas.height);
+                grid.center(canvas.width, canvas.height);
                 grid.createDrawOrder();
                 // Update defaultY used by OverlayChat
-                this.defaultY = Math.floor(canvas.height/3);
+                this.defaultY = Math.floor(canvas.height / 3);
             }
         };
 
@@ -232,15 +236,15 @@ export default class Game {
             this.initialPos.x = e.clientX;
             this.initialPos.y = e.clientY;
         };
-        
+
         document.onmousemove = (e) => {
-            if (this.room !== null){
-                if (this.mousedown){
+            if (this.room !== null) {
+                if (this.mousedown) {
                     // Prevent from selecting text while dragging
                     //window.getSelection().removeAllRanges();
                     this.mouse = e;
                     // Disable click event after dragging
-                    this.disableClick = true;  
+                    this.disableClick = true;
                 }
             }
         };
@@ -252,17 +256,17 @@ export default class Game {
         };
 
         canvas.onclick = (e) => {
-            if (!this.disableClick){
+            if (!this.disableClick) {
                 // Check player
                 const p: Player | null = this.playerAt(e.clientX, e.clientY);
-                if (p!==null) {
+                if (p !== null) {
                     this.socket.emit('click', p.pos);
                     this.showPlayerInfo(p);
                 }
                 // Check cell
                 else {
                     const c: Pos | null = grid.cellAt(e.clientX, e.clientY);
-                    if (c!==null) {
+                    if (c !== null) {
                         this.socket.emit('click', c);
                         this.hidePlayerInfo();
                     }
@@ -280,7 +284,7 @@ export default class Game {
     playerAt(x: number, y: number): Player | null {
         const mask: CanvasRenderingContext2D = this.maskCanvasCtx!;
         const pixel: ImageData = mask.getImageData(x, y, 1, 1);
-        if (pixel.data[0]===0){
+        if (pixel.data[0] === 0) {
             const index: number = pixel.data[2];
             const playerNames: string[] = Object.keys(this.room!.players);
             const player: Player = this.room!.players[playerNames[index]];
@@ -312,7 +316,7 @@ export default class Game {
     configureSocket(): void {
         // Check player name
         this.socket.on('check name', async (b: CheckNameResponse) => {
-            if (b.res){
+            if (b.res) {
                 this.player = new Player({ name: b.name, id: this.socket.id! } as Player);
                 gameEventEmitter.emit(GameEvent.PlayerLoggedIn);
                 const app = document.getElementById('app')! as HTMLDivElement;
@@ -333,10 +337,25 @@ export default class Game {
             this.addMsg(msg);
         });
 
-        // Event: Receive file message
-        this.socket.on('file message', (msg: Msg) => {
-            this.addMsg(msg);
+        this.socket.on('par upload', async (data: any) => {
+            const fileName: string = data.fileName;
+            const uploadUrl: string = data.url;
+            const file: File = this.filesToUpload.get(fileName)!;
+            await ociObjectStorageService.putFile(uploadUrl, file);
+            this.filesToUpload.delete(fileName);
+            this.socket.emit('par download', fileName);
         });
+
+        this.socket.on('par download', async (data: any) => {   
+            const fileName: string = data.fileName;
+            const downloadUrl: string = data.url;
+            const file: File = await ociObjectStorageService.getFile(downloadUrl, fileName);
+            const sender = data.player;
+            const dataUrl: string = await this.readFileAsDataUrl(file);
+            let msg: Msg = { type: file.type, data: dataUrl, filename: file.name };
+            msg.player = sender;
+            this.addMsg(msg);
+        })
 
         // Event: Receive number of players
         this.socket.on('online players', (numPlayers: number) => {
@@ -351,7 +370,7 @@ export default class Game {
         // Event: Receive room info
         this.socket.on('room info', (room: Room) => {
             // If join room or change room
-            if (this.room===null || room.name !== this.room.name) this.joinRoom(room);
+            if (this.room === null || room.name !== this.room.name) this.joinRoom(room);
             // If still in the same room
             else this.room.update(room);
         });
@@ -362,11 +381,11 @@ export default class Game {
         });
 
         this.socket.on('player join', (name: string) => {
-            this.addInfoMsg(name+' se ha unido a la sala');
+            this.addInfoMsg(name + ' se ha unido a la sala');
         });
 
         this.socket.on('player left', (name: string) => {
-            this.addInfoMsg(name+' abandonó la sala');
+            this.addInfoMsg(name + ' abandonó la sala');
         });
 
         this.socket.on('disconnect', () => {
@@ -395,7 +414,7 @@ export default class Game {
 
     hidePlayerInfo(): void {
         const pis = document.getElementsByClassName('game-playerInfo');
-        if (pis.length > 0){
+        if (pis.length > 0) {
             const pi = pis[0] as HTMLDivElement;
             const app = document.getElementById('app')! as HTMLDivElement;
             app.removeChild(pi);
@@ -431,7 +450,7 @@ export default class Game {
 
     login(nickname: string): void {
         this.socket.emit('check name', nickname);
-    } 
+    }
 
     sendLeaveRoom(): void {
         this.socket.emit('leave room');
@@ -440,29 +459,33 @@ export default class Game {
     allowedFile(file: File): boolean {
         if (file.size > MAX_FILE_SIZE_BYTES) return false;
 
-        for (let i=0; i<this.allowedTypes.length; ++i)
+        for (let i = 0; i < this.allowedTypes.length; ++i)
             if (file.type.split('/')[0] === this.allowedTypes[i])
                 return true;
 
         return false;
     }
 
-    checkAndReadFile(file: File) {
+    checkFileAndRequestParUpload(file: File) {
         if (this.allowedFile(file))
-            this.readFile(file);
+            this.requestParUpload(file);
     }
 
-    readFile(file: File) {
-        let fr = new FileReader();
-        fr.onload = (e) => {
-            let data = e.target!.result as string;
-            let type = data.substring(5,20).split(';')[0];
-            let msg: Msg = { type: type, data: data, filename: file.name };
-            this.socket!.emit('file message', msg);
-            msg.player = { name: this.player!.name, id: this.player!.id };
-            this.addMsg(msg);
-        };
-        fr.readAsDataURL(file);
+    requestParUpload(file: File) {
+        const fileName: string = appendBeforeExtension(file.name, "-"+timeString());
+        this.filesToUpload.set(fileName, file);
+        this.socket.emit('par upload', fileName);
+    }
+
+    readFileAsDataUrl(file: File): Promise<string> {
+        return new Promise((resolve) => {
+            let fr = new FileReader();
+            fr.onload = (e) => {
+                let data = e.target!.result as string;
+                resolve(data);
+            };
+            fr.readAsDataURL(file);
+        });
     }
 
     addMsg(msg: Msg): void {
@@ -477,7 +500,7 @@ export default class Game {
     sendMsg(msgText: string): void {
         const msg: Msg = { type: 'text', text: msgText };
         this.socket!.emit('chat message', msg);
-        msg.player = { 
+        msg.player = {
             name: this.player!.name,
             id: this.player!.id
         };
@@ -485,8 +508,8 @@ export default class Game {
     }
 
     sendVoiceNote(file: any): void {
-        file.name = 'PixelChat-'+this.player!.name+timeString()+'.wav';
-        this.readFile(file);
+        file.name = 'PixelChat-' + this.player!.name + '.wav';
+        this.requestParUpload(file);
     }
 
 }

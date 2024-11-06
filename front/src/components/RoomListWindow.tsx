@@ -109,7 +109,7 @@ const RoomListWindow = () => {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}>
       <div ref={draggableRef} 
-        className="absolute w-[290px] h-[316px] z-10 p-0 m-0 bg-roomListWindow border border-black rounded-lg pointer-events-auto"
+        className="absolute w-[290px] h-[316px] z-20 p-0 m-0 bg-roomListWindow border border-black rounded-lg pointer-events-auto"
         >
         <div className="relative bg-roomListWindowHeader h-[30px] text-center text-white rounded-t-md flex justify-center items-center cursor-move"
           onMouseDown={handleMouseDown}>
