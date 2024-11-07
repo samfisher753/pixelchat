@@ -394,31 +394,11 @@ export default class Game {
     }
 
     showPlayerInfo(player: Player): void {
-        this.hidePlayerInfo();
-        const app = document.getElementById('app')! as HTMLDivElement;
-        const pi = document.createElement('div');
-        pi.className = 'game-playerInfo';
-        const p = document.createElement('p');
-        p.innerHTML = player.name;
-        const di = document.createElement('div');
-        const img = document.createElement('img');
-        const storedImg = player.images!['stand'][6][0] as HTMLImageElement;
-        img.src = storedImg.src;
-        img.onload = () => {
-            pi.appendChild(p);
-            di.appendChild(img);
-            pi.appendChild(di);
-            app.appendChild(pi);
-        };
+        gameEventEmitter.emit(GameEvent.ShowPlayerInfo, player);
     }
 
     hidePlayerInfo(): void {
-        const pis = document.getElementsByClassName('game-playerInfo');
-        if (pis.length > 0) {
-            const pi = pis[0] as HTMLDivElement;
-            const app = document.getElementById('app')! as HTMLDivElement;
-            app.removeChild(pi);
-        }
+        gameEventEmitter.emit(GameEvent.HidePlayerInfo);
     }
 
     sendJoinRoom(roomName: string): void {

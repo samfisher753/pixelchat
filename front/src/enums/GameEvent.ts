@@ -9,5 +9,7 @@ export enum GameEvent {
     AddMessage = "add_message",
     ToggleRoomsListWindow = "toggle_rooms_list_window",
     UpdateOverlayChat = "update_overlay_chat",
-    DrawOverlayChat = "draw_overlay_chat"
+    DrawOverlayChat = "draw_overlay_chat",
+    ShowPlayerInfo = "show_player_info",
+    HidePlayerInfo = "hide_player_info"
 }

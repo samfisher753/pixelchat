@@ -33,32 +33,6 @@ body {
   z-index: 2;
 }
 
-.game-playerInfo {
-  position: absolute;
-  right: 12px;
-  bottom: 60px;
-  z-index: 1;
-  background-color: rgb(61,61,61);
-  border-radius: 7px; 
-}
-
-.game-playerInfo > p {
-  margin: 0;
-  padding: 10px 15px;
-  color: white;
-  font-weight: bold;
-  font-size: 14px;
-}
-
-.game-playerInfo > div {
-  background: rgb(101,101,101);
-  border: 1px solid rgb(24,24,24);
-  border-radius: 5px;
-  display: inline-block;
-  margin: 0px 10px 12px 10px;
-  padding: 5px 5px 15px 8px;
-}
-
 .game-canvas {
   position: absolute;
   width: 100%;
