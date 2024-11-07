@@ -12,7 +12,7 @@ export default class Room {
 
     name: string;
     size: number;
-    array: RoomCell[];
+    array: RoomCell[][];
     spawn: Pos;
     spawnDirection: number;
     players: PlayerCollection;

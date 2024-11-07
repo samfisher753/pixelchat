@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "build": "tsc",
+    "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jose Ruiz",
@@ -14,5 +15,11 @@
     "oci-common": "^2.98.0",
     "oci-objectstorage": "^2.98.0",
     "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.0",
+    "@types/socket.io": "^3.0.2",
+    "typescript": "^5.6.3"
   }
 }

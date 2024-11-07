@@ -1,11 +1,28 @@
-const Player = require('./model/Player');
-const Room = require('./model/Room');
-const common = require('oci-common');
-const objectstorage = require('oci-objectstorage');
+import Player from "./models/Player";
+import Room from "./models/Room";
+import * as objectstorage from "oci-objectstorage";
+import common = require("oci-common");
+import { Server as SocketIOServer } from 'socket.io';
 
-class Server {
+export default class Server {
     
-    constructor(io) {
+    rooms: any;
+    players: any;
+    sockets: any;
+
+    fps: number;
+    timestep: number;
+    lastFrameTimeMs: number;
+    delta: number;
+
+    fps2: number;
+    timestep2: number;
+    lastFrameTimeMs2: number;
+    delta2: number;
+
+    ociClient: objectstorage.ObjectStorageClient;
+
+    constructor(io: SocketIOServer) {
         this.rooms = {};
         this.players = {};
         this.sockets = {};
@@ -41,7 +58,7 @@ class Server {
         return new objectstorage.ObjectStorageClient({ authenticationDetailsProvider: provider });
     }
 
-    async getParUploadUrl(fileName) {
+    async getParUploadUrl(fileName: string) {
         const expireDate = new Date();
         expireDate.setHours(expireDate.getHours() + 1);
 
@@ -62,7 +79,7 @@ class Server {
         return createPreauthenticatedRequestResponse.preauthenticatedRequest.fullPath;
     }
 
-    async getParDownloadUrl(fileName) {
+    async getParDownloadUrl(fileName: string) {
         const expireDate = new Date();
         expireDate.setHours(expireDate.getHours() + 1);
 
@@ -136,7 +153,7 @@ class Server {
         let size = 11;
         let array = [];
         for (let i=0; i<size; ++i){
-            array.push([]);
+            array.push([] as any[]);
             for (let j=0; j<size; ++j){
                 array[i].push({ material: 'grass', players: [] });
             }
@@ -150,7 +167,7 @@ class Server {
             array[i][10] = null;
         }
 
-        let room = {
+        let room: any = {
             name: name,
             size: size,
             array: array,
@@ -161,7 +178,7 @@ class Server {
         size = 5;
         array = [];
         for (let i=0; i<size; ++i){
-            array.push([]);
+            array.push([] as any[]);
             for (let j=0; j<size; ++j){
                 array[i].push({ material: 'default', players: [] });
             }
@@ -178,7 +195,7 @@ class Server {
         size = 15;
         array = [];
         for (let i=0; i<size; ++i){
-            array.push([]);
+            array.push([] as any[]);
             for (let j=0; j<size; ++j){
                 array[i].push({ material: 'grass', players: [] });
             }
@@ -198,13 +215,13 @@ class Server {
         this.rooms[name] = new Room(room);
     }
 
-    bindEvents(io) {
+    bindEvents(io: SocketIOServer) {
         io.on('connection', (socket) => {
-            let player = null;
-            let room = null;
+            let player: any = null;
+            let room: any = null;
         
             socket.on('check name', (plName) => {
-                let b = {name: plName, res: null, errno: 0};
+                let b: any = {name: plName, res: null, errno: 0};
                 b.res = (plName.length >= 4 && plName.length <= 15);
                 if (b.res) {
                     for (let id in this.players) {
@@ -292,7 +309,7 @@ class Server {
             });
 
             socket.on('rooms list', () => {
-                let rooms = [];
+                const rooms: any[] = [];
                 Object.keys(this.rooms).forEach((name) => {
                     rooms.push({
                         name: name, 
@@ -346,7 +363,7 @@ class Server {
         }
     }
 
-    leave(room, player) {
+    leave(room: Room, player: Player) {
         room.leave(player.id);
         console.log(player.name+' left '+room.name+'.');
 
@@ -357,7 +374,7 @@ class Server {
         }
     }
 
-    checkCmd(msg, player) {
+    checkCmd(msg: any, player: Player) {
         if (msg.text.substring(0,1) === ':'){
             let cmd = msg.text.substring(1, msg.text.length);
             switch (cmd) {
@@ -372,5 +389,3 @@ class Server {
     }
 
 };
-
-module.exports = Server;

@@ -10,5 +10,7 @@ COPY . /app
 # Install project dependencies
 RUN npm install
 
+RUN npm run build
+
 # Run the JavaScript file
-CMD ["node", "index.js"]
+CMD ["npm", "start"]
