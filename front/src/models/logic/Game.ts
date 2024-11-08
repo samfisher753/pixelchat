@@ -162,9 +162,11 @@ export default class Game {
         if (this.delta >= this.timestep) {
             const fps: number = 1000 / t;
             this.fpsSpan!.innerHTML = 'fps: ' + Math.floor(fps);
+            let i = 0;
             while (this.delta >= this.timestep) {
-                this.update();
+                this.update(i === 0);
                 this.delta -= this.timestep;
+                ++i;
             }
             this.draw();
         }
@@ -172,10 +174,12 @@ export default class Game {
         this.frame = requestAnimationFrame(this.gameLoop.bind(this));
     }
 
-    update(): void {
+    update(updateOverlayChat: boolean): void {
         if (this.room !== null) {
             this.room.updateLogic();
-            gameEventEmitter.emit(GameEvent.UpdateOverlayChat);
+            if (updateOverlayChat) {
+                gameEventEmitter.emit(GameEvent.UpdateOverlayChat);
+            }
         }
 
         this.d = { x: 0, y: 0 };
