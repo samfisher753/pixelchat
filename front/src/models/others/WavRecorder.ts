@@ -1,3 +1,6 @@
+/* Thanks to Thibault Imbert article https://typedarray.org/from-microphone-to-wav-with-getusermedia-and-web-audio/
+and the Wave File Format specification http://tiny.systems/software/soundProgrammer/WavFormatDocs.pdf */
+
 class WavRecorder {
     available: boolean;
     sampleRate: number | null;
