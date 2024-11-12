@@ -9,7 +9,7 @@
   },
   "author": "Jose Ruiz",
   "dependencies": {
-    "express": "^4.17.1",
+    "express": "^4.21.1",
     "oci-common": "^2.98.0",
     "oci-objectstorage": "^2.98.0",
     "socket.io": "^4.8.0"
