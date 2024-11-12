@@ -2,14 +2,12 @@
   "name": "pixelchat-back",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jose Ruiz",
-  "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
     "oci-common": "^2.98.0",
