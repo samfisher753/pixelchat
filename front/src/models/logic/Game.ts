@@ -56,7 +56,8 @@ export default class Game {
         this.frame = null;
 
         // Misc
-        this.socket = io(import.meta.env.VITE_SOCKETIO_BACKEND, {
+        this.socket = io(import.meta.env.VITE_API_URL, {
+            path: "/socket.io",
             reconnection: false
         });
         this.canvasCtx = null;

@@ -128,21 +128,22 @@ class Assets {
         }
 
         const av: any = {}; 
+        const AVATAR_API_URL = import.meta.env.VITE_API_URL + '/api/avatarimage';
 
         av['stand'] = [
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=6&head_direction=6'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=7&head_direction=7'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=0&head_direction=0'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=1&head_direction=1',
-             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=1&head_direction=1&gesture=eyb'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=2&head_direction=2',
-             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=2&head_direction=2&gesture=eyb'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=3&head_direction=3',
-             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=3&head_direction=3&gesture=eyb'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4',
-             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4&gesture=eyb'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=5&head_direction=5',
-             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=5&head_direction=5&gesture=eyb']
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=6&head_direction=6'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=7&head_direction=7'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=0&head_direction=0'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=1&head_direction=1',
+             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=1&head_direction=1&gesture=eyb'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2',
+             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2&gesture=eyb'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=3&head_direction=3',
+             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=3&head_direction=3&gesture=eyb'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4',
+             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4&gesture=eyb'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=5&head_direction=5',
+             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=5&head_direction=5&gesture=eyb']
         ];
 
         av['walk'] = [];
@@ -150,19 +151,19 @@ class Assets {
         for (let i=0; i<8; ++i){
             av['walk'].push([]);
             for (let f=0; f<4; ++f){
-                let s = 'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction='+d+'&head_direction='+d+'&action=wlk&frame='+f;
+                let s = AVATAR_API_URL + '?hb=image&user='+playerName+'&direction='+d+'&head_direction='+d+'&action=wlk&frame='+f;
                 av['walk'][i].push(s);
             }
             d = (d+1)%8;
         }
 
         av['sit'] = [
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=6&head_direction=6&action=sit'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=0&head_direction=0&action=sit'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit',
-             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit&gesture=eyb'],
-            ['https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit',
-             'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit&gesture=eyb']
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=6&head_direction=6&action=sit'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=0&head_direction=0&action=sit'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit',
+             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit&gesture=eyb'],
+            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit',
+             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit&gesture=eyb']
         ];
 
         av['wave'] = [];
@@ -170,7 +171,7 @@ class Assets {
         for (let i=0; i<8; ++i){
             av['wave'].push([]);
             for (let f=0; f<2; ++f){
-                let s = 'https://www.habbo.es/habbo-imaging/avatarimage?hb=image&user='+playerName+'&direction='+d+'&head_direction='+d+'&action=wav&frame='+f;
+                let s = AVATAR_API_URL + '?hb=image&user='+playerName+'&direction='+d+'&head_direction='+d+'&action=wav&frame='+f;
                 av['wave'][i].push(s);
             }
             d = (d+1)%8;
