@@ -83,7 +83,10 @@ export default class Game {
 
         this.configureSocket();
         this.setDragEvents();
-        gameEventEmitter.emit(GameEvent.StartUi);
+
+        assets.load().then(() => {
+            gameEventEmitter.emit(GameEvent.StartUi);
+        });
     }
 
     setDragEvents(): void {
@@ -327,7 +330,7 @@ export default class Game {
                 const app = document.getElementById('app')! as HTMLDivElement;
                 app.innerHTML = '';
                 this.createInfoSpans();
-                assets.load(this.player);
+                assets.loadAvatarImages(this.player.name, this.player);
                 // Send player name
                 this.socket.emit('new player', this.player.name);
                 this.startGame();
