@@ -340,8 +340,10 @@ export default class Server {
             });
 
             socket.on('leave room', () => {
-                this.leave(room, player);
-                room = null;
+                if (room !== null){
+                    this.leave(room, player);
+                    room = null;
+                }
                 socket.emit('left room');
             });
 
