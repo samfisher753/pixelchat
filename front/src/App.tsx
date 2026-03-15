@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
 import { GameEvent } from "@/enums/GameEvent";
 import Ui from "@/components/Ui";
+import Spinner from "@/components/Spinner";
 
 function App() {
   const [startUi, setStartUi] = useState(false);
@@ -19,7 +20,7 @@ function App() {
 
   return (
     <div className="absolute z-10 w-full h-full min-w-[650px] min-h-[400px] pointer-events-none">
-      { startUi && <Ui/>}
+      { startUi ? <Ui/> : <Spinner /> }
     </div>
   )
 }

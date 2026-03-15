@@ -16,11 +16,10 @@ class Assets {
         this.avatars = {};
     }
     
-    async load(player: Player): Promise<void> {
+    async load(): Promise<void> {
         this.fillFileArrays();
         await this.loadImages();
         await this.loadAvatarImages(DEFAULT_AVATAR, null);
-        await this.loadAvatarImages(player.name, player);
     }
 
     loadImages(): Promise<void> {
