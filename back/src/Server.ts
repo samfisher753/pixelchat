@@ -10,15 +10,15 @@ export default class Server {
     players: any;
     sockets: any;
 
+    engineFps: number;
+    engineTimestep: number;
     fps: number;
     timestep: number;
     lastFrameTimeMs: number;
-    delta: number;
+    accumulator: number;
 
     fps2: number;
     timestep2: number;
-    lastFrameTimeMs2: number;
-    delta2: number;
 
     ociClient: objectstorage.ObjectStorageClient;
 
@@ -28,17 +28,14 @@ export default class Server {
         this.sockets = {};
 
         // Game Loop
-        // setImmediate achieves less fps than I set it to
-        this.fps = 61; // so I set one fps more
+        this.engineFps = 60;
+        this.engineTimestep = 1000/this.engineFps;
+        this.fps = 60;
         this.timestep = 1000/this.fps;
-        this.lastFrameTimeMs = 0;
-        this.delta = 0;
 
         // Send Loop
-        this.fps2 = 22;
+        this.fps2 = 20;
         this.timestep2 = 1000/this.fps2;
-        this.lastFrameTimeMs2 = 0;
-        this.delta2 = 0;
 
         this.createMockRooms();
         this.bindEvents(io);
@@ -47,9 +44,9 @@ export default class Server {
 
         // Start server loop
         this.lastFrameTimeMs = Date.now();
-        setImmediate(this.gameLoop.bind(this));
-        this.lastFrameTimeMs2 = Date.now();
-        setImmediate(this.sendLoop.bind(this));
+        this.accumulator = 0;
+        this.gameLoop();
+        this.sendLoop();
     }
 
     ociInit() {
@@ -101,22 +98,18 @@ export default class Server {
     }
 
     gameLoop() {
-        let timestamp = Date.now();
-        let t = timestamp - this.lastFrameTimeMs;
-        this.delta += t;
-        
-        if (this.delta >= this.timestep){
+        const start = Date.now();
+        const delta = start - this.lastFrameTimeMs;
+        this.lastFrameTimeMs = start;
+        this.accumulator += delta;
+        while (this.accumulator >= this.engineTimestep) {
             this.update();
-            
-            // process.stdout.write('\x1Bc');
-            // console.log('Game fps: '+(1000/this.delta));
-            
-            this.delta -= this.timestep;
+            this.accumulator -= this.engineTimestep;
         }
-
-        this.lastFrameTimeMs = timestamp;
-
-        setImmediate(this.gameLoop.bind(this));
+        const duration = Date.now() - start;
+        setTimeout(() => {
+            this.gameLoop();
+        }, Math.max(0, this.timestep - duration));
     }
 
     update() {
@@ -127,25 +120,21 @@ export default class Server {
     }
 
     sendLoop() {
-        let timestamp = Date.now();
-        let t = timestamp - this.lastFrameTimeMs2;
-        this.delta2 += t;
-
-        if (this.delta2 >= this.timestep2){
-            for (let p in this.players){
-                let q = this.players[p];
-                if (q.room !== null){
-                    let s = this.sockets[p];
-                    s.emit('room info', this.rooms[q.room]);
-                }
-            }
-            
-            this.delta2 -= this.timestep2;
-        }
-
-        this.lastFrameTimeMs2 = timestamp;
+        const start = Date.now();
         
-        setImmediate(this.sendLoop.bind(this));
+        for (let p in this.players){
+            let q = this.players[p];
+            if (q.room !== null){
+                let s = this.sockets[p];
+                s.emit('room info', this.rooms[q.room]);
+            }
+        }
+            
+        const duration = Date.now() - start;
+        
+        setTimeout(() => {
+            this.sendLoop();
+        }, Math.max(0, this.timestep2 - duration));  
     }
 
     createMockRooms() {
