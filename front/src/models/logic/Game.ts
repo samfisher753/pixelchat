@@ -164,16 +164,17 @@ export default class Game {
         this.lastFrameTimeMs = timeStamp;
 
         if (this.delta >= this.timestep) {
-            const fps: number = 1000 / t;
-            this.fpsSpan!.innerHTML = 'fps: ' + Math.floor(fps);
             let i = 0;
             while (this.delta >= this.timestep) {
                 this.update(i === 0);
                 this.delta -= this.timestep;
                 ++i;
             }
-            this.draw();
         }
+
+        const fps: number = 1000 / t;
+        this.fpsSpan!.innerHTML = 'fps: ' + Math.floor(fps);
+        this.draw();
 
         this.frame = requestAnimationFrame(this.gameLoop.bind(this));
     }

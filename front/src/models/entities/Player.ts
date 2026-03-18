@@ -34,8 +34,8 @@ export default class Player {
         this.pos = player.pos || null;
 
         this.status = PlayerStatus.None;
-        this.direction = player.direction || -1;
-        this.animFrame = -1;
+        this.direction = player.direction || 0;
+        this.animFrame = 0;
         this.walkd = {x:0, y:0};
         this.images = null;
 
@@ -67,8 +67,8 @@ export default class Player {
         this.room = null;
         this.pos = null;
         this.status = PlayerStatus.None;
-        this.direction = -1;
-        this.animFrame = -1;
+        this.direction = 0;
+        this.animFrame = 0;
         this.walkd = {x:0, y:0};
         this.images = null;
         this.target = null;
@@ -79,7 +79,7 @@ export default class Player {
     changeAnim(dir: number, status: PlayerStatus): void {
         this.direction = dir;
         this.status = status;
-        this.animFrame = -1;
+        this.animFrame = 0;
         this.walkd = {x:0, y:0};
     }
 
