@@ -83,10 +83,6 @@ export default class Game {
 
         this.configureSocket();
         this.setDragEvents();
-
-        assets.load().then(() => {
-            gameEventEmitter.emit(GameEvent.StartUi);
-        });
     }
 
     setDragEvents(): void {
@@ -115,10 +111,6 @@ export default class Game {
         if (this.room === null) {
             this.createCanvas();
             this.bindEvents();
-            const app = document.getElementById('app')! as HTMLDivElement;
-            app.style.backgroundImage = 'none';
-            app.style.backgroundColor = '#010101';
-
             this.frame = requestAnimationFrame(this.gameLoop.bind(this));
         }
         else {
@@ -150,8 +142,6 @@ export default class Game {
         const canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
         app.removeChild(maskCanvas);
         app.removeChild(canvas);
-        app.style.backgroundImage = 'url("/assets/misc/background.jpg")';
-        app.style.backgroundColor = '#2e2e2c';
     }
 
     startGame(): void {
@@ -331,6 +321,9 @@ export default class Game {
                 const app = document.getElementById('app')! as HTMLDivElement;
                 app.innerHTML = '';
                 this.createInfoSpans();
+                gameEventEmitter.emit(GameEvent.LoadingStart);
+                await assets.load();
+                gameEventEmitter.emit(GameEvent.LoadingEnd);
                 assets.loadAvatarImages(this.player.name, this.player);
                 // Send player name
                 this.socket.emit('new player', this.player.name);

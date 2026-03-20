@@ -15,15 +15,10 @@ body {
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color: #2e2e2c;
+  background-color: #1E1E1E;
   min-width: 650px;
   min-height: 400px;
   overflow: hidden;
-  background-image: url("/assets/misc/background.jpg");
-  background-size: 100%;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-attachment: fixed;
 }
 
 .game-infoSpan {

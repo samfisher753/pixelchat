@@ -1,7 +1,7 @@
 import { ImageCollection } from "@/types/ImageCollection";
 import { PlayerAnimations, PlayerAnimationsCollection } from "@/types/PlayerAnimations";
 import Player from "../entities/Player";
-import { DEFAULT_AVATAR } from "@/constants/constants";
+import { DEFAULT_AVATAR, DEFAULT_HABBO_AVATAR } from "@/constants/constants";
 import { PlayerStatus } from "@/enums/PlayerStatus";
 
 class Assets {
@@ -19,7 +19,7 @@ class Assets {
     async load(): Promise<void> {
         this.fillFileArrays();
         await this.loadImages();
-        await this.loadAvatarImages(DEFAULT_AVATAR, null);
+        await this.loadAvatarImages(DEFAULT_HABBO_AVATAR, null);
     }
 
     loadImages(): Promise<void> {
@@ -73,6 +73,7 @@ class Assets {
 
     createPlayerAnimationsObject(): PlayerAnimations {
         return {
+            loaded: false,
             stand: [[], [], [], [], [], [], [], []],
             walk: [[], [], [], [], [], [], [], []],
             sit: [[], [], [], []],
@@ -110,11 +111,22 @@ class Assets {
             }
     
             Promise.all(promises).then(() => {
+                this.avatars[playerName].loaded = true;
                 if (player !== null) player.images = this.avatars[playerName];
+                if (playerName === DEFAULT_AVATAR && player === null) {
+                    this.avatars[DEFAULT_HABBO_AVATAR] = this.avatars[DEFAULT_AVATAR];
+                }
                 resolve();
-            }).catch(() => {
-                if (playerName !== DEFAULT_AVATAR) 
-                    this.avatars[playerName] = this.avatars[DEFAULT_AVATAR];
+            }).catch(async () => {
+                if (playerName === DEFAULT_AVATAR) {
+                    alert("Error al cargar los gráficos del personaje base.");
+                } else if (playerName === DEFAULT_HABBO_AVATAR) {
+                    await this.loadAvatarImages(DEFAULT_AVATAR, null);
+                    resolve();
+                    return;
+                } else {
+                    this.avatars[playerName] = this.avatars[DEFAULT_HABBO_AVATAR];
+                }
                 if (player !== null) player.images = this.avatars[playerName];
                 reject();
             });

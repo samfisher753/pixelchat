@@ -6,7 +6,7 @@ import { Pos } from '@/types/Pos';
 import { PlayerCollection } from '@/types/PlayerCollection';
 import { PlayerMovementProps } from '@/types/PlayerAnimations';
 import { PlayerStatus } from '@/enums/PlayerStatus';
-import { DEFAULT_AVATAR } from '@/constants/constants';
+import { DEFAULT_HABBO_AVATAR } from '@/constants/constants';
 
 export default class Room {
 
@@ -35,9 +35,9 @@ export default class Room {
             if (typeof this.players[p] === 'undefined') {
                 q = new Player(room.players[p]);
                 
-                if (typeof assets.avatars[q.name] === 'undefined'){
+                if (!assets.avatars[q.name]?.loaded){
                     assets.loadAvatarImages(q.name, q);
-                    q.images = assets.avatars[DEFAULT_AVATAR];
+                    q.images = assets.avatars[DEFAULT_HABBO_AVATAR];
                 }
                 else {
                     q.images = assets.avatars[q.name];
