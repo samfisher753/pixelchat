@@ -27,7 +27,8 @@ export default {
         linkBlue: '#1884ff',
         playerInfoDarkGrey: '#3d3d3d',
         playerInfoLightGrey: 'rgb(101,101,101)',
-        playerInfoBorderBlack: 'rgb(24,24,24)'
+        playerInfoBorderBlack: 'rgb(24,24,24)',
+        pixelchatBlue: '#022F72'
       },
     },
   },

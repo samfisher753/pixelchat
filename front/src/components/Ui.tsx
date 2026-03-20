@@ -8,13 +8,23 @@ import ChatPanel from "@/components/ChatPanel";
 import OverlayChat from "@/components/OverlayChat";
 import Player from "@/models/entities/Player";
 import PlayerInfo from "@/components/PlayerInfo";
+import Spinner from "./Spinner";
 
 const Ui = () => {
   const [isLogged, setIsLogged] = useState(false);
   const [roomJoined, setRoomJoined] = useState(false);
   const [playerInfoPlayer, setPlayerInfoPlayer] = useState<Player | null>(null);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+
+    const handleLoadingStart = () => {
+      setLoading(true);
+    };
+
+    const handleLoadingEnd = () => {
+      setLoading(false);
+    };
 
     const handleLogin = () => {
       setIsLogged(true);
@@ -36,6 +46,8 @@ const Ui = () => {
       setPlayerInfoPlayer(null);
     };
 
+    gameEventEmitter.on(GameEvent.LoadingStart, handleLoadingStart);
+    gameEventEmitter.on(GameEvent.LoadingEnd, handleLoadingEnd);
     gameEventEmitter.on(GameEvent.PlayerLoggedIn, handleLogin);
     gameEventEmitter.on(GameEvent.RoomJoined, handleRoomJoined);
     gameEventEmitter.on(GameEvent.RoomLeft, handleRoomLeft);
@@ -43,6 +55,8 @@ const Ui = () => {
     gameEventEmitter.on(GameEvent.HidePlayerInfo, hidePlayerInfo);
     
     return () => {
+      gameEventEmitter.off(GameEvent.LoadingStart, handleLoadingStart);
+      gameEventEmitter.off(GameEvent.LoadingEnd, handleLoadingEnd);
       gameEventEmitter.off(GameEvent.PlayerLoggedIn, handleLogin);
       gameEventEmitter.off(GameEvent.RoomJoined, handleRoomJoined);
       gameEventEmitter.off(GameEvent.RoomLeft, handleRoomLeft);
@@ -53,17 +67,22 @@ const Ui = () => {
 
   return (
     <div className="absolute w-full h-full pointer-events-none">
-      {!isLogged && <Login />}
-      {isLogged && 
-        <div className="flex flex-col w-full h-full pointer-events-none">
-          <div className="relative grow pointer-events-none">
-            <RoomListWindow />
-            <ChatPanel show={roomJoined} />
-            {roomJoined && <OverlayChat />}
-            {playerInfoPlayer && <PlayerInfo player={playerInfoPlayer} />}
-          </div>
-          <NavBar roomJoined={roomJoined} />
-        </div>    
+      { loading && <Spinner /> }
+      { !loading && 
+        <>
+          {!isLogged && <Login />}
+          {isLogged && 
+            <div className="flex flex-col w-full h-full pointer-events-none">
+              <div className="relative grow pointer-events-none">
+                <RoomListWindow />
+                <ChatPanel show={roomJoined} />
+                {roomJoined && <OverlayChat />}
+                {playerInfoPlayer && <PlayerInfo player={playerInfoPlayer} />}
+              </div>
+              <NavBar roomJoined={roomJoined} />
+            </div>    
+          }
+        </>
       }
     </div>
   );

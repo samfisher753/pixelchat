@@ -7,6 +7,7 @@ type EightDirections = [AnimationFrames, AnimationFrames, AnimationFrames, Anima
 type FourDirections = [AnimationFrames, AnimationFrames, AnimationFrames, AnimationFrames];
 
 export type PlayerAnimations = {
+    loaded: boolean;
     stand: EightDirections;
     walk: EightDirections;
     sit: FourDirections;
