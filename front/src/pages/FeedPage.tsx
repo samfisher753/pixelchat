@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Heart, MessageCircle, Share2, MoreHorizontal, Image as ImageIcon } from "lucide-react";
+import { Heart, MoreHorizontal, Image as ImageIcon } from "lucide-react";
 
 const MOCK_POSTS = [
   {

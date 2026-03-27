@@ -57,11 +57,11 @@ const OverlayChat = () => {
           msg.height = ref.offsetHeight;
           msg.dx = adjustX - (msg.width / 2);
           msg.dy = -msg.height;
-          msg.pos = game.room!.players[msg.player!.id].pos!;
-          msg.playerObject = game.room!.players[msg.player!.id];
+          msg.pos = game!.room!.players[msg.player!.id].pos!;
+          msg.playerObject = game!.room!.players[msg.player!.id];
           const dp: Pos = grid.drawPos[msg.pos!.y][msg.pos!.x];
           msg.left = dp.x + msg.dx;
-          msg.top = game.defaultY! + msg.dy;
+          msg.top = game!.defaultY! + msg.dy;
           msg.loaded = true;
         }
       }
@@ -94,7 +94,7 @@ const OverlayChat = () => {
         const msg: Msg = msgs[i];
         const dp: Pos = grid.drawPos[msg.pos!.y][msg.pos!.x];
         msg.left = dp.x + msg.dx!;
-        msg.top = game.defaultY! + msg.dy!;
+        msg.top = game!.defaultY! + msg.dy!;
         ref.style.left = msg.left + 'px';
         ref.style.top = msg.top + 'px';
         // Player pos reference image
@@ -124,7 +124,7 @@ const OverlayChat = () => {
 
   const clean = () => {
     for (let i = 0; i < msgs.length; ++i) {
-      if (msgs[i].dy! + msgs[i].height! <= -game.defaultY!) {
+      if (msgs[i].dy! + msgs[i].height! <= -game!.defaultY!) {
         msgs.splice(i, 1);
         setMsgs([...msgs]);
         --i;
