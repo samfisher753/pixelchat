@@ -9,15 +9,20 @@ const ChatInput = () => {
   const [msg, setMsg] = useState<string>("");
   const inputRef: React.RefObject<HTMLInputElement> = useRef<HTMLInputElement>(null);
   const [recording, setRecording] = useState<boolean>(false);
+  const [micAvailable, setMicAvailable] = useState<boolean>(wavRecorder.available);
   const game = useGame();
 
   useEffect(() => {
+    const unsubscribe = wavRecorder.onAvailableChange((available) => {
+      setMicAvailable(available);
+    });
+
     focusInput();
 
     const stopAndSendRecording = () => {
       if (wavRecorder.recording) {
         const file: any = wavRecorder.stop();
-        game.sendVoiceNote(file);
+        game!.sendVoiceNote(file);
         setRecording(false);
       }
     };
@@ -35,6 +40,7 @@ const ChatInput = () => {
     return () => {
       window.removeEventListener("mouseup", stopAndSendRecording);
       window.removeEventListener("keydown", onKeyDown);
+      unsubscribe();
     };
   },[]);
 
@@ -53,7 +59,7 @@ const ChatInput = () => {
 
   const handleSendMsg = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && msg !== "") {
-      game.sendMsg(msg);
+      game!.sendMsg(msg);
       setMsg("");
     }
   };
@@ -66,10 +72,10 @@ const ChatInput = () => {
   return (
     <div className="absolute left-1/3 bottom-0">
 
-      <button disabled={!wavRecorder.available}
+      <button disabled={!micAvailable}
         className={clsx("relative pt-[3px] pr-[3px] pb-0 pl-[3px] mr-[10px] bg-micButton rounded-md", 
-          {"opacity-30 cursor-default": !wavRecorder.available,
-            "cursor-pointer": wavRecorder.available,
+          {"opacity-30 cursor-default": !micAvailable,
+            "cursor-pointer": micAvailable,
             "bg-micButtonActive": recording
           })}
         onMouseDown={startRecording}>

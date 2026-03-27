@@ -31,7 +31,7 @@ export default class Game {
     maskCanvasCtx: CanvasRenderingContext2D | null;
     d: Pos;
     initialPos: Pos;
-    mouse: MouseEvent | null;
+    mouse: Pos | null;
     mousedown: boolean;
     disableClick: boolean;
     mouseCell: Pos | null;
@@ -70,8 +70,6 @@ export default class Game {
         this.mouseCell = null;
 
         this.roomsWindowOpen = false;
-        let app = document.getElementById('app')!;
-        this.defaultY = Math.floor(app.clientHeight / 3);
 
         this.allowedTypes = [
             'image',
@@ -83,6 +81,54 @@ export default class Game {
 
         this.configureSocket();
         this.setDragEvents();
+    }
+
+    reset(): void {
+        if (this.room !== null) this.leaveRoom();
+
+        this.player = null;
+        this.room = null;
+
+        this.delta = 0;
+        this.lastFrameTimeMs = 0;
+        this.frame = null;
+
+        this.canvasCtx = null;
+        this.maskCanvasCtx = null;
+        this.d = { x: 0, y: 0 };
+        this.initialPos = { x: 0, y: 0 };
+        this.mouse = null;
+        this.mousedown = false;
+        this.disableClick = false;
+        this.mouseCell = null;
+
+        this.roomsWindowOpen = false;
+
+        this.allowedTypes = [
+            'image',
+            'video',
+            'audio',
+        ];
+
+        this.filesToUpload = new Map();
+    }
+
+    logout(): void {
+        this.socket.emit('logout');
+        this.reset();
+    }
+
+    init(): void {
+        let app = document.getElementById('app')!;
+        this.defaultY = Math.floor(app.clientHeight / 3);
+        this.checkAlreadyLogged();
+    }
+
+    checkAlreadyLogged(): void {
+        const playerName: string | null = localStorage.getItem('access_token');
+        if (playerName) {
+            this.login(playerName);
+        }
     }
 
     setDragEvents(): void {
@@ -127,6 +173,8 @@ export default class Game {
         grid.createDrawOrder();
 
         this.addInfoMsg('Te uniste a ' + this.room.name);
+
+        wavRecorder.init();
     }
 
     leaveRoom(): void {
@@ -142,10 +190,7 @@ export default class Game {
         const canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
         app.removeChild(maskCanvas);
         app.removeChild(canvas);
-    }
-
-    startGame(): void {
-        wavRecorder.init();
+        wavRecorder.close();
     }
 
     gameLoop(timeStamp: number): void {
@@ -181,12 +226,12 @@ export default class Game {
 
         // If canvas has been dragged
         if (this.mouse !== null) {
-            this.d.x += this.mouse.clientX - this.initialPos.x;
-            this.d.y += this.mouse.clientY - this.initialPos.y;
+            this.d.x += this.mouse.x - this.initialPos.x;
+            this.d.y += this.mouse.y - this.initialPos.y;
             grid.move(this.d);
             grid.createDrawOrder();
-            this.initialPos.x = this.mouse.clientX;
-            this.initialPos.y = this.mouse.clientY;
+            this.initialPos.x = this.mouse.x;
+            this.initialPos.y = this.mouse.y;
             this.mouse = null;
         }
     }
@@ -214,6 +259,8 @@ export default class Game {
         const maskCanvas = document.getElementsByClassName('game-canvas')[0] as HTMLCanvasElement;
         const canvas = document.getElementsByClassName('game-canvas')[1] as HTMLCanvasElement;
         const body = document.getElementsByTagName('body')[0] as HTMLBodyElement;
+        const canvasSize = canvas.getBoundingClientRect();
+           
         body.onresize = () => {
             if (this.room !== null) {
                 // Resize Mask Canvas
@@ -231,9 +278,11 @@ export default class Game {
         };
 
         canvas.onmousedown = (e) => {
+            const x = e.clientX - canvasSize.left;
+            const y = e.clientY - canvasSize.top;
             this.mousedown = true;
-            this.initialPos.x = e.clientX;
-            this.initialPos.y = e.clientY;
+            this.initialPos.x = x;
+            this.initialPos.y = y;
         };
 
         document.onmousemove = (e) => {
@@ -241,7 +290,9 @@ export default class Game {
                 if (this.mousedown) {
                     // Prevent from selecting text while dragging
                     //window.getSelection().removeAllRanges();
-                    this.mouse = e;
+                    const x = e.clientX - canvasSize.left;
+                    const y = e.clientY - canvasSize.top;
+                    this.mouse = { x, y };
                     // Disable click event after dragging
                     this.disableClick = true;
                 }
@@ -256,15 +307,17 @@ export default class Game {
 
         canvas.onclick = (e) => {
             if (!this.disableClick) {
+                const x = e.clientX - canvasSize.left;
+                const y = e.clientY - canvasSize.top;
                 // Check player
-                const p: Player | null = this.playerAt(e.clientX, e.clientY);
+                const p: Player | null = this.playerAt(x, y);
                 if (p !== null) {
                     this.socket.emit('click', p.pos);
                     this.showPlayerInfo(p);
                 }
                 // Check cell
                 else {
-                    const c: Pos | null = grid.cellAt(e.clientX, e.clientY);
+                    const c: Pos | null = grid.cellAt(x, y);
                     if (c !== null) {
                         this.socket.emit('click', c);
                         this.hidePlayerInfo();
@@ -275,7 +328,9 @@ export default class Game {
         };
 
         canvas.onmousemove = (e) => {
-            this.mouseCell = grid.cellAt(e.clientX, e.clientY);
+            const x = e.clientX - canvasSize.left;
+            const y = e.clientY - canvasSize.top;
+            this.mouseCell = grid.cellAt(x, y);
         }
 
     }
@@ -317,17 +372,13 @@ export default class Game {
         this.socket.on('check name', async (b: CheckNameResponse) => {
             if (b.res) {
                 this.player = new Player({ name: b.name, id: this.socket.id! } as Player);
-                gameEventEmitter.emit(GameEvent.PlayerLoggedIn);
-                const app = document.getElementById('app')! as HTMLDivElement;
-                app.innerHTML = '';
-                this.createInfoSpans();
-                gameEventEmitter.emit(GameEvent.LoadingStart);
+                gameEventEmitter.emit(GameEvent.PlayerLoggedIn, this.player.name);
+                gameEventEmitter.emit(GameEvent.Loading, true);
                 await assets.load();
-                gameEventEmitter.emit(GameEvent.LoadingEnd);
+                gameEventEmitter.emit(GameEvent.Loading, false);
                 assets.loadAvatarImages(this.player.name, this.player);
                 // Send player name
                 this.socket.emit('new player', this.player.name);
-                this.startGame();
             }
             else {
                 gameEventEmitter.emit(GameEvent.ErrorOnPlayerLogin, b.errno)
@@ -418,6 +469,8 @@ export default class Game {
 
     createInfoSpans(): void {
         const app = document.getElementById('app')! as HTMLDivElement;
+        app.innerHTML = '';
+
         this.fpsSpan = document.createElement('span');
         this.fpsSpan.className = 'game-infoSpan';
         this.fpsSpan.innerHTML = 'fps: 0';

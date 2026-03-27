@@ -5,10 +5,11 @@ import RoomListWindowLine from "./RoomListWindowLine";
 import clsx from "clsx";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
 import { GameEvent } from "@/enums/GameEvent";
+import Game from "@/models/logic/Game";
 
 const RoomListWindow = () => {
 
-  const game = useGame();
+  const game: Game | null = useGame();
   const [rooms, setRooms] = useState<RoomListItem[] | null>(null);
   const parentRef: React.RefObject<HTMLDivElement> | null = useRef(null);
   const draggableRef: React.RefObject<HTMLDivElement> | null = useRef(null);
@@ -27,7 +28,7 @@ const RoomListWindow = () => {
     gameEventEmitter.on(GameEvent.UpdateRoomsList, onUpdateRoomsList);
     gameEventEmitter.on(GameEvent.ToggleRoomsListWindow, setOpen);
 
-    game.toggleRoomsListWindow();
+    game!.toggleRoomsListWindow();
 
     return () => {
       gameEventEmitter.off(GameEvent.UpdateRoomsList, onUpdateRoomsList);
@@ -37,9 +38,9 @@ const RoomListWindow = () => {
 
   useEffect(() => {
     if (open) {
-      game.requestRoomsList();
+      game!.requestRoomsList();
       idInterval = setInterval(() => {
-        game.requestRoomsList();
+        game!.requestRoomsList();
       }, 10000);
     } else { 
       if (idInterval) {
@@ -72,11 +73,11 @@ const RoomListWindow = () => {
     const element = draggableRef.current.getBoundingClientRect();
     
     const newX = Math.min(
-      Math.max(0, element.left + e.movementX),
+      Math.max(0, element.left + e.movementX - parent.left),
       parent.width - element.width
     );
     const newY = Math.min(
-      Math.max(0, element.top + e.movementY),
+      Math.max(0, element.top + e.movementY - parent.top),
       parent.height - element.height
     );
 
@@ -89,12 +90,12 @@ const RoomListWindow = () => {
   };
 
   const joinRoom = (roomName: string) => {
-    game.sendJoinRoom(roomName);
+    game!.sendJoinRoom(roomName);
     onClose();
   };
 
   const onClose = () => {
-    game.toggleRoomsListWindow();
+    game!.toggleRoomsListWindow();
   };
 
   return (

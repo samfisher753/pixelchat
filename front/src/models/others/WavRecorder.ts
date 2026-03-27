@@ -1,8 +1,11 @@
 /* Thanks to Thibault Imbert article https://typedarray.org/from-microphone-to-wav-with-getusermedia-and-web-audio/
 and the Wave File Format specification http://tiny.systems/software/soundProgrammer/WavFormatDocs.pdf */
 
+type WavRecorderListener = (available: boolean) => void;
+
 class WavRecorder {
     available: boolean;
+    private onAvailableChangeCallbacks: WavRecorderListener[] = [];
     sampleRate: number | null;
     volume: number;
     leftchannel: Float32Array[];
@@ -11,6 +14,7 @@ class WavRecorder {
     recording: boolean;
     audioCtx: AudioContext | null;
     workletNode: AudioWorkletNode | null;
+    stream: MediaStream | null;
 
     constructor() {
         this.available = false;
@@ -22,21 +26,43 @@ class WavRecorder {
         this.recording = false;
         this.audioCtx = null;
         this.workletNode = null;
+        this.stream = null;
     }
 
     async init() {
         try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('La captura de audio no está soportada en este navegador o entorno (requiere HTTPS o localhost).');
+                return;
+            }
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
             await this.success(stream);
-        } catch {
-            alert('Audio capture not supported in this browser.');
+        } catch (error) {
+            console.error('Error accediendo al micrófono:', error);
+            const msg = error instanceof Error ? error.message : String(error);
+            alert(`Error al acceder al micrófono: ${msg}\n\nRevisa si bloqueaste los permisos, desconectaste el micrófono o si otra app lo está usando.`);
+        }
+    }
+
+    onAvailableChange(callback: WavRecorderListener) {
+        this.onAvailableChangeCallbacks.push(callback);
+        return () => {
+            this.onAvailableChangeCallbacks = this.onAvailableChangeCallbacks.filter(cb => cb !== callback);
+        };
+    }
+
+    private setAvailable(val: boolean) {
+        if (this.available !== val) {
+            this.available = val;
+            this.onAvailableChangeCallbacks.forEach(cb => cb(val));
         }
     }
 
     async success(stream: MediaStream) {
-        this.available = true;
+        this.stream = stream;
+        this.setAvailable(true);
         this.audioCtx = new AudioContext();
-        await this.audioCtx.audioWorklet.addModule('WavProcessor.js'); // Add worklet
+        await this.audioCtx.audioWorklet.addModule(`/WavProcessor.js`); // Add worklet
 
         this.sampleRate = this.audioCtx.sampleRate;
         this.workletNode = new AudioWorkletNode(this.audioCtx, 'wav-processor');
@@ -100,6 +126,34 @@ class WavRecorder {
         }
 
         return new Blob([view], { type: 'audio/wav' });
+    }
+
+    async close() {
+        if (this.recording) {
+            this.cancel();
+        }
+
+        if (this.workletNode) {
+            this.workletNode.disconnect();
+            this.workletNode = null;
+        }
+
+        if (this.audioCtx && this.audioCtx.state !== 'closed') {
+            await this.audioCtx.close();
+        }
+        this.audioCtx = null;
+
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => track.stop());
+            this.stream = null;
+        }
+
+        this.setAvailable(false);
+        this.sampleRate = null;
+        this.leftchannel = [];
+        this.rightchannel = [];
+        this.recordingLength = 0;
+        this.recording = false;
     }
 
     mergeBuffers(channelBuffer: Float32Array[], recordingLength: number) {

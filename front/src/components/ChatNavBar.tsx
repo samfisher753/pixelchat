@@ -3,20 +3,20 @@ import { useGame } from "@/contexts/GameContext";
 import Game from "@/models/logic/Game";
 import ChatInput from "@/components/ChatInput";
 
-const NavBar = ({ roomJoined } : 
+const ChatNavBar = ({ roomJoined } : 
   {
     roomJoined: boolean
   }
 ) => {
 
-  const game: Game = useGame();
+  const game: Game | null = useGame();
 
   const toggleRoomsList = () => {
-    game.toggleRoomsListWindow();
+    game!.toggleRoomsListWindow();
   };
 
   const leaveRoom = () => {
-    game.sendLeaveRoom();
+    game!.sendLeaveRoom();
   };
 
   return (
@@ -33,4 +33,4 @@ const NavBar = ({ roomJoined } :
 
 }
 
-export default NavBar;
+export default ChatNavBar;

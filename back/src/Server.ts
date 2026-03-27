@@ -5,7 +5,7 @@ import common = require("oci-common");
 import { Server as SocketIOServer } from 'socket.io';
 
 export default class Server {
-    
+
     rooms: any;
     players: any;
     sockets: any;
@@ -29,13 +29,13 @@ export default class Server {
 
         // Game Loop
         this.engineFps = 60;
-        this.engineTimestep = 1000/this.engineFps;
+        this.engineTimestep = 1000 / this.engineFps;
         this.fps = 60;
-        this.timestep = 1000/this.fps;
+        this.timestep = 1000 / this.fps;
 
         // Send Loop
         this.fps2 = 20;
-        this.timestep2 = 1000/this.fps2;
+        this.timestep2 = 1000 / this.fps2;
 
         this.createMockRooms();
         this.bindEvents(io);
@@ -60,18 +60,18 @@ export default class Server {
         expireDate.setHours(expireDate.getHours() + 1);
 
         const createPreauthenticatedRequestDetails = {
-            name: "upload-"+fileName,
+            name: "upload-" + fileName,
             objectName: fileName,
             accessType: objectstorage.models.CreatePreauthenticatedRequestDetails.AccessType.ObjectWrite,
             timeExpires: expireDate,
         }
-    
-        const createPreauthenticatedRequestRequest = { 
+
+        const createPreauthenticatedRequestRequest = {
             namespaceName: "axyrawf9bk3a",
             bucketName: "pixelchat-files",
             createPreauthenticatedRequestDetails: createPreauthenticatedRequestDetails
-        }; 
-    
+        };
+
         const createPreauthenticatedRequestResponse = await this.ociClient.createPreauthenticatedRequest(createPreauthenticatedRequestRequest);
         return createPreauthenticatedRequestResponse.preauthenticatedRequest.fullPath;
     }
@@ -81,18 +81,18 @@ export default class Server {
         expireDate.setHours(expireDate.getHours() + 1);
 
         const createPreauthenticatedRequestDetails = {
-            name: "download-"+fileName,
+            name: "download-" + fileName,
             objectName: fileName,
             accessType: objectstorage.models.CreatePreauthenticatedRequestDetails.AccessType.ObjectRead,
             timeExpires: expireDate,
         }
-    
-        const createPreauthenticatedRequestRequest = { 
+
+        const createPreauthenticatedRequestRequest = {
             namespaceName: "axyrawf9bk3a",
             bucketName: "pixelchat-files",
             createPreauthenticatedRequestDetails: createPreauthenticatedRequestDetails
-        }; 
-    
+        };
+
         const createPreauthenticatedRequestResponse = await this.ociClient.createPreauthenticatedRequest(createPreauthenticatedRequestRequest);
         return createPreauthenticatedRequestResponse.preauthenticatedRequest.fullPath;
     }
@@ -114,45 +114,45 @@ export default class Server {
 
     update() {
         // Update rooms
-        for (let r in this.rooms){
+        for (let r in this.rooms) {
             this.rooms[r].updateLogic();
         }
     }
 
     sendLoop() {
         const start = Date.now();
-        
-        for (let p in this.players){
+
+        for (let p in this.players) {
             let q = this.players[p];
-            if (q.room !== null){
+            if (q.room !== null) {
                 let s = this.sockets[p];
                 s.emit('room info', this.rooms[q.room]);
             }
         }
-            
+
         const duration = Date.now() - start;
-        
+
         setTimeout(() => {
             this.sendLoop();
-        }, Math.max(0, this.timestep2 - duration));  
+        }, Math.max(0, this.timestep2 - duration));
     }
 
     createMockRooms() {
         let name = 'DefaultRoom';
         let size = 11;
         let array = [];
-        for (let i=0; i<size; ++i){
+        for (let i = 0; i < size; ++i) {
             array.push([] as any[]);
-            for (let j=0; j<size; ++j){
+            for (let j = 0; j < size; ++j) {
                 array[i].push({ material: 'grass', players: [] });
             }
         }
-        for (let i=0; i<4; ++i){
-            for (let j=6; j<size; ++j){
+        for (let i = 0; i < 4; ++i) {
+            for (let j = 6; j < size; ++j) {
                 array[i][j] = null;
             }
         }
-        for (let i=0; i<size; ++i){
+        for (let i = 0; i < size; ++i) {
             array[i][10] = null;
         }
 
@@ -166,9 +166,9 @@ export default class Server {
         name = 'Zulo';
         size = 5;
         array = [];
-        for (let i=0; i<size; ++i){
+        for (let i = 0; i < size; ++i) {
             array.push([] as any[]);
-            for (let j=0; j<size; ++j){
+            for (let j = 0; j < size; ++j) {
                 array[i].push({ material: 'default', players: [] });
             }
         }
@@ -183,14 +183,14 @@ export default class Server {
         name = 'Garito';
         size = 15;
         array = [];
-        for (let i=0; i<size; ++i){
+        for (let i = 0; i < size; ++i) {
             array.push([] as any[]);
-            for (let j=0; j<size; ++j){
+            for (let j = 0; j < size; ++j) {
                 array[i].push({ material: 'grass', players: [] });
             }
         }
-        for (let i=10; i<size; ++i){
-            for (let j=0; j<size; ++j){
+        for (let i = 10; i < size; ++i) {
+            for (let j = 0; j < size; ++j) {
                 array[i][j] = null;
             }
         }
@@ -199,7 +199,7 @@ export default class Server {
             name: name,
             size: size,
             array: array,
-            spawn: {x: 10, y:0},
+            spawn: { x: 10, y: 0 },
         };
         this.rooms[name] = new Room(room);
     }
@@ -208,13 +208,13 @@ export default class Server {
         io.on('connection', (socket) => {
             let player: any = null;
             let room: any = null;
-        
+
             socket.on('check name', (plName) => {
-                let b: any = {name: plName, res: null, errno: 0};
+                let b: any = { name: plName, res: null, errno: 0 };
                 b.res = (plName.length >= 4 && plName.length <= 15);
                 if (b.res) {
                     for (let id in this.players) {
-                        if (this.players[id].name === plName){
+                        if (this.players[id].name === plName) {
                             b.res = false;
                             break;
                         }
@@ -223,7 +223,7 @@ export default class Server {
                 }
                 else {
                     b.errno = 1;
-                } 
+                }
                 socket.emit('check name', b);
             });
 
@@ -254,54 +254,46 @@ export default class Server {
                 this.checkCmd(msg, player);
 
                 // Send msg to room players
-                for (let p in room.players){
+                for (let p in room.players) {
                     if (p !== msg.player.id)
                         this.sockets[p].emit('chat message', msg);
                 }
-                
+
             });
 
             socket.on('par upload', async (fileName) => {
-                console.log(player.name+' is requesting a PAR to upload the file:\n'+fileName);
+                console.log(player.name + ' is requesting a PAR to upload the file:\n' + fileName);
                 const url = await this.getParUploadUrl(fileName);
-                socket.emit('par upload', {fileName, url});
+                socket.emit('par upload', { fileName, url });
             });
 
             socket.on('par download', async (fileName) => {
                 const url = await this.getParDownloadUrl(fileName);
                 const sender = { name: player.name, id: player.id };
-                for (let p in room.players){
-                    this.sockets[p].emit('par download', {fileName, url, player: sender});
+                for (let p in room.players) {
+                    this.sockets[p].emit('par download', { fileName, url, player: sender });
                 }
             });
-        
+
             socket.on('disconnect', () => {
                 // Avoid problems in the case a player connected but 
                 // disconnected immediately without sending his name.
-                if (player !== null) {
-                    if (room !== null){
-                        this.leave(room, player);
-                        room = null;
-                    }
-                    delete this.players[player.id];
-                    delete this.sockets[player.id]
+                this.logout(player, room);
+                room = null;
+                player = null;
+            });
 
-                    // Server side terminal msgs
-                    console.log(player.name + ' left.');
-                    this.printOnlinePlayers();
-
-                    // Send online players
-                    this.sendOnlinePlayers();
-
-                    player = null;
-                }
+            socket.on('logout', () => {
+                this.logout(player, room);
+                room = null;
+                player = null;
             });
 
             socket.on('rooms list', () => {
                 const rooms: any[] = [];
                 Object.keys(this.rooms).forEach((name) => {
                     rooms.push({
-                        name: name, 
+                        name: name,
                         players: Object.keys(this.rooms[name].players).length,
                     });
                 })
@@ -314,14 +306,14 @@ export default class Server {
                     this.leave(room, player);
                 }
 
-                console.log(player.name+' joined '+roomName+'.');
-                
+                console.log(player.name + ' joined ' + roomName + '.');
+
                 // Join room
                 this.rooms[roomName].join(this.players[player.id]);
                 room = this.rooms[roomName];
 
                 // Notify room players
-                for (let p in room.players){
+                for (let p in room.players) {
                     let q = this.sockets[p];
                     if (p !== player.id)
                         q.emit('player join', player.name);
@@ -329,7 +321,7 @@ export default class Server {
             });
 
             socket.on('leave room', () => {
-                if (room !== null){
+                if (room !== null) {
                     this.leave(room, player);
                     room = null;
                 }
@@ -343,12 +335,29 @@ export default class Server {
 
     }
 
+    logout(player: Player, room: Room) {
+        if (player !== null) {
+            if (room !== null) {
+                this.leave(room, player);
+            }
+            delete this.players[player.id];
+            delete this.sockets[player.id]
+
+            // Server side terminal msgs
+            console.log(player.name + ' left.');
+            this.printOnlinePlayers();
+
+            // Send online players
+            this.sendOnlinePlayers();
+        }
+    }
+
     printOnlinePlayers() {
         console.log('Online players: ' + Object.keys(this.players).length);
     }
 
     sendOnlinePlayers() {
-        for (let p in this.sockets){
+        for (let p in this.sockets) {
             let q = this.sockets[p];
             q.emit('online players', Object.keys(this.players).length);
         }
@@ -356,17 +365,17 @@ export default class Server {
 
     leave(room: Room, player: Player) {
         room.leave(player.id);
-        console.log(player.name+' left '+room.name+'.');
+        console.log(player.name + ' left ' + room.name + '.');
 
         // Notify room players
-        for (let p in room.players){
+        for (let p in room.players) {
             let q = this.sockets[p];
             q.emit('player left', player.name);
         }
     }
 
     checkCmd(msg: any, player: Player) {
-        if (msg.text.substring(0,1) === ':'){
+        if (msg.text.substring(0, 1) === ':') {
             let cmd = msg.text.substring(1, msg.text.length);
             switch (cmd) {
                 case 'sit':
@@ -374,7 +383,7 @@ export default class Server {
                     break;
             }
         }
-        else if (msg.text === 'o/'){
+        else if (msg.text === 'o/') {
             player.wave();
         }
     }

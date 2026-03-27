@@ -1,7 +1,6 @@
 
 export enum GameEvent {
-    LoadingStart = "loading_start",
-    LoadingEnd = "loading_end",
+    Loading = "loading",
     PlayerLoggedIn = "player_logged_in",
     ErrorOnPlayerLogin = "error_on_player_login",
     RoomJoined = "room_joined",
