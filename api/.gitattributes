@@ -1,0 +1,4 @@
+# Fuerza LF en scripts que se ejecutan en Linux (dentro de contenedores Docker)
+gradlew          text eol=lf
+gradlew.bat      text eol=crlf
+*.sh             text eol=lf
