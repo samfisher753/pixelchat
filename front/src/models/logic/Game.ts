@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client'
+import { toast } from 'sonner'
 import Player from '@/models/entities/Player'
 import { assets } from '@/models/others/Assets'
 import Room from '@/models/entities/Room'
@@ -7,13 +8,13 @@ import { grid } from '@/models/logic/Grid'
 import { gameEventEmitter } from '@/emitters/GameEventEmitter'
 import { GameEvent } from '@/enums/GameEvent'
 import { Pos } from '@/types/Pos'
-import { CheckNameResponse } from '@/types/CheckNameResponse'
 import { Msg } from '@/types/Msg'
 import { RoomListItem } from '@/types/RoomListItem'
 import { wavRecorder } from '@/models/others/WavRecorder'
 import { MAX_FILE_SIZE_BYTES } from '@/constants/constants'
 import { appendBeforeExtension, timeString } from '@/utils/Utils'
 import ociObjectStorageService from '@/services/ociObjectStorageService'
+import { AuthUser } from '@/types/AuthUser'
 
 export default class Game {
 
@@ -26,7 +27,7 @@ export default class Game {
     lastFrameTimeMs: number;
     frame: number | null;
 
-    socket: Socket;
+    socket: Socket | null;
     canvasCtx: CanvasRenderingContext2D | null;
     maskCanvasCtx: CanvasRenderingContext2D | null;
     d: Pos;
@@ -38,7 +39,6 @@ export default class Game {
     fpsSpan: HTMLSpanElement | undefined;
     playersSpan: HTMLSpanElement | undefined;
     xIni: number | undefined;
-    roomsWindowOpen: boolean;
     defaultY?: number;
     allowedTypes: string[];
     filesToUpload: Map<string, File>;
@@ -56,10 +56,7 @@ export default class Game {
         this.frame = null;
 
         // Misc
-        this.socket = io(import.meta.env.VITE_API_URL, {
-            path: "/socket.io",
-            reconnection: false
-        });
+        this.socket = null;
         this.canvasCtx = null;
         this.maskCanvasCtx = null;
         this.d = { x: 0, y: 0 };
@@ -69,8 +66,6 @@ export default class Game {
         this.disableClick = false;
         this.mouseCell = null;
 
-        this.roomsWindowOpen = false;
-
         this.allowedTypes = [
             'image',
             'video',
@@ -79,8 +74,38 @@ export default class Game {
 
         this.filesToUpload = new Map();
 
-        this.configureSocket();
         this.setDragEvents();
+    }
+
+    connectSocket(): void {
+        const token = localStorage.getItem('access_token');
+        if (!token) return;
+
+        if (this.socket) {
+            this.socket.disconnect();
+        }
+
+        this.socket = io(import.meta.env.VITE_WORLD_URL, {
+            path: "/socket.io",
+            reconnection: false,
+            auth: { token }
+        });
+
+        this.socket.once('connect_error', (err) => {
+            if (err.message === 'auth.token_expired') {
+                gameEventEmitter.emit(GameEvent.TokenExpired);
+            }
+        });
+
+        this.configureSocket();
+    }
+
+    updatePlayer(updated: AuthUser): void {
+        this.player!.username = updated.username || '';
+        this.player!.look = updated.look || '';
+        this.player!.motto = updated.motto || '';
+        assets.loadAvatarImages(this.player!.look, this.player);
+        this.socket!.emit('update player', this.player!);
     }
 
     reset(): void {
@@ -102,8 +127,6 @@ export default class Game {
         this.disableClick = false;
         this.mouseCell = null;
 
-        this.roomsWindowOpen = false;
-
         this.allowedTypes = [
             'image',
             'video',
@@ -114,21 +137,14 @@ export default class Game {
     }
 
     logout(): void {
-        this.socket.emit('logout');
+        this.socket!.disconnect();
         this.reset();
     }
 
     init(): void {
         let app = document.getElementById('app')!;
         this.defaultY = Math.floor(app.clientHeight / 3);
-        this.checkAlreadyLogged();
-    }
-
-    checkAlreadyLogged(): void {
-        const playerName: string | null = localStorage.getItem('access_token');
-        if (playerName) {
-            this.login(playerName);
-        }
+        this.connectSocket();
     }
 
     setDragEvents(): void {
@@ -312,14 +328,14 @@ export default class Game {
                 // Check player
                 const p: Player | null = this.playerAt(x, y);
                 if (p !== null) {
-                    this.socket.emit('click', p.pos);
+                    this.socket!.emit('click', p.pos);
                     this.showPlayerInfo(p);
                 }
                 // Check cell
                 else {
                     const c: Pos | null = grid.cellAt(x, y);
                     if (c !== null) {
-                        this.socket.emit('click', c);
+                        this.socket!.emit('click', c);
                         this.hidePlayerInfo();
                     }
                 }
@@ -368,38 +384,31 @@ export default class Game {
     }
 
     configureSocket(): void {
-        // Check player name
-        this.socket.on('check name', async (b: CheckNameResponse) => {
-            if (b.res) {
-                this.player = new Player({ name: b.name, id: this.socket.id! } as Player);
-                gameEventEmitter.emit(GameEvent.PlayerLoggedIn, this.player.name);
-                gameEventEmitter.emit(GameEvent.Loading, true);
-                await assets.load();
-                gameEventEmitter.emit(GameEvent.Loading, false);
-                assets.loadAvatarImages(this.player.name, this.player);
-                // Send player name
-                this.socket.emit('new player', this.player.name);
-            }
-            else {
-                gameEventEmitter.emit(GameEvent.ErrorOnPlayerLogin, b.errno)
-            }
+
+        this.socket!.on('connected', async (player: Player) => {
+            this.player = new Player(player);
+            gameEventEmitter.emit(GameEvent.Loading, true);
+            await assets.load();
+            gameEventEmitter.emit(GameEvent.Loading, false);
+            assets.loadAvatarImages(this.player.look, this.player);
+            gameEventEmitter.emit(GameEvent.SocketReady);
         });
 
         // Event: Receive chat message
-        this.socket.on('chat message', (msg: Msg) => {
+        this.socket!.on('chat message', (msg: Msg) => {
             this.addMsg(msg);
         });
 
-        this.socket.on('par upload', async (data: any) => {
+        this.socket!.on('par upload', async (data: any) => {
             const fileName: string = data.fileName;
             const uploadUrl: string = data.url;
             const file: File = this.filesToUpload.get(fileName)!;
             await ociObjectStorageService.putFile(uploadUrl, file);
             this.filesToUpload.delete(fileName);
-            this.socket.emit('par download', fileName);
+            this.socket!.emit('par download', fileName);
         });
 
-        this.socket.on('par download', async (data: any) => {   
+        this.socket!.on('par download', async (data: any) => {   
             const fileName: string = data.fileName;
             const downloadUrl: string = data.url;
             const file: File = await ociObjectStorageService.getFile(downloadUrl, fileName);
@@ -411,17 +420,17 @@ export default class Game {
         })
 
         // Event: Receive number of players
-        this.socket.on('online players', (numPlayers: number) => {
+        this.socket!.on('online players', (numPlayers: number) => {
             this.playersSpan!.innerHTML = 'online: ' + numPlayers;
         });
 
         // Event: Receive rooms list
-        this.socket.on('rooms list', (rooms: RoomListItem[]) => {
+        this.socket!.on('rooms list', (rooms: RoomListItem[]) => {
             gameEventEmitter.emit(GameEvent.UpdateRoomsList, rooms);
         });
 
         // Event: Receive room info
-        this.socket.on('room info', (room: Room) => {
+        this.socket!.on('room info', (room: Room) => {
             // If join room or change room
             if (this.room === null || room.name !== this.room.name) this.joinRoom(room);
             // If still in the same room
@@ -429,20 +438,30 @@ export default class Game {
         });
 
         // Successfully left a room
-        this.socket.on('left room', () => {
+        this.socket!.on('left room', () => {
             this.leaveRoom();
         });
 
-        this.socket.on('player join', (name: string) => {
+        this.socket!.on('player join', (name: string) => {
             this.addInfoMsg(name + ' se ha unido a la sala');
         });
 
-        this.socket.on('player left', (name: string) => {
+        this.socket!.on('player left', (name: string) => {
             this.addInfoMsg(name + ' abandonó la sala');
         });
 
-        this.socket.on('disconnect', () => {
-            alert('Desconectado del servidor.');
+        this.socket!.on('disconnect', (reason) => {
+            if (reason === "io server disconnect") {
+                toast.error('Desconectado. Te has conectado desde otro lugar.', {
+                    duration: Infinity,
+                    closeButton: true,
+                });
+            } else if (reason !== 'io client disconnect') {
+                toast.error('Se ha perdido la conexión con el servidor.', {
+                    duration: Infinity,
+                    closeButton: true,
+                });
+            }
         });
     }
 
@@ -455,16 +474,11 @@ export default class Game {
     }
 
     sendJoinRoom(roomName: string): void {
-        this.socket.emit('join room', roomName);
-    }
-
-    toggleRoomsListWindow(): void {
-        this.roomsWindowOpen = !this.roomsWindowOpen;
-        gameEventEmitter.emit(GameEvent.ToggleRoomsListWindow, this.roomsWindowOpen);
+        this.socket!.emit('join room', roomName);
     }
 
     requestRoomsList(): void {
-        this.socket.emit('rooms list');
+        this.socket!.emit('rooms list');
     }
 
     createInfoSpans(): void {
@@ -483,12 +497,8 @@ export default class Game {
         app.appendChild(this.playersSpan);
     }
 
-    login(nickname: string): void {
-        this.socket.emit('check name', nickname);
-    }
-
     sendLeaveRoom(): void {
-        this.socket.emit('leave room');
+        this.socket!.emit('leave room');
     }
 
     allowedFile(file: File): boolean {
@@ -509,7 +519,7 @@ export default class Game {
     requestParUpload(file: File) {
         const fileName: string = appendBeforeExtension(file.name, "-"+timeString());
         this.filesToUpload.set(fileName, file);
-        this.socket.emit('par upload', fileName);
+        this.socket!.emit('par upload', fileName);
     }
 
     readFileAsDataUrl(file: File): Promise<string> {
@@ -536,14 +546,14 @@ export default class Game {
         const msg: Msg = { type: 'text', text: msgText };
         this.socket!.emit('chat message', msg);
         msg.player = {
-            name: this.player!.name,
+            name: this.player!.username,
             id: this.player!.id
         };
         this.addMsg(msg);
     }
 
     sendVoiceNote(file: any): void {
-        file.name = 'PixelChat-' + this.player!.name + '.wav';
+        file.name = 'PixelChat-' + this.player!.username + '.wav';
         this.requestParUpload(file);
     }
 

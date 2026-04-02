@@ -14,8 +14,13 @@ const Y: number[] = [ -1, -1, 0, 1, 1,  1,  0, -1 ];
 
 export default class Player {
 
-    name: string;
+    username: string;
+    displayName: string;
     id: string;
+    socketId: string;
+    look: string;
+    avatarUrl: string;
+    motto: string;
     room?: string | null;
     pos?: Pos | null;
     status?: PlayerStatus;
@@ -28,8 +33,13 @@ export default class Player {
     click?: Pos | null;
 
     constructor(player: Player) {
-        this.name = player.name;
+        this.username = player.username;
+        this.displayName = player.displayName;
         this.id = player.id;
+        this.socketId = player.socketId;
+        this.look = player.look;
+        this.avatarUrl = player.avatarUrl;
+        this.motto = player.motto;
         this.room = player.room || null;
         this.pos = player.pos || null;
 

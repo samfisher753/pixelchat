@@ -7,14 +7,13 @@ import { gameEventEmitter } from "@/emitters/GameEventEmitter";
 import { GameEvent } from "@/enums/GameEvent";
 import Game from "@/models/logic/Game";
 
-const RoomListWindow = () => {
+const RoomListWindow = ({ open, setWindowOpen }: { open: boolean; setWindowOpen: (open:boolean) => void }) => {
 
   const game: Game | null = useGame();
   const [rooms, setRooms] = useState<RoomListItem[] | null>(null);
   const parentRef: React.RefObject<HTMLDivElement> | null = useRef(null);
   const draggableRef: React.RefObject<HTMLDivElement> | null = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [open, setOpen] = useState(false);
 
   let idInterval: NodeJS.Timeout;
 
@@ -25,14 +24,16 @@ const RoomListWindow = () => {
       setRooms(rooms);
     };
 
-    gameEventEmitter.on(GameEvent.UpdateRoomsList, onUpdateRoomsList);
-    gameEventEmitter.on(GameEvent.ToggleRoomsListWindow, setOpen);
+    const onSocketReady = () => {
+      setWindowOpen(true);
+    };
 
-    game!.toggleRoomsListWindow();
+    gameEventEmitter.on(GameEvent.UpdateRoomsList, onUpdateRoomsList);
+    gameEventEmitter.on(GameEvent.SocketReady, onSocketReady);
 
     return () => {
       gameEventEmitter.off(GameEvent.UpdateRoomsList, onUpdateRoomsList);
-      gameEventEmitter.off(GameEvent.ToggleRoomsListWindow, setOpen);
+      gameEventEmitter.off(GameEvent.SocketReady, onSocketReady);
     };
   }, []);
 
@@ -42,7 +43,7 @@ const RoomListWindow = () => {
       idInterval = setInterval(() => {
         game!.requestRoomsList();
       }, 10000);
-    } else { 
+    } else {
       if (idInterval) {
         clearInterval(idInterval);
       }
@@ -95,7 +96,7 @@ const RoomListWindow = () => {
   };
 
   const onClose = () => {
-    game!.toggleRoomsListWindow();
+    setWindowOpen(false);
   };
 
   return (

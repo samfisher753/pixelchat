@@ -3,17 +3,14 @@ import { useGame } from "@/contexts/GameContext";
 import Game from "@/models/logic/Game";
 import ChatInput from "@/components/ChatInput";
 
-const ChatNavBar = ({ roomJoined } : 
+const ChatNavBar = ({ roomJoined, onToggleRoomsList } : 
   {
-    roomJoined: boolean
+    roomJoined: boolean,
+    onToggleRoomsList: () => void
   }
 ) => {
 
   const game: Game | null = useGame();
-
-  const toggleRoomsList = () => {
-    game!.toggleRoomsListWindow();
-  };
 
   const leaveRoom = () => {
     game!.sendLeaveRoom();
@@ -24,7 +21,7 @@ const ChatNavBar = ({ roomJoined } :
       { roomJoined && 
         <NavBarItem onClick={leaveRoom} imgSrc="/assets/icons/back.png" />
       }
-      <NavBarItem onClick={toggleRoomsList} imgSrc="/assets/icons/rooms.png" />
+      <NavBarItem onClick={onToggleRoomsList} imgSrc="/assets/icons/rooms.png" />
       { roomJoined &&
         <ChatInput />
       }

@@ -2,7 +2,7 @@ import { useLocation } from 'react-router-dom';
 import ChatPage from '@/pages/ChatPage';
 import FeedPage from '@/pages/FeedPage';
 import ProfilePage from '@/pages/ProfilePage';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { gameEventEmitter } from '@/emitters/GameEventEmitter';
 import { GameEvent } from '@/enums/GameEvent';
 import Spinner from '@/components/Spinner';
@@ -15,8 +15,11 @@ const MainLayout = () => {
   const location = useLocation();
   const game: Game | null = useGame();
 
-  useEffect(() => {
+  const feedRef    = useRef<HTMLDivElement>(null);
+  const chatRef    = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
     const handleLoading = (loading: boolean) => {
       setLoading(loading);
     };
@@ -34,6 +37,30 @@ const MainLayout = () => {
     }
   }, [game]);
 
+  // Usar `inert` para desactivar completamente la interactividad de las páginas
+  // inactivas, incluyendo canvas y elementos con handlers DOM directos.
+  // `pointer-events-none` en CSS no bloquea descendientes con handlers de DOM.
+  useEffect(() => {
+    const pages = [
+      { ref: feedRef,    path: '/feed' },
+      { ref: chatRef,    path: '/chat' },
+      { ref: profileRef, path: '/profile' },
+    ];
+    for (const { ref, path } of pages) {
+      if (!ref.current) continue;
+      if (location.pathname === path) {
+        ref.current.removeAttribute('inert');
+      } else {
+        ref.current.setAttribute('inert', '');
+      }
+    }
+  }, [location.pathname]);
+
+  const pageClass = (path: string) =>
+    `absolute inset-0 w-full h-full overflow-y-auto transition-opacity duration-300 ${
+      location.pathname === path ? 'opacity-100 z-10' : 'opacity-0 z-0'
+    }`;
+
   return (
     <>
       {(!game || loading) && <Spinner />}
@@ -42,15 +69,15 @@ const MainLayout = () => {
           <LayoutNavBar />
           
           <main className="flex-1 relative overflow-hidden">
-            <div className={`absolute inset-0 w-full h-full overflow-y-auto transition-opacity duration-300 ${location.pathname === '/feed' ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+            <div ref={feedRef} className={pageClass('/feed')}>
               <FeedPage />
             </div>
             
-            <div className={`absolute inset-0 w-full h-full overflow-y-auto transition-opacity duration-300 ${location.pathname === '/chat' ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+            <div ref={chatRef} className={pageClass('/chat')}>
               <ChatPage />
             </div>
 
-            <div className={`absolute inset-0 w-full h-full overflow-y-auto transition-opacity duration-300 ${location.pathname === '/profile' ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'}`}>
+            <div ref={profileRef} className={pageClass('/profile')}>
               <ProfilePage />
             </div>
           </main>

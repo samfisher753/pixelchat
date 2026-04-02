@@ -1,0 +1,17 @@
+# Contexto para Dockerfile en la raíz (build multi-stage con fuentes).
+
+.git
+.gitignore
+.idea
+*.iml
+.vscode
+
+# Salidas locales; la imagen compila dentro del stage "build"
+build
+.gradle
+**/build
+
+# Claves JWT: no meter en la imagen; en runtime usa rutas montadas o variables
+src/main/resources/privateKey.pem
+src/main/resources/publicKey.pem
+.env
