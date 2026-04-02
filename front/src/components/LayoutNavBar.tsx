@@ -11,8 +11,8 @@ const LayoutNavBar = () => {
   const auth = useAuth();
   const game = useGame();
 
-  const logout = async () => {
-    await game!.logout();
+  const logout = () => {
+    game!.logout();
     auth.logout();
     navigate("/login");
   };

@@ -1,7 +1,7 @@
 import { ImageCollection } from "@/types/ImageCollection";
 import { PlayerAnimations, PlayerAnimationsCollection } from "@/types/PlayerAnimations";
 import Player from "../entities/Player";
-import { DEFAULT_AVATAR, DEFAULT_HABBO_AVATAR } from "@/constants/constants";
+import { DEFAULT_AVATAR, DEFAULT_HABBO_AVATAR, AVATAR_API_URL } from "@/constants/constants";
 import { PlayerStatus } from "@/enums/PlayerStatus";
 
 class Assets {
@@ -81,16 +81,35 @@ class Assets {
         };
     }
 
-    loadAvatarImages(playerName: string, player: Player | null): Promise<void> {
+    getPreviewImage(avatarName: string): Promise<HTMLImageElement> {
+        return new Promise<HTMLImageElement>((resolve, reject) => {
+            const img: HTMLImageElement = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.src = AVATAR_API_URL + '?hb=image&user='+avatarName+'&direction=4&head_direction=4';
+            img.onload = () => {
+                resolve(img);
+            };
+            img.onerror = () => {
+                reject();
+            };
+        });
+    }
+
+    loadAvatarImages(avatarName: string, player: Player | null): Promise<void> {
         return new Promise<void>((resolve, reject) => {
-            this.avatars[playerName] = this.createPlayerAnimationsObject();
-            const av: PlayerAnimations = this.createAvatarFilesObject(playerName);
+            if (!avatarName) {
+                if (player !== null) player.images = this.avatars[DEFAULT_HABBO_AVATAR];
+                resolve();
+                return;
+            }            
+            this.avatars[avatarName] = this.createPlayerAnimationsObject();
+            const av: PlayerAnimations = this.createAvatarFilesObject(avatarName);
             const promises: Promise<void>[] = [];
             for (const status in av){
-                this.avatars[playerName][status] = [];
+                this.avatars[avatarName][status] = [];
                 let i = 0;
                 for (const dir of av[status]){
-                    this.avatars[playerName][status].push([]);
+                    this.avatars[avatarName][status].push([]);
                     for (const frame of dir){
                         const promise: Promise<void> = new Promise<void>((resolve2, reject2) => {
                             const img: HTMLImageElement = new Image();
@@ -102,7 +121,7 @@ class Assets {
                             img.onerror = () => {
                                 reject2();
                             };
-                            this.avatars[playerName][status][i].push(img);
+                            this.avatars[avatarName][status][i].push(img);
                         });
                         promises.push(promise);
                     }
@@ -111,23 +130,23 @@ class Assets {
             }
     
             Promise.all(promises).then(() => {
-                this.avatars[playerName].loaded = true;
-                if (player !== null) player.images = this.avatars[playerName];
-                if (playerName === DEFAULT_AVATAR && player === null) {
+                this.avatars[avatarName].loaded = true;
+                if (player !== null) player.images = this.avatars[avatarName];
+                if (avatarName === DEFAULT_AVATAR && player === null) {
                     this.avatars[DEFAULT_HABBO_AVATAR] = this.avatars[DEFAULT_AVATAR];
                 }
                 resolve();
             }).catch(async () => {
-                if (playerName === DEFAULT_AVATAR) {
+                if (avatarName === DEFAULT_AVATAR) {
                     alert("Error al cargar los gráficos del personaje base.");
-                } else if (playerName === DEFAULT_HABBO_AVATAR) {
+                } else if (avatarName === DEFAULT_HABBO_AVATAR) {
                     await this.loadAvatarImages(DEFAULT_AVATAR, null);
                     resolve();
                     return;
                 } else {
-                    this.avatars[playerName] = this.avatars[DEFAULT_HABBO_AVATAR];
+                    this.avatars[avatarName] = this.avatars[DEFAULT_HABBO_AVATAR];
                 }
-                if (player !== null) player.images = this.avatars[playerName];
+                if (player !== null) player.images = this.avatars[avatarName];
                 reject();
             });
         });
@@ -139,7 +158,6 @@ class Assets {
         }
 
         const av: any = {}; 
-        const AVATAR_API_URL = import.meta.env.VITE_API_URL + '/api/avatarimage';
 
         av['stand'] = [
             [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=6&head_direction=6'],

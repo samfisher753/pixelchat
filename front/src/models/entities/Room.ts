@@ -34,17 +34,19 @@ export default class Room {
             let q: Player;
             if (typeof this.players[p] === 'undefined') {
                 q = new Player(room.players[p]);
-                
-                if (!assets.avatars[q.name]?.loaded){
-                    assets.loadAvatarImages(q.name, q);
-                    q.images = assets.avatars[DEFAULT_HABBO_AVATAR];
-                }
-                else {
-                    q.images = assets.avatars[q.name];
-                }
             }
             else {
                 q = this.players[p];
+                q.username = room.players[p].username;
+                q.motto = room.players[p].motto;
+                q.look = room.players[p].look;
+            }
+            if (!assets.avatars[q.look]?.loaded){
+                assets.loadAvatarImages(q.look, q);
+                q.images = assets.avatars[DEFAULT_HABBO_AVATAR];
+            }
+            else {
+                q.images = assets.avatars[q.look];
             }
             const roomPlayer: Player = room.players[p];
             const playerMovementProps: PlayerMovementProps = {

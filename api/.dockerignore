@@ -1,0 +1,9 @@
+*
+!build/*-runner
+!build/*-runner.jar
+!build/lib/*
+!build/quarkus-app/*
+
+# JWT keys
+src/main/resources/privateKey.pem
+src/main/resources/publicKey.pem

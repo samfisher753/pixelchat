@@ -1,0 +1,28 @@
+{
+  "name": "pixelchat-world",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jose Ruiz",
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/jsonwebtoken": "^9.0.10",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^4.17.1",
+    "jsonwebtoken": "^9.0.3",
+    "oci-common": "^2.98.0",
+    "oci-objectstorage": "^2.98.0",
+    "socket.io": "^4.8.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.9.0",
+    "@types/socket.io": "^3.0.2",
+    "typescript": "^5.6.3"
+  }
+}
