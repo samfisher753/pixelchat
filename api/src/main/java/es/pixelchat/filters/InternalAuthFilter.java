@@ -1,5 +1,6 @@
 package es.pixelchat.filters;
 
+import io.quarkus.runtime.annotations.StaticInitSafe;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.Response;
@@ -10,6 +11,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 @InternalOnly
 public class InternalAuthFilter implements ContainerRequestFilter {
 
+    /** En imagen nativa el secreto debe venir del entorno en runtime, no del build. */
+    @StaticInitSafe
     @ConfigProperty(name = "internal.secret")
     String secret;
 

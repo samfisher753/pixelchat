@@ -55,8 +55,17 @@ const io = new SocketIOServer(httpServer, {
 
 // ---------------------------------------------------------------------------
 // JWT public key: env var en producción, archivo local en desarrollo
+// En .env / Docker suele ir en una línea con \n entre bloques; dotenv no
+// convierte eso a saltos reales, así que normalizamos aquí.
 // ---------------------------------------------------------------------------
-const jwtPublicKey: string = process.env.JWT_PUBLIC_KEY
+function pemFromEnv(value: string | undefined): string | undefined {
+    const v = value?.trim();
+    if (!v) return undefined;
+    return v.includes('\\n') ? v.replace(/\\n/g, '\n') : v;
+}
+
+const jwtPublicKey: string =
+    pemFromEnv(process.env.JWT_PUBLIC_KEY)
     || fs.readFileSync(path.resolve(__dirname, '../../api/src/main/resources/publicKey.pem'), 'utf-8');
 
 // ---------------------------------------------------------------------------
