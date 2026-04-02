@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.5.xsd">
+
+    <changeSet id="202603281750" author="jruiz">
+        <createTable tableName="users">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="email" type="VARCHAR(255)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="username" type="VARCHAR(15)">
+                <constraints unique="true" nullable="false"/>
+            </column>
+            <column name="password" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_name" type="VARCHAR(100)"/>
+            <column name="look" type="VARCHAR(255)"/>
+            <column name="motto" type="VARCHAR(50)"/>
+            <column name="avatar_url" type="VARCHAR(255)"/>
+            <column name="header_url" type="VARCHAR(255)"/>
+            <column name="website" type="VARCHAR(255)"/>
+            <column name="location" type="VARCHAR(100)"/>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP"/>
+            <column name="email_verified" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="is_demo" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="202603301553" author="jruiz">
+        <createTable tableName="refresh_tokens">
+            <column name="user_id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"
+                             foreignKeyName="fk_refresh_tokens_user_id"
+                             references="users(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="token" type="VARCHAR(36)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_refresh_tokens_token"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="202603311912" author="jruiz">
+        <createTable tableName="user_tokens">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="user_id" type="VARCHAR(36)">
+                <constraints nullable="false"
+                             foreignKeyName="fk_user_tokens_user_id"
+                             references="users(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="token" type="VARCHAR(64)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uq_user_tokens_token"/>
+            </column>
+            <column name="type" type="ENUM('VERIFY_EMAIL', 'RESET_PASSWORD')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="user_tokens" indexName="idx_user_tokens_user_id_type">
+            <column name="user_id"/>
+            <column name="type"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

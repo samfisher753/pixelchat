@@ -5,15 +5,15 @@ import RoomListWindowLine from "./RoomListWindowLine";
 import clsx from "clsx";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
 import { GameEvent } from "@/enums/GameEvent";
+import Game from "@/models/logic/Game";
 
-const RoomListWindow = () => {
+const RoomListWindow = ({ open, setWindowOpen }: { open: boolean; setWindowOpen: (open:boolean) => void }) => {
 
-  const game = useGame();
+  const game: Game | null = useGame();
   const [rooms, setRooms] = useState<RoomListItem[] | null>(null);
   const parentRef: React.RefObject<HTMLDivElement> | null = useRef(null);
   const draggableRef: React.RefObject<HTMLDivElement> | null = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [open, setOpen] = useState(false);
 
   let idInterval: NodeJS.Timeout;
 
@@ -24,24 +24,26 @@ const RoomListWindow = () => {
       setRooms(rooms);
     };
 
-    gameEventEmitter.on(GameEvent.UpdateRoomsList, onUpdateRoomsList);
-    gameEventEmitter.on(GameEvent.ToggleRoomsListWindow, setOpen);
+    const onSocketReady = () => {
+      setWindowOpen(true);
+    };
 
-    game.toggleRoomsListWindow();
+    gameEventEmitter.on(GameEvent.UpdateRoomsList, onUpdateRoomsList);
+    gameEventEmitter.on(GameEvent.SocketReady, onSocketReady);
 
     return () => {
       gameEventEmitter.off(GameEvent.UpdateRoomsList, onUpdateRoomsList);
-      gameEventEmitter.off(GameEvent.ToggleRoomsListWindow, setOpen);
+      gameEventEmitter.off(GameEvent.SocketReady, onSocketReady);
     };
   }, []);
 
   useEffect(() => {
     if (open) {
-      game.requestRoomsList();
+      game!.requestRoomsList();
       idInterval = setInterval(() => {
-        game.requestRoomsList();
+        game!.requestRoomsList();
       }, 10000);
-    } else { 
+    } else {
       if (idInterval) {
         clearInterval(idInterval);
       }
@@ -72,11 +74,11 @@ const RoomListWindow = () => {
     const element = draggableRef.current.getBoundingClientRect();
     
     const newX = Math.min(
-      Math.max(0, element.left + e.movementX),
+      Math.max(0, element.left + e.movementX - parent.left),
       parent.width - element.width
     );
     const newY = Math.min(
-      Math.max(0, element.top + e.movementY),
+      Math.max(0, element.top + e.movementY - parent.top),
       parent.height - element.height
     );
 
@@ -89,12 +91,12 @@ const RoomListWindow = () => {
   };
 
   const joinRoom = (roomName: string) => {
-    game.sendJoinRoom(roomName);
+    game!.sendJoinRoom(roomName);
     onClose();
   };
 
   const onClose = () => {
-    game.toggleRoomsListWindow();
+    setWindowOpen(false);
   };
 
   return (
