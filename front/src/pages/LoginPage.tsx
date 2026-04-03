@@ -160,17 +160,7 @@ const LoginPage = () => {
               {errors.password && <p className="mt-1.5 ml-1 text-xs text-red-400">{errors.password}</p>}
             </div>
 
-            <div className="flex items-center justify-between pt-1 pb-2">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 bg-[#1E1E1E] border-[#383838] rounded text-[#022F72] focus:ring-[#022F72] focus:ring-offset-[#2C2C2C]"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-neutral-400">
-                  Recordarme
-                </label>
-              </div>
+            <div className="flex items-center justify-end pt-1 pb-2">
               <Link to="/reset-password" className="text-sm font-medium text-white hover:text-neutral-300 transition-colors">
                 ¿Olvidaste tu contraseña?
               </Link>
