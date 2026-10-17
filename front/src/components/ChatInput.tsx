@@ -2,6 +2,7 @@ import { MAX_MSG_LENGTH } from "@/constants/constants";
 import { wavRecorder } from "@/models/others/WavRecorder";
 import { useEffect, useRef, useState } from "react";
 import clsx from "clsx";
+import { Mic } from "lucide-react";
 import { useGame } from "@/contexts/GameContext";
 
 const ChatInput = () => {
@@ -70,21 +71,25 @@ const ChatInput = () => {
   };
 
   return (
-    <div className="absolute left-1/3 bottom-0">
+    <div className="absolute left-1/3 top-0 h-full flex items-center gap-2">
 
-      <button disabled={!micAvailable}
-        className={clsx("relative pt-[3px] pr-[3px] pb-0 pl-[3px] mr-[10px] bg-micButton rounded-md", 
-          {"opacity-30 cursor-default": !micAvailable,
-            "cursor-pointer": micAvailable,
-            "bg-micButtonActive": recording
+      <button type="button" disabled={!micAvailable}
+        title={micAvailable ? 'Mantén pulsado para grabar una nota de voz' : 'Micrófono no disponible'}
+        aria-label="Grabar nota de voz"
+        className={clsx("flex items-center justify-center w-9 h-9 rounded-lg border transition-colors",
+          {"opacity-40 cursor-default bg-[#383838] border-[#444444] text-neutral-400": !micAvailable,
+            "cursor-pointer bg-[#383838] hover:bg-[#444444] border-[#444444] text-white": micAvailable && !recording,
+            "bg-red-500 border-red-400 text-white animate-pulse": recording
           })}
         onMouseDown={startRecording}>
-        <img src="/assets/icons/mic.png" />
+        <Mic className="w-4 h-4" />
       </button>
 
       <input ref={inputRef} type="text" value={msg} onChange={handleMsgChange}
         maxLength={MAX_MSG_LENGTH}
-        className="absolute text-left bottom-[10px] w-[500px] h-[25px] bg-white text-black rounded outline-none"
+        placeholder="Escribe un mensaje…"
+        aria-label="Mensaje"
+        className="h-9 w-[500px] max-w-[calc(66vw-60px)] px-3 bg-[#1E1E1E] text-white text-sm placeholder-neutral-500 rounded-lg border border-[#383838] outline-none focus:border-pixelchatBlue focus:ring-1 focus:ring-pixelchatBlue transition-colors"
         onBlur={focusInput}
         onKeyDown={handleSendMsg}
         ></input>

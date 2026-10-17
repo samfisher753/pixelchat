@@ -21,6 +21,11 @@ const OverlayChat = () => {
   const adjustX: number = 32;
   const moveUp: number = 23;
 
+  // La casilla de un mensaje solo existe en la sala donde se escribió (cada sala tiene su tamaño)
+  const cellExists = (pos: Pos | null | undefined): boolean =>
+    !!pos && !!grid.drawPos[pos.y]?.[pos.x];
+  const playerInRoom = (msg: Msg): boolean => !!game?.room?.players[msg.player!.id];
+
   useEffect(() => {
 
     const handleNewMessage = (msg: Msg) => {
@@ -29,12 +34,20 @@ const OverlayChat = () => {
       setUnloadedMsgs((prevMessages) => [...prevMessages, msg]);
     };
 
+    // Al entrar en otra sala, los mensajes flotantes de la anterior desaparecen
+    const handleRoomJoined = () => {
+      setMsgs([]);
+      setUnloadedMsgs([]);
+    };
+
     gameEventEmitter.on(GameEvent.AddMessage, handleNewMessage);
+    gameEventEmitter.on(GameEvent.RoomJoined, handleRoomJoined);
     gameEventEmitter.on(GameEvent.UpdateOverlayChat, update);
     gameEventEmitter.on(GameEvent.DrawOverlayChat, draw);
 
     return () => {
       gameEventEmitter.off(GameEvent.AddMessage, handleNewMessage);
+      gameEventEmitter.off(GameEvent.RoomJoined, handleRoomJoined);
       gameEventEmitter.offAll(GameEvent.UpdateOverlayChat);
       gameEventEmitter.offAll(GameEvent.DrawOverlayChat);
     };
@@ -53,6 +66,8 @@ const OverlayChat = () => {
         const ref: HTMLDivElement | null = unloadedMsgsRefs.current[i];
         if (ref) {
           const msg: Msg = unloadedMsgs[i];
+          // Mensaje de alguien que ya no está en la sala: se descarta
+          if (!playerInRoom(msg)) continue;
           msg.width = ref.offsetWidth;
           msg.height = ref.offsetHeight;
           msg.dx = adjustX - (msg.width / 2);
@@ -66,7 +81,7 @@ const OverlayChat = () => {
         }
       }
       if (unloadedMsgs.length > 0) {
-        const stillUnloaded: Msg[] = unloadedMsgs.filter((msg) => !msg.loaded);
+        const stillUnloaded: Msg[] = unloadedMsgs.filter((msg) => !msg.loaded && playerInRoom(msg));
         const loaded: Msg[] = unloadedMsgs.filter((msg) => msg.loaded);
         setUnloadedMsgs(stillUnloaded);
         for (const msg of loaded) addMsg(msg);
@@ -90,8 +105,10 @@ const OverlayChat = () => {
   const draw = () => {
     if (msgs.length > 0) {
       for (let i = 0; i < msgs.length; ++i) {
-        const ref: HTMLDivElement = msgsRefs.current[i]!;
+        const ref: HTMLDivElement | null = msgsRefs.current[i];
         const msg: Msg = msgs[i];
+        // Puede quedar algún mensaje de la sala anterior hasta que React lo borre
+        if (!ref || !cellExists(msg.pos) || !cellExists(msg.playerObject?.pos)) continue;
         const dp: Pos = grid.drawPos[msg.pos!.y][msg.pos!.x];
         msg.left = dp.x + msg.dx!;
         msg.top = game!.defaultY! + msg.dy!;
@@ -102,7 +119,8 @@ const OverlayChat = () => {
         const borderRadius: number = 6;
         const leftLimit: number = msg.left + borderRadius;
         const rightLimit: number = msg.left + msg.width! - borderRadius;
-        const playerPosRef: HTMLImageElement = playerPosRefs.current[i]!;
+        const playerPosRef: HTMLImageElement | null = playerPosRefs.current[i];
+        if (!playerPosRef) continue;
         playerPosRef.style.position = 'fixed';
         const playerPosDp: Pos = grid.drawPos[msg.playerObject!.pos!.y][msg.playerObject!.pos!.x];
         let playerPosX: number = playerPosDp.x + adjustX + msg.playerObject!.walkd!.x - 4;
@@ -133,6 +151,7 @@ const OverlayChat = () => {
   }
 
   const touch = (a: Msg, b: Msg) => {
+    if (!cellExists(a.pos) || !cellExists(b.pos)) return false;
     let pa: Pos = grid.drawPos[a.pos!.y][a.pos!.x];
     let pb: Pos = grid.drawPos[b.pos!.y][b.pos!.x];
     pa = { x: pa.x + a.dx!, y: a.dy! };

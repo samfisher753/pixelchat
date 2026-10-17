@@ -8,6 +8,8 @@ import ChatPanel from "@/components/ChatPanel";
 import OverlayChat from "@/components/OverlayChat";
 import Player from "@/models/entities/Player";
 import PlayerInfo from "@/components/PlayerInfo";
+import PlayerMenu from "@/components/PlayerMenu";
+import LookEditor from "@/components/LookEditor";
 import { useGame } from "@/contexts/GameContext";
 import { useAuth } from "@/providers/AuthProvider";
 
@@ -15,6 +17,7 @@ const ChatPage = () => {
   const [roomJoined, setRoomJoined] = useState(false);
   const [roomListWindowOpen, setRoomListWindowOpen] = useState(false);
   const [playerInfoPlayer, setPlayerInfoPlayer] = useState<Player | null>(null);
+  const [lookEditorOpen, setLookEditorOpen] = useState(false);
   const game = useGame();
   const auth = useAuth();
   const navigate = useNavigate();
@@ -26,6 +29,8 @@ const ChatPage = () => {
 
     const handleRoomJoined = () => {
       setRoomJoined(true);
+      // Al cambiar de sala se cierra el panel del jugador seleccionado (y el menú propio)
+      setPlayerInfoPlayer(null);
     };
 
     const handleRoomLeft = () => {
@@ -65,6 +70,14 @@ const ChatPage = () => {
     };
   }, []);
 
+  // El menú flotante solo aparece al pulsar sobre tu propio personaje
+  const isOwnPlayer = playerInfoPlayer !== null && playerInfoPlayer.id === game?.player?.id;
+
+  const openLookEditor = () => {
+    setPlayerInfoPlayer(null);
+    setLookEditorOpen(true);
+  };
+
   return (
     <>
       <div id="app" className="absolute w-full h-full min-w-[650px] min-h-[400px] overflow-hidden text-base text-[#333333]"></div>
@@ -74,9 +87,13 @@ const ChatPage = () => {
           <ChatPanel show={roomJoined} />
           {roomJoined && <OverlayChat />}
           {playerInfoPlayer && <PlayerInfo player={playerInfoPlayer} />}
+          {isOwnPlayer && playerInfoPlayer && (
+            <PlayerMenu player={playerInfoPlayer} onChangeLook={openLookEditor} onClose={() => setPlayerInfoPlayer(null)} />
+          )}
         </div>
         <ChatNavBar roomJoined={roomJoined} onToggleRoomsList={toggleRoomListWindow} />
       </div>
+      {lookEditorOpen && <LookEditor onClose={() => setLookEditorOpen(false)} />}
     </>
     
   );
