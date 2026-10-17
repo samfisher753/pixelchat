@@ -6,7 +6,7 @@ import { Pos } from '@/types/Pos';
 import { PlayerCollection } from '@/types/PlayerCollection';
 import { PlayerMovementProps } from '@/types/PlayerAnimations';
 import { PlayerStatus } from '@/enums/PlayerStatus';
-import { DEFAULT_HABBO_AVATAR } from '@/constants/constants';
+import { DEFAULT_AVATAR } from '@/constants/constants';
 
 export default class Room {
 
@@ -43,7 +43,7 @@ export default class Room {
             }
             if (!assets.avatars[q.look]?.loaded){
                 assets.loadAvatarImages(q.look, q);
-                q.images = assets.avatars[DEFAULT_HABBO_AVATAR];
+                q.images = assets.avatars[DEFAULT_AVATAR];
             }
             else {
                 q.images = assets.avatars[q.look];

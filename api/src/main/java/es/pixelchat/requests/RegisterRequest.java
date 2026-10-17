@@ -23,5 +23,6 @@ public class RegisterRequest {
     public String password;
 
     @Size(max = 255)
+    @Pattern(regexp = LookFormat.REGEX, message = "El aspecto no tiene un formato válido")
     public String look;
 }

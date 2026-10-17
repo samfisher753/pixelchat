@@ -24,5 +24,6 @@ public class UpdateProfileRequest {
     public String website;
 
     @Size(max = 255, message = "El look no puede superar los 255 caracteres")
+    @Pattern(regexp = LookFormat.REGEX_OR_EMPTY, message = "El aspecto no tiene un formato válido")
     public String look;
 }

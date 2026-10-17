@@ -1,25 +1,39 @@
 import { ImageCollection } from "@/types/ImageCollection";
 import { PlayerAnimations, PlayerAnimationsCollection } from "@/types/PlayerAnimations";
 import Player from "../entities/Player";
-import { DEFAULT_AVATAR, DEFAULT_HABBO_AVATAR, AVATAR_API_URL } from "@/constants/constants";
+import { DEFAULT_AVATAR } from "@/constants/constants";
 import { PlayerStatus } from "@/enums/PlayerStatus";
+import { DEFAULT_LOOK, Look, parseLook } from "./avatar/Look";
+import { avatarRenderer } from "./avatar/AvatarRenderer";
 
 class Assets {
 
     images: ImageCollection;
     imgFiles: string[];
     avatars: PlayerAnimationsCollection;
+    pendingAvatars: { [look: string]: Promise<PlayerAnimations> };
+    // false si el navegador no puede generar avatares (sin WebGL): entonces todos usan la silueta base
+    canGenerateAvatars: boolean;
 
     constructor() {
         this.images = {};
         this.imgFiles = [];
         this.avatars = {};
+        this.pendingAvatars = {};
+        this.canGenerateAvatars = true;
     }
-    
+
     async load(): Promise<void> {
         this.fillFileArrays();
         await this.loadImages();
-        await this.loadAvatarImages(DEFAULT_HABBO_AVATAR, null);
+        // El avatar por defecto es el que se ve mientras se generan los demás y el de quien no tiene aspecto
+        try {
+            this.avatars[DEFAULT_AVATAR] = await avatarRenderer.buildAnimations(DEFAULT_LOOK);
+        } catch (error) {
+            console.warn('Este navegador no puede generar avatares (WebGL no disponible); se usa la silueta base.', error);
+            this.canGenerateAvatars = false;
+            this.avatars[DEFAULT_AVATAR] = await this.loadBaseCharacter();
+        }
     }
 
     loadImages(): Promise<void> {
@@ -71,196 +85,56 @@ class Assets {
         this.imgFiles.push(path+'msg-pos.png');
     }
 
-    createPlayerAnimationsObject(): PlayerAnimations {
-        return {
-            loaded: false,
-            stand: [[], [], [], [], [], [], [], []],
-            walk: [[], [], [], [], [], [], [], []],
-            sit: [[], [], [], []],
-            wave: [[], [], [], [], [], [], [], []],
+    // Genera los sprites del avatar en el navegador a partir de su cadena de aspecto. Si la cadena
+    // no es un aspecto válido (vacía o un nombre antiguo de Habbo), se usa el avatar por defecto.
+    async loadAvatarImages(lookString: string, player: Player | null): Promise<void> {
+        const look: Look | null = parseLook(lookString);
+        if (look === null || !this.canGenerateAvatars) {
+            if (player !== null) player.images = this.avatars[DEFAULT_AVATAR];
+            return;
+        }
+        if (!this.avatars[lookString]?.loaded) {
+            this.pendingAvatars[lookString] ??= avatarRenderer.buildAnimations(look);
+            try {
+                this.avatars[lookString] = await this.pendingAvatars[lookString];
+            } catch (error) {
+                console.warn('No se pudo generar el avatar ' + lookString, error);
+                this.avatars[lookString] = this.avatars[DEFAULT_AVATAR];
+            } finally {
+                delete this.pendingAvatars[lookString];
+            }
+        }
+        if (player !== null) player.images = this.avatars[lookString];
+    }
+
+    // Silueta blanca dibujada a mano. Solo se usa si el navegador no puede generar avatares.
+    async loadBaseCharacter(): Promise<PlayerAnimations> {
+        const path = '/assets/character/';
+        const eight = [0, 1, 2, 3, 4, 5, 6, 7];
+        // Mismo orden que los avatares generados; donde se ve la cara se repite la imagen (no tiene parpadeo)
+        const files: Record<string, string[][]> = {
+            stand: eight.map(i => {
+                const file = path + 'stand/bc-stand-' + i + '.png';
+                return i < 3 ? [file] : [file, file];
+            }),
+            walk: eight.map(i => [0, 1, 2, 3].map(f => path + 'walk/bc-walk-' + i + '-' + f + '.png')),
+            sit: [0, 2, 4, 6].map((d, i) => {
+                const file = path + 'sit/bc-sit-' + d + '.png';
+                return i < 2 ? [file] : [file, file];
+            }),
+            wave: eight.map(i => [0, 1].map(f => path + 'wave/bc-wave-' + i + '-' + f + '.png')),
         };
-    }
-
-    getPreviewImage(avatarName: string): Promise<HTMLImageElement> {
-        return new Promise<HTMLImageElement>((resolve, reject) => {
-            const img: HTMLImageElement = new Image();
-            img.crossOrigin = 'Anonymous';
-            img.src = AVATAR_API_URL + '?hb=image&user='+avatarName+'&direction=4&head_direction=4';
-            img.onload = () => {
-                resolve(img);
-            };
-            img.onerror = () => {
-                reject();
-            };
+        const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('No se pudo cargar ' + src));
+            img.src = src;
         });
-    }
-
-    loadAvatarImages(avatarName: string, player: Player | null): Promise<void> {
-        return new Promise<void>((resolve, reject) => {
-            if (!avatarName) {
-                if (player !== null) player.images = this.avatars[DEFAULT_HABBO_AVATAR];
-                resolve();
-                return;
-            }            
-            this.avatars[avatarName] = this.createPlayerAnimationsObject();
-            const av: PlayerAnimations = this.createAvatarFilesObject(avatarName);
-            const promises: Promise<void>[] = [];
-            for (const status in av){
-                this.avatars[avatarName][status] = [];
-                let i = 0;
-                for (const dir of av[status]){
-                    this.avatars[avatarName][status].push([]);
-                    for (const frame of dir){
-                        const promise: Promise<void> = new Promise<void>((resolve2, reject2) => {
-                            const img: HTMLImageElement = new Image();
-                            img.crossOrigin = 'Anonymous';
-                            img.src = frame;
-                            img.onload = () => {
-                                resolve2();
-                            };
-                            img.onerror = () => {
-                                reject2();
-                            };
-                            this.avatars[avatarName][status][i].push(img);
-                        });
-                        promises.push(promise);
-                    }
-                    i++;
-                }
-            }
-    
-            Promise.all(promises).then(() => {
-                this.avatars[avatarName].loaded = true;
-                if (player !== null) player.images = this.avatars[avatarName];
-                if (avatarName === DEFAULT_AVATAR && player === null) {
-                    this.avatars[DEFAULT_HABBO_AVATAR] = this.avatars[DEFAULT_AVATAR];
-                }
-                resolve();
-            }).catch(async () => {
-                if (avatarName === DEFAULT_AVATAR) {
-                    alert("Error al cargar los gráficos del personaje base.");
-                } else if (avatarName === DEFAULT_HABBO_AVATAR) {
-                    await this.loadAvatarImages(DEFAULT_AVATAR, null);
-                    resolve();
-                    return;
-                } else {
-                    this.avatars[avatarName] = this.avatars[DEFAULT_HABBO_AVATAR];
-                }
-                if (player !== null) player.images = this.avatars[avatarName];
-                reject();
-            });
-        });
-    }
-
-    createAvatarFilesObject(playerName): PlayerAnimations {
-        if (playerName.toLowerCase().includes("base")) {
-            return this.createBaseCharacterFilesObject();
-        }
-
-        const av: any = {}; 
-
-        av['stand'] = [
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=6&head_direction=6'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=7&head_direction=7'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=0&head_direction=0'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=1&head_direction=1',
-             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=1&head_direction=1&gesture=eyb'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2',
-             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2&gesture=eyb'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=3&head_direction=3',
-             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=3&head_direction=3&gesture=eyb'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4',
-             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4&gesture=eyb'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=5&head_direction=5',
-             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=5&head_direction=5&gesture=eyb']
-        ];
-
-        av['walk'] = [];
-        let d = 6;
-        for (let i=0; i<8; ++i){
-            av['walk'].push([]);
-            for (let f=0; f<4; ++f){
-                let s = AVATAR_API_URL + '?hb=image&user='+playerName+'&direction='+d+'&head_direction='+d+'&action=wlk&frame='+f;
-                av['walk'][i].push(s);
-            }
-            d = (d+1)%8;
-        }
-
-        av['sit'] = [
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=6&head_direction=6&action=sit'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=0&head_direction=0&action=sit'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit',
-             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=2&head_direction=2&action=sit&gesture=eyb'],
-            [AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit',
-             AVATAR_API_URL + '?hb=image&user='+playerName+'&direction=4&head_direction=4&action=sit&gesture=eyb']
-        ];
-
-        av['wave'] = [];
-        d = 6;
-        for (let i=0; i<8; ++i){
-            av['wave'].push([]);
-            for (let f=0; f<2; ++f){
-                let s = AVATAR_API_URL + '?hb=image&user='+playerName+'&direction='+d+'&head_direction='+d+'&action=wav&frame='+f;
-                av['wave'][i].push(s);
-            }
-            d = (d+1)%8;
-        }
-
-        return av;
-    }
-
-    createBaseCharacterFilesObject(): PlayerAnimations {
-        const av: any = {};
-        const path: string = "/assets/character/";
-        const pathStand: string = path + "stand/";
-
-        av['stand'] = [
-            [pathStand+"bc-stand-0.png"],
-            [pathStand+"bc-stand-1.png"],
-            [pathStand+"bc-stand-2.png"],
-            [pathStand+"bc-stand-3.png",
-            pathStand+"bc-stand-3.png"],
-            [pathStand+"bc-stand-4.png",
-            pathStand+"bc-stand-4.png"],
-            [pathStand+"bc-stand-5.png",
-            pathStand+"bc-stand-5.png"],
-            [pathStand+"bc-stand-6.png",
-            pathStand+"bc-stand-6.png"],
-            [pathStand+"bc-stand-7.png",
-            pathStand+"bc-stand-7.png"]
-        ];
-
-        const pathWalk: string = path + "walk/";
-        av['walk'] = [];
-        for (let i=0; i<8; ++i){
-            av['walk'].push([]);
-            for (let f=0; f<4; ++f){
-                const s: string = pathWalk+"bc-walk-"+i+"-"+f+".png";
-                av['walk'][i].push(s);
-            }
-        }
-
-        const pathSit: string = path + "sit/";
-        av['sit'] = [
-            [pathSit+"bc-sit-0.png"],
-            [pathSit+"bc-sit-2.png"],
-            [pathSit+"bc-sit-4.png",
-            pathSit+"bc-sit-4.png"],
-            [pathSit+"bc-sit-6.png",
-            pathSit+"bc-sit-6.png"]
-        ];
-
-        const pathWave: string = path + "wave/";
-        av['wave'] = [];
-        for (let i=0; i<8; ++i){
-            av['wave'].push([]);
-            for (let f=0; f<2; ++f){
-                const s: string = pathWave+"bc-wave-"+i+"-"+f+".png";
-                av['wave'][i].push(s);
-            }
-        }
-
-        return av;
+        const anims: Record<string, unknown> = { loaded: true };
+        await Promise.all(Object.entries(files).map(async ([status, dirs]) => {
+            anims[status] = await Promise.all(dirs.map(frames => Promise.all(frames.map(loadImage))));
+        }));
+        return anims as unknown as PlayerAnimations;
     }
 
 }

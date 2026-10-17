@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Settings, MapPin, Calendar, Link as LinkIcon, Edit3, X, Check, Loader2, UserCircle } from 'lucide-react';
-import LookPreview from '@/components/LookPreview';
+import { Settings, MapPin, Calendar, Link as LinkIcon, Edit3, X, Check, Loader2, Shirt } from 'lucide-react';
+import LookEditor from '@/components/LookEditor';
 import { toast } from 'sonner';
 import { useAuth } from '@/providers/AuthProvider';
 import apiService, { ApiError } from '@/services/apiService';
@@ -35,7 +35,6 @@ interface ProfileForm {
   motto: string;
   location: string;
   website: string;
-  look: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -48,6 +47,7 @@ export function ProfilePage() {
   const game = useGame();
   
   const [isEditing, setIsEditing] = useState(false);
+  const [isEditingLook, setIsEditingLook] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState<ProfileForm>({
@@ -56,7 +56,6 @@ export function ProfilePage() {
     motto:       user.motto       ?? '',
     location:    user.location    ?? '',
     website:     user.website     ?? '',
-    look:        user.look        ?? '',
   });
 
   const handleEdit = () => {
@@ -66,7 +65,6 @@ export function ProfilePage() {
       motto:       user.motto       ?? '',
       location:    user.location    ?? '',
       website:     user.website     ?? '',
-      look:        user.look        ?? '',
     });
     setErrors({});
     setIsEditing(true);
@@ -87,7 +85,6 @@ export function ProfilePage() {
         motto:       form.motto       || null,
         location:    form.location    || null,
         website:     form.website     || null,
-        look:        form.look        || null,
       });
       auth.updateUser(updated);
       game!.updatePlayer(updated);
@@ -168,13 +165,22 @@ export function ProfilePage() {
 
             {/* Botones edición */}
             {!isEditing ? (
-              <button
-                onClick={handleEdit}
-                className="flex items-center gap-2 px-6 py-2 bg-[#383838] hover:bg-[#444444] text-white rounded-full font-bold transition-colors border border-[#444444]"
-              >
-                <Settings className="w-4 h-4" />
-                Editar Perfil
-              </button>
+              <div className="flex flex-wrap justify-end items-center gap-2">
+                <button
+                  onClick={() => setIsEditingLook(true)}
+                  className="flex items-center gap-2 px-6 py-2 bg-[#383838] hover:bg-[#444444] text-white rounded-full font-bold transition-colors border border-[#444444]"
+                >
+                  <Shirt className="w-4 h-4" />
+                  Cambiar aspecto
+                </button>
+                <button
+                  onClick={handleEdit}
+                  className="flex items-center gap-2 px-6 py-2 bg-[#383838] hover:bg-[#444444] text-white rounded-full font-bold transition-colors border border-[#444444]"
+                >
+                  <Settings className="w-4 h-4" />
+                  Editar Perfil
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2">
                 <button
@@ -239,12 +245,6 @@ export function ProfilePage() {
                     </a>
                   </div>
                 )}
-                {user.look && (
-                  <div className="flex items-center gap-1.5">
-                    <UserCircle className="w-4 h-4 shrink-0" />
-                    <span>{user.look}</span>
-                  </div>
-                )}
                 {joinDate && (
                   <div className="flex items-center gap-1.5">
                     <Calendar className="w-4 h-4 shrink-0" />
@@ -289,21 +289,6 @@ export function ProfilePage() {
                   {field('website', 'https://tu-web.com', { maxLength: 255 })}
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Avatar de Habbo.es (apariencia en el juego)</label>
-                <LookPreview
-                  value={form.look}
-                  onChange={v => setForm(prev => ({ ...prev, look: v }))}
-                  maxLength={255}
-                  inputClassName={`w-full bg-[#1E1E1E] text-white placeholder-neutral-500 rounded-xl px-3 py-2 text-sm border focus:outline-none focus:ring-1 transition-colors ${
-                    errors.look
-                      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                      : 'border-[#383838] focus:border-[#022F72] focus:ring-[#022F72]'
-                  }`}
-                />
-                {errors.look && <p className="mt-1 text-xs text-red-400">{errors.look}</p>}
-              </div>
             </div>
           )}
         </div>
@@ -325,6 +310,8 @@ export function ProfilePage() {
           Crear mi primer post
         </button>
       </div>
+
+      {isEditingLook && <LookEditor onClose={() => setIsEditingLook(false)} />}
     </div>
   );
 }

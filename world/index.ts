@@ -21,30 +21,6 @@ const app = express();
 app.use(cors({ origin: corsOrigins, methods: ['GET', 'POST'] }));
 
 // ---------------------------------------------------------------------------
-// Avatar proxy
-// ---------------------------------------------------------------------------
-app.get('/api/avatarimage', async (req, res) => {
-    try {
-        const urlParams = new URLSearchParams(req.query as any).toString();
-        const response = await fetch(`https://www.habbo.es/habbo-imaging/avatarimage?${urlParams}`);
-
-        if (!response.ok) {
-            res.status(response.status).send(response.statusText);
-            return;
-        }
-
-        const contentType = response.headers.get('content-type');
-        if (contentType) res.setHeader('Content-Type', contentType);
-
-        const arrayBuffer = await response.arrayBuffer();
-        res.send(Buffer.from(arrayBuffer));
-    } catch (error) {
-        console.error('Error fetching avatar image:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-// ---------------------------------------------------------------------------
 // Socket.IO
 // ---------------------------------------------------------------------------
 const httpServer = http.createServer(app);
