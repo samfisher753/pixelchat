@@ -1,0 +1,661 @@
+<meta charset="utf-8">
+<title>Taller de avatares PixelChat</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono&family=Silkscreen&display=swap">
+<style>
+/* Layout: banco de trabajo. Escenario isométrico a la izquierda, armario a la derecha, hoja de sprites debajo. */
+:root {
+  --bg: #edf0f6;
+  --surface: #ffffff;
+  --fg: #121829;
+  --muted: #586179;
+  --line: #d3d9e6;
+  --accent: #022f72;
+  --accent-fg: #ffffff;
+  --stage: #0b1020;
+  --stage-fg: #8f9ab3;
+  --cell-a: #f4f6fa;
+  --cell-b: #e8ecf3;
+  --font-display: "Silkscreen", ui-monospace, monospace;
+  --font-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d111c; --surface: #151b2a; --fg: #e6eaf3; --muted: #98a1b6; --line: #262e44;
+    --accent: #86aaf0; --accent-fg: #0b1020; --stage: #05070d; --stage-fg: #7d88a3;
+    --cell-a: #1a2133; --cell-b: #151b2a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d111c; --surface: #151b2a; --fg: #e6eaf3; --muted: #98a1b6; --line: #262e44;
+  --accent: #86aaf0; --accent-fg: #0b1020; --stage: #05070d; --stage-fg: #7d88a3;
+  --cell-a: #1a2133; --cell-b: #151b2a; color-scheme: dark;
+}
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 32px; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); font-weight: 600; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(28px, 4.4vw, 44px); line-height: 1.05; margin: 4px 0 0; text-wrap: balance; }
+.lead { max-width: 65ch; color: var(--muted); margin: 10px 0 0; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.left { display: grid; gap: 12px; min-width: 0; }
+.stage { background: var(--stage); border-radius: 6px; display: flex; justify-content: safe center; align-items: center; padding: 16px; overflow-x: auto; min-width: 0; }
+#stage { flex: none; image-rendering: pixelated; display: block; }
+.glerr { color: var(--stage-fg); max-width: 40ch; text-align: center; padding: 40px 16px; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: inherit; font-size: 13px; font-weight: 500; padding: 5px 11px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); border-radius: 999px; cursor: pointer;
+}
+.chip:hover { border-color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.dirbox { display: flex; align-items: center; gap: 8px; }
+.iconbtn {
+  font: inherit; font-size: 18px; line-height: 1; width: 34px; height: 34px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer;
+}
+.dirlabel { font-size: 13px; min-width: 15ch; text-align: center; font-variant-numeric: tabular-nums; }
+.dirlabel b { font-family: var(--font-mono); font-weight: 400; }
+.toggles { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 14px; }
+.toggles label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 18px; }
+.group { display: grid; gap: 8px; }
+.group h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0; font-weight: 600; }
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+.sw { width: 24px; height: 24px; border-radius: 4px; border: 1px solid rgba(0, 0, 0, .22); cursor: pointer; padding: 0; }
+.sw[aria-pressed="true"] { outline: 2px solid var(--fg); outline-offset: 2px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sheet { display: grid; gap: 14px; min-width: 0; }
+.sheet h2 { font-family: var(--font-display); font-weight: 400; font-size: 22px; margin: 0; }
+.note { color: var(--muted); max-width: 70ch; margin: 0; }
+.stat { font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+.blocks { display: flex; gap: 24px; overflow-x: auto; padding-bottom: 8px; align-items: start; }
+.block { display: grid; gap: 6px; flex: none; }
+.block h3 { font-family: var(--font-mono); font-size: 13px; font-weight: 400; margin: 0; }
+.block h3 span { color: var(--muted); }
+.block canvas { image-rendering: pixelated; display: block; border-radius: 4px; }
+.figure {
+  font-family: var(--font-mono); font-size: 13px; background: var(--surface); border: 1px solid var(--line);
+  padding: 10px 12px; border-radius: 6px; overflow-wrap: anywhere; user-select: all;
+}
+code { font-family: var(--font-mono); font-size: .9em; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">PixelChat · prototipo</div>
+    <h1>Taller de avatares</h1>
+    <p class="lead">Un muñeco de seis cajas en 3D, fotografiado en isométrico a 64×112 píxeles. Las animaciones salen de girar las cajas y la ropa son texturas planas. Los ojos y la boca son pequeños dibujos de píxeles que se colocan sobre la cara, así miden lo mismo en todas las direcciones.</p>
+  </header>
+
+  <div class="bench">
+    <div class="left">
+      <div class="stage">
+        <canvas id="stage" width="384" height="280" role="img" aria-label="Avatar en una sala isométrica"></canvas>
+        <p class="glerr" id="glerr" hidden>Este navegador no ha podido iniciar WebGL, que es lo que dibuja el muñeco. Prueba en otro navegador o activa la aceleración por hardware.</p>
+      </div>
+      <div class="bar">
+        <div class="chips" id="anims" role="group" aria-label="Animación"></div>
+        <div class="dirbox">
+          <button class="iconbtn" id="rotL" aria-label="Girar a la izquierda">⟲</button>
+          <span class="dirlabel" id="dirlabel"></span>
+          <button class="iconbtn" id="rotR" aria-label="Girar a la derecha">⟳</button>
+        </div>
+      </div>
+      <div class="bar">
+        <div class="toggles">
+          <div class="chips" role="group" aria-label="Tamaño"><button class="chip" data-key="zoom" data-val="1">1× como PixelChat</button><button class="chip" data-key="zoom" data-val="2">2×</button><button class="chip" data-key="zoom" data-val="3">3×</button></div>
+          <label><input type="checkbox" id="outline" checked> Contorno</label>
+          <label><input type="checkbox" id="play" checked> Animar</label>
+        </div>
+        <button class="chip" id="random">Aleatorio</button>
+      </div>
+    </div>
+    <aside class="panel" id="panel" aria-label="Personalización"></aside>
+  </div>
+
+  <section class="sheet">
+    <h2>Hoja de sprites</h2>
+    <p class="note">Esto es lo que espera <code>createAvatarFilesObject()</code> en <code>Assets.ts</code>: <code>stand</code>, <code>walk</code>, <code>sit</code> y <code>wave</code>, con el índice 0 en la dirección 6 de Habbo y el parpadeo como segundo fotograma donde se ve la cara. Se regenera entera cada vez que cambias algo.</p>
+    <div class="stat" id="stat"></div>
+    <div class="blocks" id="blocks"></div>
+    <h2>Figura</h2>
+    <p class="note">Una línea de texto describe el muñeco entero. Es lo que guardarías en la tabla <code>users</code> en lugar del nombre de Habbo.</p>
+    <div class="figure" id="figure"></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function () {
+  // ---------- Paletas ----------
+  const SKIN = ['#f6d5b8', '#ecb98f', '#d49b6b', '#ac7148', '#7d4b2d', '#4f301e'];
+  const HAIR = ['#1d1612', '#4a2e1b', '#8a5a2b', '#d9a54a', '#efe2b6', '#b3402b', '#9aa0a8', '#3a5fcf'];
+  const CLOTH = ['#f4f4f4', '#2a2d36', '#d23b3b', '#f08a24', '#f2c94c', '#3fa34d', '#2f80ed', '#022f72', '#8e44ad', '#e86fa8', '#7a5536', '#5bc0be'];
+
+  const state = {
+    skin: SKIN[1], hair: 'corto', hairColor: HAIR[1], hat: 'no', hatColor: CLOTH[2],
+    sleeve: 'corta', pattern: 'logo', shirt: CLOTH[7], legs: 'largo', pants: CLOTH[1], shoes: CLOTH[0],
+    face: 'normal', acc: 'no', accColor: CLOTH[4],
+    anim: 'stand', dir: 3, outline: true, zoom: '1',
+    playing: !matchMedia('(prefers-reduced-motion: reduce)').matches,
+  };
+
+  const GROUPS = [
+    { title: 'Cara', chips: [{ key: 'face', items: [['normal', 'Normal'], ['feliz', 'Feliz'], ['guino', 'Guiño'], ['sorpresa', 'Sorpresa'], ['triste', 'Triste'], ['enfadado', 'Enfadado']] }] },
+    { title: 'Piel', colorKey: 'skin', swatches: SKIN },
+    { title: 'Pelo', chips: [{ key: 'hair', items: [['corto', 'Corto'], ['largo', 'Largo'], ['coleta', 'Coleta'], ['cresta', 'Cresta'], ['rapado', 'Rapado']] }], colorKey: 'hairColor', swatches: HAIR },
+    { title: 'Gorro', chips: [{ key: 'hat', items: [['no', 'Nada'], ['gorra', 'Gorra'], ['gorro', 'Gorro de lana']] }], colorKey: 'hatColor', swatches: CLOTH },
+    { title: 'Camiseta', chips: [{ key: 'sleeve', items: [['corta', 'Manga corta'], ['larga', 'Manga larga']] }, { key: 'pattern', items: [['liso', 'Lisa'], ['rayas', 'Rayas'], ['logo', 'Logo']] }], colorKey: 'shirt', swatches: CLOTH },
+    { title: 'Pantalón', chips: [{ key: 'legs', items: [['largo', 'Largo'], ['corto', 'Corto']] }], colorKey: 'pants', swatches: CLOTH },
+    { title: 'Zapatillas', colorKey: 'shoes', swatches: CLOTH },
+    { title: 'Accesorio', chips: [{ key: 'acc', items: [['no', 'Nada'], ['mochila', 'Mochila'], ['bufanda', 'Bufanda']] }], colorKey: 'accColor', swatches: CLOTH },
+  ];
+  const ANIMS = [['stand', 'De pie'], ['walk', 'Andar'], ['sit', 'Sentado'], ['wave', 'Saludar']];
+  const DIR_NAMES = ['atrás-derecha', 'derecha', 'frente-derecha', 'de frente', 'frente-izquierda', 'izquierda', 'atrás-izquierda', 'de espaldas'];
+
+  // Mismo orden que Assets.ts: índice 0 = dirección Habbo 6
+  const SHEET = [
+    { anim: 'stand', dirs: [6, 7, 0, 1, 2, 3, 4, 5], frames: i => (i < 3 ? 1 : 2) },
+    { anim: 'walk', dirs: [6, 7, 0, 1, 2, 3, 4, 5], frames: () => 4 },
+    { anim: 'sit', dirs: [6, 0, 2, 4], frames: i => (i < 2 ? 1 : 2) },
+    { anim: 'wave', dirs: [6, 7, 0, 1, 2, 3, 4, 5], frames: () => 2 },
+  ];
+
+  // ---------- Color ----------
+  const hexToRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const rgbToHex = c => '#' + c.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, t) => { const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(A.map((v, i) => v + (B[i] - v) * t)); };
+  const shade = (a, t) => (t < 0 ? mix(a, '#000000', -t) : mix(a, '#ffffff', t));
+  const lum = a => { const [r, g, b] = hexToRgb(a); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+  const cssVar = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  // ---------- Render isométrico ----------
+  const SW = 64, SH = 112, FOOT = 100;          // tamaño del sprite y altura de los pies dentro de él
+  const PPU = 64 / Math.SQRT2;                  // una casilla = 64 px de ancho en pantalla
+  let renderer, scene, camera, rig;
+
+  function initGL() {
+    renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(1);
+    renderer.setSize(SW, SH, false);
+    renderer.setClearColor(0x000000, 0);
+    scene = new THREE.Scene();
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const sun = new THREE.DirectionalLight(0xffffff, 0.6);
+    sun.position.set(0.4, 1.6, 1);
+    scene.add(sun);
+    camera = new THREE.OrthographicCamera(-32 / PPU, 32 / PPU, FOOT / PPU, -(SH - FOOT) / PPU, 0.1, 100);
+    const pitch = Math.PI / 6, r = 20;          // 30° de inclinación = suelo 2:1 como Habbo
+    camera.position.set(r * Math.cos(pitch) / Math.SQRT2, r * Math.sin(pitch), r * Math.cos(pitch) / Math.SQRT2);
+    camera.lookAt(0, 0, 0);
+  }
+
+  function tex(w, h, draw, mirror) {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    if (mirror) { g.translate(w, 0); g.scale(-1, 1); }
+    draw(g);
+    const t = new THREE.CanvasTexture(c);
+    t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
+    return t;
+  }
+  const px = (g, c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+  const M = c => new THREE.MeshLambertMaterial({ color: new THREE.Color(c) });
+  const T = t => new THREE.MeshLambertMaterial({ map: t });
+  const box = (w, h, d, mat) => new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+
+  // Rasgos de la cara: dibujos fijos en píxeles de pantalla que se colocan donde cae cada punto
+  // de la cara. Así los dos ojos miden siempre lo mismo, se mire desde donde se mire.
+  const GLYPH = {
+    eye: ['XXw', 'XXX', 'XXX', 'XXX'], eyeBig: ['XXw', 'XXX', 'XXX', 'XXX', 'XXX'],
+    eyeShut: ['...', '...', '...', 'XXX'], eyeHappy: ['...', '.X.', 'X.X', '...'],
+    mouth: { normal: ['mmm'], feliz: ['m...m', '.mmm.'], guino: ['m...m', '.mmm.'], sorpresa: ['.mm.', 'm..m', '.mm.'], triste: ['.mmm.', 'm...m'], enfadado: ['mmmm'] },
+    browSadL: ['..bb', 'bb..'], browSadR: ['bb..', '..bb'], browAngryL: ['bb..', '..bb'], browAngryR: ['..bb', 'bb..'],
+    blush: ['pp'],
+  };
+  // Dónde va cada rasgo, en coordenadas de la textura 16×16 de la cara
+  const ANCHOR = { eyeL: [5, 8.5], eyeR: [11, 8.5], mouth: [8, 12.75], browL: [4.5, 5.5], browR: [11.5, 5.5], cheekL: [2.5, 11.5], cheekR: [13.5, 11.5] };
+
+  function drawFeatures(d, face, A, blink) {
+    const s = state, E = s.face;
+    const pal = {
+      X: '#1b1420', w: '#ffffff', m: mix(shade(s.skin, -0.45), '#9c2f3c', 0.45), b: shade(s.hairColor, -0.15),
+      p: mix(s.skin, '#ff5a6e', 0.35),
+    };
+    const rgb = {};
+    for (const k in pal) rgb[k] = hexToRgb(pal[k]);
+    const inside = (x, y) => x >= 0 && y >= 0 && x < SW && y < SH;
+    // Un rasgo se dibuja entero si al menos la mitad cae sobre la parte visible de la cara;
+    // así un ojo junto al borde no pierde píxeles y los dos quedan iguales.
+    const stamp = (rows, [ax, ay]) => {
+      const w = rows[0].length, h = rows.length, x0 = Math.round(ax - w / 2), y0 = Math.round(ay - h / 2);
+      const pts = [];
+      rows.forEach((r, j) => [...r].forEach((ch, i) => { if (ch !== '.') pts.push([x0 + i, y0 + j, ch]); }));
+      const onFace = pts.filter(([x, y]) => inside(x, y) && face[y * SW + x]).length;
+      if (onFace * 2 < pts.length) return;
+      for (const [x, y, ch] of pts) {
+        if (!inside(x, y)) continue;
+        const p = y * SW + x;
+        if (d[p * 4 + 3] !== 255) continue;
+        const c = rgb[ch];
+        d[p * 4] = c[0]; d[p * 4 + 1] = c[1]; d[p * 4 + 2] = c[2];
+      }
+    };
+
+    if (E === 'feliz' || E === 'guino') { stamp(GLYPH.blush, A.cheekL); stamp(GLYPH.blush, A.cheekR); }
+    stamp(GLYPH.mouth[E], A.mouth);
+    if (E === 'triste') { stamp(GLYPH.browSadL, A.browL); stamp(GLYPH.browSadR, A.browR); }
+    if (E === 'enfadado') { stamp(GLYPH.browAngryL, A.browL); stamp(GLYPH.browAngryR, A.browR); }
+    if (blink) { stamp(GLYPH.eyeShut, A.eyeL); stamp(GLYPH.eyeShut, A.eyeR); }
+    else if (E === 'guino') { stamp(GLYPH.eye, A.eyeL); stamp(GLYPH.eyeHappy, A.eyeR); }
+    else { const e = E === 'sorpresa' ? GLYPH.eyeBig : GLYPH.eye; stamp(e, A.eyeL); stamp(e, A.eyeR); }
+  }
+
+  // Texturas de la cabeza (8×8). En las caras laterales el frente queda a la izquierda.
+  function paintHead(face, blink, mirror) {
+    const s = state, hc = s.hairColor, H = s.hair, buzz = mix(s.hairColor, s.skin, 0.45);
+    return tex(8, 8, g => {
+      px(g, s.skin, 0, 0, 8, 8);
+      if (face === 'top') px(g, H === 'rapado' || H === 'cresta' ? buzz : hc, 0, 0, 8, 8);
+      if (face === 'back') {
+        if (H === 'rapado' || H === 'cresta') px(g, buzz, 0, 0, 8, 4);
+        else if (H === 'corto') px(g, hc, 0, 0, 8, 6);
+        else px(g, hc, 0, 0, 8, 8);
+      }
+      if (face === 'side') {
+        if (H === 'rapado' || H === 'cresta') px(g, buzz, 2, 0, 6, 3);
+        else if (H === 'largo') { px(g, hc, 0, 0, 8, 3); px(g, hc, 2, 3, 6, 5); }
+        else { px(g, hc, 1, 0, 7, 3); px(g, hc, 4, 3, 4, H === 'coleta' ? 4 : 3); }
+        if (H !== 'largo') px(g, shade(s.skin, -0.12), 2, 4, 1, 2);
+      }
+      if (face === 'front') {
+        if (H === 'corto' || H === 'coleta') { px(g, hc, 0, 0, 8, 2); px(g, hc, 0, 2, 1, 1); px(g, hc, 7, 2, 1, 1); }
+        if (H === 'largo') { px(g, hc, 0, 0, 8, 2); px(g, hc, 0, 2, 1, 6); px(g, hc, 7, 2, 1, 6); }
+        if (H === 'rapado' || H === 'cresta') px(g, buzz, 0, 0, 8, 1);
+      }
+      if (s.hat !== 'no' && face !== 'bottom') {
+        const rows = s.hat === 'gorro' ? 3 : 2;
+        if (face === 'top') px(g, s.hatColor, 0, 0, 8, 8);
+        else px(g, s.hatColor, 0, 0, 8, rows);
+      }
+    }, mirror);
+  }
+
+  // Texturas del torso (8×11)
+  function paintTorso(face, mirror) {
+    const s = state;
+    return tex(8, 11, g => {
+      px(g, s.shirt, 0, 0, 8, 11);
+      if (s.pattern === 'rayas') {
+        const st = lum(s.shirt) > 0.6 ? shade(s.shirt, -0.35) : mix(s.shirt, '#ffffff', 0.55);
+        for (let y = 2; y < 10; y += 3) px(g, st, 0, y, 8, 1);
+      }
+      if (face === 'front') {
+        px(g, s.skin, 3, 0, 2, 1);
+        px(g, shade(s.shirt, -0.2), 2, 0, 1, 1); px(g, shade(s.shirt, -0.2), 5, 0, 1, 1);
+        if (s.pattern === 'logo') {
+          const c = lum(s.shirt) > 0.6 ? '#022f72' : '#ffffff';
+          px(g, c, 2, 3, 4, 3); px(g, c, 2, 6, 1, 1);
+          px(g, s.shirt, 3, 4, 1, 1); px(g, s.shirt, 4, 4, 1, 1);
+        }
+      }
+      px(g, s.pants, 0, 10, 8, 1);
+    }, mirror);
+  }
+
+  function dispose(obj) {
+    obj.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) [].concat(o.material).forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+    });
+  }
+
+  function buildRig() {
+    if (rig) { scene.remove(rig.root); dispose(rig.root); }
+    const s = state, root = new THREE.Group();
+    const HS = 0.5, headBottom = 1.42, headTop = headBottom + HS;
+
+    const frontOpen = T(paintHead('front'));
+    const head = box(HS, HS, HS, [T(paintHead('side', false, false)), T(paintHead('side', false, true)), T(paintHead('top')), M(s.skin), frontOpen, T(paintHead('back'))]);
+    head.position.y = headBottom + HS / 2;
+    root.add(head);
+
+    const add = (w, h, d, mat, x, y, z) => { const m = box(w, h, d, mat); m.position.set(x, y, z); root.add(m); return m; };
+    const H = s.hair, hatOn = s.hat !== 'no';
+    if (H === 'largo') add(HS, 0.62, 0.06, M(s.hairColor), 0, headTop - 0.41, -(HS / 2 + 0.03));
+    if (H === 'coleta') { add(0.14, 0.3, 0.12, M(s.hairColor), 0, headBottom + 0.12, -(HS / 2 + 0.08)); add(0.16, 0.05, 0.08, M(s.hatColor), 0, headBottom + 0.3, -(HS / 2 + 0.05)); }
+    if (H === 'cresta' && !hatOn) add(0.12, 0.14, HS * 0.85, M(s.hairColor), 0, headTop + 0.07, 0);
+    if (s.hat === 'gorra') {
+      add(HS + 0.05, 0.12, HS + 0.05, M(s.hatColor), 0, headTop - 0.03, 0);
+      add(HS * 0.8, 0.03, 0.2, M(shade(s.hatColor, -0.25)), 0, headTop - 0.075, HS / 2 + 0.1);
+    }
+    if (s.hat === 'gorro') {
+      add(HS + 0.06, 0.18, HS + 0.06, M(s.hatColor), 0, headTop - 0.04, 0);
+      add(0.12, 0.09, 0.12, M(shade(s.hatColor, 0.35)), 0, headTop + 0.09, 0);
+    }
+
+    const torso = box(0.5, 0.7, 0.28, [T(paintTorso('side', false)), T(paintTorso('side', true)), M(s.shirt), M(s.pants), T(paintTorso('front')), T(paintTorso('back'))]);
+    torso.position.y = 0.72 + 0.35;
+    root.add(torso);
+
+    if (s.acc === 'mochila') {
+      add(0.36, 0.44, 0.14, M(s.accColor), 0, 1.06, -0.21);
+      add(0.26, 0.14, 0.05, M(shade(s.accColor, -0.2)), 0, 0.95, -0.3);
+      for (const x of [-0.13, 0.13]) add(0.05, 0.56, 0.02, M(shade(s.accColor, -0.25)), x, 1.12, 0.15);
+    }
+    if (s.acc === 'bufanda') {
+      add(0.54, 0.1, 0.34, M(s.accColor), 0, 1.38, 0);
+      add(0.1, 0.28, 0.03, M(shade(s.accColor, -0.12)), 0.11, 1.2, 0.17);
+    }
+
+    function limb(x, y, parts) {
+      const g = new THREE.Group();
+      g.position.set(x, y, 0);
+      let yy = 0;
+      for (const p of parts) { const m = box(p.w, p.h, p.d, p.mat); m.position.set(0, yy - p.h / 2, p.z || 0); g.add(m); yy -= p.h; }
+      root.add(g);
+      return g;
+    }
+    const armLen = 0.64, sleeve = s.sleeve === 'corta' ? 0.24 : armLen - 0.12;
+    const arm = x => limb(x, 1.42, [{ w: 0.16, h: sleeve, d: 0.18, mat: M(s.shirt) }, { w: 0.15, h: armLen - sleeve, d: 0.17, mat: M(s.skin) }]);
+    const legH = 0.72, shoeH = 0.14, pantsH = s.legs === 'largo' ? legH - shoeH : 0.28, skinH = legH - shoeH - pantsH;
+    const shoeMat = [M(s.shoes), M(s.shoes), M(s.shoes), M(shade(s.shoes, -0.4)), M(s.shoes), M(s.shoes)];
+    const leg = x => limb(x, 0.72, [
+      { w: 0.22, h: pantsH, d: 0.24, mat: M(s.pants) },
+      ...(skinH > 0 ? [{ w: 0.19, h: skinH, d: 0.21, mat: M(s.skin) }] : []),
+      { w: 0.22, h: shoeH, d: 0.3, z: 0.03, mat: shoeMat },
+    ]);
+
+    rig = { root, head, frontOpen, armL: arm(0.33), armR: arm(-0.33), legL: leg(0.125), legR: leg(-0.125) };
+    scene.add(root);
+  }
+
+  function pose(anim, f) {
+    const r = rig;
+    for (const l of [r.armL, r.armR, r.legL, r.legR]) l.rotation.set(0, 0, 0);
+    r.root.position.y = 0;
+    let blink = false;
+    if (anim === 'stand') blink = f === 1;
+    if (anim === 'walk') {
+      const a = [0.5, 0, -0.5, 0][f % 4];
+      r.legL.rotation.x = a; r.legR.rotation.x = -a;
+      r.armL.rotation.x = -a * 0.8; r.armR.rotation.x = a * 0.8;
+      r.root.position.y = -(1 - Math.cos(a)) * 0.72;
+    }
+    if (anim === 'sit') {
+      r.legL.rotation.x = r.legR.rotation.x = -Math.PI / 2;
+      r.armL.rotation.x = r.armR.rotation.x = -0.35;
+      r.root.position.y = 0.12 - 0.72;
+      blink = f === 1;
+    }
+    if (anim === 'wave') { r.armR.rotation.z = f % 2 ? -2.65 : -2.95; r.armR.rotation.x = -0.15; }
+    return blink;
+  }
+
+  // Segundo render con la cara en magenta: los píxeles magenta son la parte visible de la cara
+  const KEY = new THREE.MeshBasicMaterial({ color: 0xff00ff });
+  const grabC = document.createElement('canvas');
+  grabC.width = SW; grabC.height = SH;
+  const grabG = grabC.getContext('2d', { willReadFrequently: true });
+  function grab() {
+    renderer.render(scene, camera);
+    grabG.clearRect(0, 0, SW, SH);
+    grabG.drawImage(renderer.domElement, 0, 0);
+    return grabG.getImageData(0, 0, SW, SH);
+  }
+  const tmpV = new THREE.Vector3();
+  function faceAnchor([u, v]) {
+    const HS = 0.5;
+    tmpV.set(-HS / 2 + (u / 16) * HS, HS / 2 - (v / 16) * HS, HS / 2).applyMatrix4(rig.head.matrixWorld).project(camera);
+    return [((tmpV.x + 1) / 2) * SW, ((1 - tmpV.y) / 2) * SH];
+  }
+
+  // Recorta la transparencia a 0/255, pinta la cara y añade un contorno de 1 px
+  function post(im, mk, A, blink) {
+    const c = document.createElement('canvas');
+    c.width = SW; c.height = SH;
+    const g = c.getContext('2d');
+    const d = im.data, m = mk.data;
+    const solid = new Uint8Array(SW * SH), face = new Uint8Array(SW * SH);
+    let faceSeen = false;
+    for (let p = 0; p < SW * SH; p++) {
+      const on = d[p * 4 + 3] >= 128; solid[p] = on; d[p * 4 + 3] = on ? 255 : 0;
+      if (m[p * 4] === 255 && m[p * 4 + 1] === 0 && m[p * 4 + 2] === 255 && m[p * 4 + 3] === 255) { face[p] = 1; faceSeen = true; }
+    }
+    if (faceSeen) drawFeatures(d, face, A, blink);
+    if (state.outline) {
+      for (let y = 0; y < SH; y++) for (let x = 0; x < SW; x++) {
+        const p = y * SW + x;
+        if (solid[p]) continue;
+        if ((x > 0 && solid[p - 1]) || (x < SW - 1 && solid[p + 1]) || (y > 0 && solid[p - SW]) || (y < SH - 1 && solid[p + SW])) {
+          d[p * 4] = 22; d[p * 4 + 1] = 17; d[p * 4 + 2] = 36; d[p * 4 + 3] = 255;
+        }
+      }
+    }
+    g.putImageData(im, 0, 0);
+    return c;
+  }
+
+  let cache = new Map();
+  function sprite(anim, f, dir) {
+    const k = anim + f + dir;
+    if (!cache.has(k)) {
+      const blink = pose(anim, f);
+      rig.root.rotation.y = (4 - dir) * Math.PI / 4;
+      rig.root.updateMatrixWorld(true);
+      const im = grab();
+      rig.head.material[4] = KEY;
+      const mk = grab();
+      rig.head.material[4] = rig.frontOpen;
+      const A = {};
+      for (const n in ANCHOR) A[n] = faceAnchor(ANCHOR[n]);
+      cache.set(k, post(im, mk, A, blink));
+    }
+    return cache.get(k);
+  }
+
+  // ---------- Sala ----------
+  const stage = document.getElementById('stage'), sg = stage.getContext('2d');
+  const OX = 192, OY = 100;
+  const floor = document.createElement('canvas');
+  floor.width = 384; floor.height = 280;
+  (function drawFloor() {
+    const g = floor.getContext('2d');
+    for (let x = OX - 160; x < OX; x++) px(g, '#6c7387', x, Math.floor(OY + 80 + (x - (OX - 160)) / 2), 1, 8);
+    for (let x = OX; x < OX + 160; x++) px(g, '#565d70', x, Math.floor(OY + 160 - (x - OX) / 2), 1, 8);
+    for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) {
+      const tx = OX + (j - i) * 32, ty = OY + (i + j) * 16, col = (i + j) % 2 ? '#9fa7b9' : '#a8afc0';
+      for (let y = 0; y < 32; y++) {
+        const hw = y < 16 ? (y + 1) * 2 : (32 - y) * 2, edge = y < 16 ? '#c4cad7' : '#878fa3';
+        px(g, col, tx - hw, ty + y, hw * 2, 1);
+        px(g, edge, tx - hw, ty + y, 2, 1); px(g, edge, tx + hw - 2, ty + y, 2, 1);
+      }
+    }
+  })();
+
+  function drawStage(spr) {
+    const cx = OX, cy = OY + 80;
+    sg.clearRect(0, 0, stage.width, stage.height);
+    sg.drawImage(floor, 0, 0);
+    sg.fillStyle = 'rgba(0,0,0,.28)';
+    for (let y = -5; y <= 5; y++) { const hw = Math.round(18 * Math.sqrt(1 - (y / 6) ** 2)); sg.fillRect(cx - hw, cy + y, hw * 2, 1); }
+    sg.drawImage(spr, cx - SW / 2, cy - FOOT);
+  }
+
+  let lastKey = '', version = 0;
+  function tick(t) {
+    let f = 0;
+    const a = state.anim;
+    if (state.playing) {
+      if (a === 'walk') f = Math.floor(t / 125) % 4;
+      else if (a === 'wave') f = Math.floor(t / 220) % 2;
+      else f = t % 3200 < 160 ? 1 : 0;
+    }
+    const key = [a, f, state.dir, version].join('|');
+    if (key !== lastKey) { lastKey = key; drawStage(sprite(a, f, state.dir)); }
+    requestAnimationFrame(tick);
+  }
+
+  // ---------- Hoja de sprites ----------
+  const blocksEl = document.getElementById('blocks'), statEl = document.getElementById('stat');
+  function renderSheet() {
+    const t0 = performance.now();
+    const cellA = cssVar('--cell-a'), cellB = cssVar('--cell-b'), muted = cssVar('--muted');
+    blocksEl.innerHTML = '';
+    let n = 0;
+    for (const b of SHEET) {
+      const cols = Math.max(...b.dirs.map((_, i) => b.frames(i)));
+      const c = document.createElement('canvas');
+      c.width = cols * SW; c.height = b.dirs.length * SH;
+      const g = c.getContext('2d');
+      b.dirs.forEach((d, i) => {
+        for (let f = 0; f < cols; f++) {
+          g.fillStyle = (i + f) % 2 ? cellB : cellA;
+          g.fillRect(f * SW, i * SH, SW, SH);
+          if (f < b.frames(i)) { g.drawImage(sprite(b.anim, f, d), f * SW, i * SH); n++; }
+        }
+        g.fillStyle = muted;
+        g.font = '10px "JetBrains Mono", monospace';
+        g.fillText('d' + d, 4, i * SH + 12);
+      });
+      const wrap = document.createElement('div');
+      wrap.className = 'block';
+      const h = document.createElement('h3');
+      h.innerHTML = b.anim + ' <span>' + b.dirs.length + ' dir × ' + cols + '</span>';
+      wrap.append(h, c);
+      blocksEl.append(wrap);
+    }
+    statEl.textContent = n + ' sprites generados en ' + Math.max(1, Math.round(performance.now() - t0)) + ' ms';
+  }
+  let sheetTimer;
+  const scheduleSheet = () => { clearTimeout(sheetTimer); sheetTimer = setTimeout(renderSheet, 120); };
+
+  // ---------- Interfaz ----------
+  const panel = document.getElementById('panel');
+  function buildPanel() {
+    for (const grp of GROUPS) {
+      const div = document.createElement('div');
+      div.className = 'group';
+      const h = document.createElement('h2');
+      h.textContent = grp.title;
+      div.append(h);
+      for (const ch of grp.chips || []) {
+        const row = document.createElement('div');
+        row.className = 'chips';
+        row.setAttribute('role', 'group');
+        row.setAttribute('aria-label', grp.title);
+        for (const [val, label] of ch.items) {
+          const b = document.createElement('button');
+          b.className = 'chip'; b.textContent = label; b.dataset.key = ch.key; b.dataset.val = val;
+          row.append(b);
+        }
+        div.append(row);
+      }
+      if (grp.swatches) {
+        const row = document.createElement('div');
+        row.className = 'swatches';
+        for (const c of grp.swatches) {
+          const b = document.createElement('button');
+          b.className = 'sw'; b.style.background = c; b.dataset.key = grp.colorKey; b.dataset.val = c;
+          b.setAttribute('aria-label', grp.title + ' ' + c);
+          row.append(b);
+        }
+        div.append(row);
+      }
+      panel.append(div);
+    }
+    const anims = document.getElementById('anims');
+    for (const [val, label] of ANIMS) {
+      const b = document.createElement('button');
+      b.className = 'chip'; b.textContent = label; b.dataset.key = 'anim'; b.dataset.val = val;
+      anims.append(b);
+    }
+  }
+
+  function syncUI() {
+    document.querySelectorAll('[data-key]').forEach(b => b.setAttribute('aria-pressed', String(state[b.dataset.key] === b.dataset.val)));
+    document.getElementById('dirlabel').innerHTML = 'Dirección <b>' + state.dir + '</b> · ' + DIR_NAMES[state.dir];
+    document.getElementById('outline').checked = state.outline;
+    stage.style.width = 384 * state.zoom + 'px';
+    stage.style.height = 280 * state.zoom + 'px';
+    document.getElementById('play').checked = state.playing;
+    const s = state, hex = c => c.slice(1);
+    document.getElementById('figure').textContent = [
+      'hd-' + hex(s.skin),
+      'hr-' + s.hair + '-' + hex(s.hairColor),
+      'ha-' + s.hat + (s.hat !== 'no' ? '-' + hex(s.hatColor) : ''),
+      'ch-' + s.sleeve + '-' + s.pattern + '-' + hex(s.shirt),
+      'lg-' + s.legs + '-' + hex(s.pants),
+      'sh-' + hex(s.shoes),
+      'fc-' + s.face,
+      'ac-' + s.acc + (s.acc !== 'no' ? '-' + hex(s.accColor) : ''),
+    ].join('.');
+  }
+
+  function changed(rebuild) {
+    if (rebuild) buildRig();
+    cache = new Map();
+    version++;
+    syncUI();
+    scheduleSheet();
+  }
+
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-key]');
+    if (!b) return;
+    state[b.dataset.key] = b.dataset.val;
+    if (b.dataset.key === 'anim' || b.dataset.key === 'zoom') { syncUI(); return; }
+    changed(true);
+  });
+  const rotate = d => { state.dir = (state.dir + d + 8) % 8; syncUI(); };
+  document.getElementById('rotL').onclick = () => rotate(-1);
+  document.getElementById('rotR').onclick = () => rotate(1);
+  document.addEventListener('keydown', e => {
+    if (e.target.closest('input, textarea')) return;
+    if (e.key === 'ArrowLeft') rotate(-1);
+    if (e.key === 'ArrowRight') rotate(1);
+  });
+  document.getElementById('outline').onchange = e => { state.outline = e.target.checked; changed(false); };
+  document.getElementById('play').onchange = e => { state.playing = e.target.checked; };
+  document.getElementById('random').onclick = () => {
+    const pick = a => a[Math.floor(Math.random() * a.length)];
+    Object.assign(state, {
+      skin: pick(SKIN), hair: pick(['corto', 'largo', 'coleta', 'cresta', 'rapado']), hairColor: pick(HAIR),
+      hat: pick(['no', 'no', 'gorra', 'gorro']), hatColor: pick(CLOTH), sleeve: pick(['corta', 'larga']),
+      pattern: pick(['liso', 'rayas', 'logo']), shirt: pick(CLOTH), legs: pick(['largo', 'corto']), pants: pick(CLOTH), shoes: pick(CLOTH),
+      face: pick(['normal', 'feliz', 'guino', 'sorpresa', 'triste', 'enfadado']),
+      acc: pick(['no', 'no', 'mochila', 'bufanda']), accColor: pick(CLOTH),
+    });
+    changed(true);
+  };
+  const reSheet = () => scheduleSheet();
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', reSheet);
+  new MutationObserver(reSheet).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  buildPanel();
+  try {
+    initGL();
+    buildRig();
+  } catch (err) {
+    stage.hidden = true;
+    document.getElementById('glerr').hidden = false;
+    syncUI();
+    return;
+  }
+  syncUI();
+  renderSheet();
+  requestAnimationFrame(tick);
+})();
+</script>

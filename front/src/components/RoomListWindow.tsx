@@ -3,6 +3,7 @@ import { useGame } from "@/contexts/GameContext";
 import { useEffect, useRef, useState } from "react";
 import RoomListWindowLine from "./RoomListWindowLine";
 import clsx from "clsx";
+import { Building2, X } from "lucide-react";
 import { gameEventEmitter } from "@/emitters/GameEventEmitter";
 import { GameEvent } from "@/enums/GameEvent";
 import Game from "@/models/logic/Game";
@@ -14,8 +15,8 @@ const RoomListWindow = ({ open, setWindowOpen }: { open: boolean; setWindowOpen:
   const parentRef: React.RefObject<HTMLDivElement> | null = useRef(null);
   const draggableRef: React.RefObject<HTMLDivElement> | null = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  let idInterval: NodeJS.Timeout;
+  // La ventana se centra la primera vez que llega la lista (su alto depende del número de salas)
+  const centered = useRef(false);
 
   useEffect(() => {
     setInitialPos();
@@ -37,19 +38,25 @@ const RoomListWindow = ({ open, setWindowOpen }: { open: boolean; setWindowOpen:
     };
   }, []);
 
+  // Mientras la ventana está abierta, la lista se refresca cada 10 s; al cerrarla se para
   useEffect(() => {
-    if (open) {
-      game!.requestRoomsList();
-      idInterval = setInterval(() => {
-        game!.requestRoomsList();
-      }, 10000);
-    } else {
-      if (idInterval) {
-        clearInterval(idInterval);
-      }
+    if (!open) {
       setRooms(null);
+      return;
     }
-  }, [open]);
+    game!.requestRoomsList();
+    const idInterval = setInterval(() => {
+      game!.requestRoomsList();
+    }, 10000);
+    return () => clearInterval(idInterval);
+  }, [open, game]);
+
+  useEffect(() => {
+    if (rooms && !centered.current) {
+      centered.current = true;
+      setInitialPos();
+    }
+  }, [rooms]);
 
   const setInitialPos = () => {
     const parent = parentRef.current!.getBoundingClientRect();
@@ -110,25 +117,26 @@ const RoomListWindow = ({ open, setWindowOpen }: { open: boolean; setWindowOpen:
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}>
-      <div ref={draggableRef} 
-        className="absolute w-[290px] h-[316px] z-20 p-0 m-0 bg-roomListWindow border border-black rounded-lg pointer-events-auto"
+      <div ref={draggableRef}
+        className="absolute w-[300px] max-h-[316px] z-20 flex flex-col bg-[#2C2C2C] border border-[#383838] rounded-2xl shadow-2xl overflow-hidden pointer-events-auto"
         >
-        <div className="relative bg-roomListWindowHeader h-[30px] text-center text-white rounded-t-md flex justify-center items-center cursor-move"
+        <div className="h-11 shrink-0 pl-4 pr-2 flex items-center justify-between border-b border-[#383838] cursor-move select-none"
           onMouseDown={handleMouseDown}>
-          <span>
-            Navegador
+          <span className="flex items-center gap-2 text-sm font-bold text-white">
+            <Building2 className="w-4 h-4 text-neutral-400" />
+            Salas
           </span>
-          <span className="absolute right-[5px] top-[5px] rounded bg-closeButtonRed text-white w-[20px] h-[20px] border border-black cursor-pointer flex justify-center items-center"
+          <button type="button" aria-label="Cerrar"
+            className="p-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-[#383838] transition-colors"
+            onMouseDown={e => e.stopPropagation()}
             onClick={onClose}>
-            <span>X</span>
-          </span>
+            <X className="w-4 h-4" />
+          </button>
         </div>
-        <div className="p-[15px]">
-          <div className="bg-white p-[5px]">
-            {
-              rooms && rooms.map((r, i) => <RoomListWindowLine roomName={r.name} playerCount={r.players} onClick={joinRoom} key={i} index={i} /> )
-            }
-          </div>
+        <div className="flex-1 min-h-0 overflow-y-auto p-2 space-y-1">
+          {
+            rooms && rooms.map((r, i) => <RoomListWindowLine roomName={r.name} playerCount={r.players} onClick={joinRoom} key={i} /> )
+          }
         </div>
       </div>
     </div>

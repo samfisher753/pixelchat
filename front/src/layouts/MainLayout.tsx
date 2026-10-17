@@ -9,11 +9,20 @@ import Spinner from '@/components/Spinner';
 import { useGame } from '@/contexts/GameContext';
 import Game from '@/models/logic/Game';
 import LayoutNavBar from '@/components/LayoutNavBar';
+import LookEditor from '@/components/LookEditor';
+import { useAuth } from '@/providers/AuthProvider';
+import apiService from '@/services/apiService';
+import type { AuthUser } from '@/types/AuthUser';
+import { parseLook, randomLook, serializeLook } from '@/models/others/avatar/Look';
+import { assets } from '@/models/others/Assets';
 
 const MainLayout = () => {
   const [loading, setLoading] = useState(true);
   const location = useLocation();
   const game: Game | null = useGame();
+  const auth = useAuth();
+  const [choosingLook, setChoosingLook] = useState(false);
+  const lookChecked = useRef(false);
 
   const feedRef    = useRef<HTMLDivElement>(null);
   const chatRef    = useRef<HTMLDivElement>(null);
@@ -36,6 +45,26 @@ const MainLayout = () => {
       game.createInfoSpans();
     }
   }, [game]);
+
+  // Quien entra sin un aspecto válido (cuenta nueva o un nombre antiguo de Habbo) elige uno.
+  // Los usuarios demo reciben uno aleatorio para entrar directos.
+  useEffect(() => {
+    const user = auth.user;
+    if (loading || !game || !user || lookChecked.current) return;
+    lookChecked.current = true;
+    // Sin WebGL no se puede ver el configurador: esos usuarios se quedan con la silueta base
+    if (parseLook(user.look) !== null || !assets.canGenerateAvatars) return;
+    if (user.demo) {
+      apiService.patch<AuthUser>('/users/me', { look: serializeLook(randomLook()) })
+        .then(updated => {
+          auth.updateUser(updated);
+          game.updatePlayer(updated);
+        })
+        .catch(() => {});
+    } else {
+      setChoosingLook(true);
+    }
+  }, [loading, game, auth]);
 
   // Usar `inert` para desactivar completamente la interactividad de las páginas
   // inactivas, incluyendo canvas y elementos con handlers DOM directos.
@@ -83,6 +112,7 @@ const MainLayout = () => {
           </main>
         </div>
       )}
+      {choosingLook && <LookEditor firstTime onClose={() => setChoosingLook(false)} />}
     </>
   );
 };

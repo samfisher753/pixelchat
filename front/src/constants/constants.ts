@@ -2,6 +2,5 @@
 // Change server index.js value too if modifying file size
 export const MAX_FILE_SIZE_BYTES: number = 300 * 1024 * 1024; // 300 MB
 export const MAX_MSG_LENGTH: number = 136;
-export const DEFAULT_AVATAR: string = "base";
-export const DEFAULT_HABBO_AVATAR: string = "defaultAvatar";
-export const AVATAR_API_URL = import.meta.env.VITE_WORLD_URL + '/api/avatarimage';
+// Clave con la que se guardan en Assets los sprites del avatar por defecto
+export const DEFAULT_AVATAR: string = "default";

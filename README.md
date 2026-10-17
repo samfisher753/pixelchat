@@ -2,7 +2,7 @@
 
 ![Logo PixelChat](front/src/assets/logo-pixelchat.svg)
 
-A habbo-like web chat application. I've used the habbo imaging api to get the avatars from habbo.es. Then I draw them in a **canvas** as well as the room. There is no avatar customization but you can change the avatar whenever you want in the profile page. Also, there is no room customization, no furniture. The 2d chat is pretty basic, you can walk around, sit, wave (with commands like ":sit" or "o/") and chat with other users. Also you can send voice notes or drag and drop images in the chat to send them. 
+A habbo-like web chat application. The avatars are PixelChat's own: each one is a small 3D box character built with three.js from the user's look string and rendered in the browser into isometric pixel-art sprites, which I draw in a **canvas** as well as the room. You choose your look the first time you log in and can change it whenever you want from the profile page. There is no room customization, no furniture. The 2d chat is pretty basic, you can walk around, sit, wave (with commands like ":sit" or "o/") and chat with other users. Also you can send voice notes or drag and drop images in the chat to send them. 
 
 Recently I've added the registration feature, so you can register an account and login to use the chat, but I still maintain a demo mode where you can login with a temporary account in case you don't want to register just to try it. 
 

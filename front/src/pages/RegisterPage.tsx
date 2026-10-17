@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router';
-import { Mail, User, UserCircle, ArrowRight } from 'lucide-react';
+import { Mail, User, ArrowRight } from 'lucide-react';
 import PasswordInput from '@/components/PasswordInput';
 import { toast } from 'sonner';
 import logo from '@/assets/logo-pixelchat.svg';
@@ -18,7 +18,6 @@ function RegisterPage() {
 
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
-  const [look, setLook] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -40,7 +39,6 @@ function RegisterPage() {
         email,
         username,
         password,
-        look: look || undefined,
       });
       toast.success('¡Cuenta creada! Revisa tu email para verificar la cuenta.', { duration: 5000 });
       navigate('/login');
@@ -126,22 +124,6 @@ function RegisterPage() {
                 />
               </div>
               {errors.username && <p className="mt-1.5 ml-1 text-xs text-red-400">{errors.username}</p>}
-            </div>
-
-            <div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <UserCircle className="h-5 w-5 text-neutral-500" />
-                </div>
-                <input
-                  type="text"
-                  className={inputClass('look')}
-                  placeholder="Avatar de Habbo.es (opcional)"
-                  value={look}
-                  onChange={e => setLook(e.target.value)}
-                />
-              </div>
-              {errors.look && <p className="mt-1.5 ml-1 text-xs text-red-400">{errors.look}</p>}
             </div>
 
             <div>

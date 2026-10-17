@@ -73,6 +73,8 @@ const messages: Record<string, string> = {
     'La ubicación no puede superar los 100 caracteres',
   'website.validation.size':
     'La web no puede superar los 255 caracteres',
+  'look.validation.pattern':
+    'El aspecto no es válido. Prueba a elegirlo de nuevo',
 };
 
 /**

@@ -1,7 +1,7 @@
 import { PlayerStatus } from "@/enums/PlayerStatus";
 import { Pos } from "@/types/Pos";
 
-type AnimationFrames = HTMLImageElement[] | string[];
+type AnimationFrames = HTMLImageElement[] | HTMLCanvasElement[] | string[];
 
 type EightDirections = [AnimationFrames, AnimationFrames, AnimationFrames, AnimationFrames, AnimationFrames, AnimationFrames, AnimationFrames, AnimationFrames];
 type FourDirections = [AnimationFrames, AnimationFrames, AnimationFrames, AnimationFrames];
