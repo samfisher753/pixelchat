@@ -1,11 +1,11 @@
 import FileMsgLink from '@/components/ChatMsg/FileMsgLink';
 import { ChatMsgProps } from '@/components/ChatMsg/ChatMsg';
+import MsgBubble from '@/components/ChatMsg/MsgBubble';
 
 const ChatAudioMsg = ({ msg }: ChatMsgProps) => {
 
   return (
-    <div className="relative max-w-full break-words rounded-md bg-white m-0 text-sm p-[2px_8px] border border-black inline-block text-black">
-      <span className="font-bold mr-[5px]">{msg.player!.name}:</span>
+    <MsgBubble msg={msg}>
       <div>
         {(msg.type === 'audio/mpeg' || msg.type === 'audio/wav' ||
           msg.type === 'audio/mp3') &&
@@ -15,7 +15,7 @@ const ChatAudioMsg = ({ msg }: ChatMsgProps) => {
         }
         <FileMsgLink msg={msg} />
       </div>
-    </div>
+    </MsgBubble>
   );
   
 };

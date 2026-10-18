@@ -534,6 +534,8 @@ export default class Game {
     }
 
     addMsg(msg: Msg): void {
+        // Se guarda el aspecto de quien escribe, así el historial conserva su cara y su color aunque se vaya
+        if (msg.player && !msg.player.look) msg.player.look = this.room?.players[msg.player.id]?.look;
         gameEventEmitter.emit(GameEvent.AddMessage, msg);
     }
 

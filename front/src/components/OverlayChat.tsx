@@ -70,6 +70,8 @@ const OverlayChat = () => {
           if (!playerInRoom(msg)) continue;
           msg.width = ref.offsetWidth;
           msg.height = ref.offsetHeight;
+          const faceColumn = ref.querySelector<HTMLElement>('[data-face-column]');
+          msg.leftInset = faceColumn ? faceColumn.getBoundingClientRect().right - ref.getBoundingClientRect().left : 0;
           msg.dx = adjustX - (msg.width / 2);
           msg.dy = -msg.height;
           msg.pos = game!.room!.players[msg.player!.id].pos!;
@@ -117,7 +119,7 @@ const OverlayChat = () => {
         // Player pos reference image
         const playerPosImageWidth: number = 9;
         const borderRadius: number = 6;
-        const leftLimit: number = msg.left + borderRadius;
+        const leftLimit: number = msg.left + (msg.leftInset ?? 0) + 1;
         const rightLimit: number = msg.left + msg.width! - borderRadius;
         const playerPosRef: HTMLImageElement | null = playerPosRefs.current[i];
         if (!playerPosRef) continue;

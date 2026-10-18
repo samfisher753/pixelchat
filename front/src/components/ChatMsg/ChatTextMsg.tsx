@@ -1,4 +1,5 @@
 import { ChatMsgProps } from '@/components/ChatMsg/ChatMsg';
+import MsgBubble from '@/components/ChatMsg/MsgBubble';
 
 const ChatTextMsg = ({ msg }: ChatMsgProps) => {
 
@@ -28,10 +29,9 @@ const ChatTextMsg = ({ msg }: ChatMsgProps) => {
   };
 
   return (
-    <div className="relative max-w-full break-words rounded-md bg-white m-0 text-sm p-[2px_8px] border border-black inline-block text-black">
-      <span className="font-bold mr-[5px]">{msg.player!.name}:</span>
+    <MsgBubble msg={msg}>
       <span>{parseTextWithLinks(msg.text!)}</span>
-    </div>
+    </MsgBubble>
   );
 };
 
