@@ -1,8 +1,12 @@
 import Player from "./models/Player";
 import Room from "./models/Room";
-import * as objectstorage from "oci-objectstorage";
-import common = require("oci-common");
+import { apiService } from './services/apiService';
 import { Server as SocketIOServer } from 'socket.io';
+
+// Nombre de un archivo del chat en el bucket: chat-<id del usuario>-<id aleatorio>-<nombre original>
+const CHAT_FILE_PREFIX = /^chat-[0-9a-f-]{36}-[0-9a-f-]{36}-/;
+// Tipos de archivo que admite el chat
+const CHAT_FILE_TYPE = /^(image|video|audio)\/[A-Za-z0-9.+-]+$/;
 
 export default class Server {
 
@@ -19,8 +23,6 @@ export default class Server {
 
     fps2: number;
     timestep2: number;
-
-    ociClient: objectstorage.ObjectStorageClient;
 
     constructor(io: SocketIOServer) {
         this.rooms = {};
@@ -40,61 +42,11 @@ export default class Server {
         this.createMockRooms();
         this.bindEvents(io);
 
-        this.ociClient = this.ociInit();
-
         // Start server loop
         this.lastFrameTimeMs = Date.now();
         this.accumulator = 0;
         this.gameLoop();
         this.sendLoop();
-    }
-
-    ociInit() {
-        const configurationFilePath = "./oci-config";
-        const provider = new common.ConfigFileAuthenticationDetailsProvider(configurationFilePath);
-        return new objectstorage.ObjectStorageClient({ authenticationDetailsProvider: provider });
-    }
-
-    async getParUploadUrl(fileName: string) {
-        const expireDate = new Date();
-        expireDate.setHours(expireDate.getHours() + 1);
-
-        const createPreauthenticatedRequestDetails = {
-            name: "upload-" + fileName,
-            objectName: fileName,
-            accessType: objectstorage.models.CreatePreauthenticatedRequestDetails.AccessType.ObjectWrite,
-            timeExpires: expireDate,
-        }
-
-        const createPreauthenticatedRequestRequest = {
-            namespaceName: "axyrawf9bk3a",
-            bucketName: "pixelchat-files",
-            createPreauthenticatedRequestDetails: createPreauthenticatedRequestDetails
-        };
-
-        const createPreauthenticatedRequestResponse = await this.ociClient.createPreauthenticatedRequest(createPreauthenticatedRequestRequest);
-        return createPreauthenticatedRequestResponse.preauthenticatedRequest.fullPath;
-    }
-
-    async getParDownloadUrl(fileName: string) {
-        const expireDate = new Date();
-        expireDate.setHours(expireDate.getHours() + 1);
-
-        const createPreauthenticatedRequestDetails = {
-            name: "download-" + fileName,
-            objectName: fileName,
-            accessType: objectstorage.models.CreatePreauthenticatedRequestDetails.AccessType.ObjectRead,
-            timeExpires: expireDate,
-        }
-
-        const createPreauthenticatedRequestRequest = {
-            namespaceName: "axyrawf9bk3a",
-            bucketName: "pixelchat-files",
-            createPreauthenticatedRequestDetails: createPreauthenticatedRequestDetails
-        };
-
-        const createPreauthenticatedRequestResponse = await this.ociClient.createPreauthenticatedRequest(createPreauthenticatedRequestRequest);
-        return createPreauthenticatedRequestResponse.preauthenticatedRequest.fullPath;
     }
 
     gameLoop() {
@@ -259,17 +211,27 @@ export default class Server {
 
             });
 
-            socket.on('par upload', async (fileName) => {
-                console.log(player.username + ' is requesting a PAR to upload the file:\n' + fileName);
-                const url = await this.getParUploadUrl(fileName);
-                socket.emit('par upload', { fileName, url });
-            });
-
-            socket.on('par download', async (fileName) => {
-                const url = await this.getParDownloadUrl(fileName);
-                const sender = { name: player.username, id: player.id };
-                for (let p in room.players) {
-                    this.sockets[p].emit('par download', { fileName, url, player: sender });
+            // El navegador ha subido un archivo del chat (con la URL que le dio la api) y lo anuncia.
+            // Solo se aceptan archivos de este jugador: su nombre empieza por chat-<su id>-.
+            // La api vuelve a comprobarlo antes de dar el enlace de lectura, que se reparte a la sala
+            // junto con el tipo (para que cada navegador lo muestre sin tener que descargarlo).
+            socket.on('file uploaded', async (data: { objectName?: unknown; contentType?: unknown }) => {
+                const objectName = data?.objectName, contentType = data?.contentType;
+                if (typeof objectName !== 'string' || !objectName.startsWith('chat-' + player.id + '-') || !room) return;
+                if (typeof contentType !== 'string' || !CHAT_FILE_TYPE.test(contentType)) return;
+                const fileName = objectName.replace(CHAT_FILE_PREFIX, '');
+                try {
+                    const { url } = await apiService.get<{ url: string }>('/internal/chat-files/read-url'
+                        + '?userId=' + encodeURIComponent(player.id) + '&objectName=' + encodeURIComponent(objectName));
+                    if (!room) return;
+                    console.log(player.username + ' shared the file: ' + fileName);
+                    const sender = { name: player.username, id: player.id };
+                    for (const p in room.players) {
+                        this.sockets[p]?.emit('par download', { fileName, url, contentType, player: sender });
+                    }
+                } catch (err) {
+                    console.error('Could not share the file ' + objectName + ':', err);
+                    socket.emit('file failed', fileName);
                 }
             });
 

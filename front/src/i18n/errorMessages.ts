@@ -73,6 +73,27 @@ const messages: Record<string, string> = {
     'La ubicación no puede superar los 100 caracteres',
   'website.validation.size':
     'La web no puede superar los 255 caracteres',
+  'users.invalid_image_url':
+    'La imagen no es válida',
+
+  // -------------------------------------------------------------------------
+  // Almacenamiento de imágenes (storage.*)
+  // -------------------------------------------------------------------------
+  'storage.unavailable':
+    'Ahora mismo no se pueden subir imágenes. Inténtalo más tarde',
+  'storage.upload_failed':
+    'No se ha podido subir el archivo. Inténtalo de nuevo',
+
+  // -------------------------------------------------------------------------
+  // Archivos del chat (chat.*)
+  // -------------------------------------------------------------------------
+  'chat.file_too_large':
+    'El archivo es demasiado grande (máximo 25 MB)',
+  'chat.file_not_allowed':
+    'No se puede compartir ese archivo',
+  'contentType.validation.pattern':
+    'Solo se pueden enviar imágenes, audio y vídeo',
+
   'look.validation.pattern':
     'El aspecto no es válido. Prueba a elegirlo de nuevo',
 };

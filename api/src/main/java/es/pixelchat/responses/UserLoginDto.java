@@ -17,6 +17,7 @@ public class UserLoginDto {
     private final String look;
     private final String motto;
     private final String avatarUrl;
+    private final String headerUrl;
     private final String location;
     private final String website;
     private final Instant createdAt;

@@ -7,6 +7,8 @@ import { Pos } from "@/types/Pos";
 import { grid } from "@/models/logic/Grid";
 import { useGame } from "@/contexts/GameContext";
 
+let nextOverlayKey: number = 0;
+
 const OverlayChat = () => {
 
   const game = useGame();
@@ -31,6 +33,7 @@ const OverlayChat = () => {
     const handleNewMessage = (msg: Msg) => {
       if (msg.type === "info") return;
       msg = JSON.parse(JSON.stringify(msg));
+      msg.overlayKey = nextOverlayKey++;
       setUnloadedMsgs((prevMessages) => [...prevMessages, msg]);
     };
 
@@ -142,9 +145,12 @@ const OverlayChat = () => {
     setMsgs([...msgs, msg]);
   };
 
+  // Se borran los mensajes que ya han salido del todo por arriba de la zona del chat (no de la
+  // ventana: por encima queda la barra superior, y un vídeo o un audio seguiría sonando debajo)
   const clean = () => {
+    const chatTop: number = chatRef.current?.getBoundingClientRect().top ?? 0;
     for (let i = 0; i < msgs.length; ++i) {
-      if (msgs[i].dy! + msgs[i].height! <= -game!.defaultY!) {
+      if (game!.defaultY! + msgs[i].dy! + msgs[i].height! <= chatTop) {
         msgs.splice(i, 1);
         setMsgs([...msgs]);
         --i;
@@ -195,7 +201,7 @@ const OverlayChat = () => {
         }
       </div>
       {msgs.map((msg, index) =>
-        <div key={index} className="absolute top-[-20px]">
+        <div key={msg.overlayKey} className="absolute top-[-20px]">
           <ChatMsg msg={msg}
             ref={(el) => (msgsRefs.current[index] = el)}
             mode="overlay" />
