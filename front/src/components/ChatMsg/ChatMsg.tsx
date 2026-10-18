@@ -21,6 +21,9 @@ const ChatMsg = forwardRef<HTMLDivElement, ChatMsgProps>(({msg, mode = "panel" }
       {
         "fixed max-w-[345px]": mode === "overlay",
         "relative": mode === "panel",
+        // En el panel, cada mensaje se monta 1 px sobre el anterior para que los bordes de dos
+        // bocadillos seguidos se vean como una sola línea
+        "mb-[-1px]": mode === "panel",
       })} 
       ref={ref}
       style={

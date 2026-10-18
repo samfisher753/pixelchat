@@ -16,9 +16,13 @@ export type Msg = {
     left?: number;
     top?: number;
     playerObject?: Player;
+    // Ancho de la columna de la cara a la izquierda del bocadillo (el indicador no pasa de ahí)
+    leftInset?: number;
 };
 
 export type MsgPlayer = {
     name: string;
     id: string;
+    // Aspecto de quien escribe en el momento del mensaje (para pintar su cara y su color)
+    look?: string;
 };
