@@ -8,10 +8,12 @@ import io.quarkus.security.Authenticated;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PATCH;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
@@ -28,6 +30,14 @@ public class UsersResource {
 
     @Inject
     JsonWebToken jwt;
+
+    /** Buscador de usuarios: GET /users/search?q=sam devuelve hasta 10 coincidencias. */
+    @GET
+    @Path("/search")
+    @Authenticated
+    public Response search(@QueryParam("q") String query) {
+        return Response.ok(usersService.search(query)).build();
+    }
 
     @PATCH
     @Path("/me")

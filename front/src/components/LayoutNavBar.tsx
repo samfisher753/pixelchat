@@ -4,6 +4,7 @@ import logo from "@/assets/logo-pixelchat.svg";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
 import { useGame } from "@/contexts/GameContext";
+import UserSearch from "@/components/UserSearch";
 
 const LayoutNavBar = () => {
 
@@ -32,8 +33,10 @@ const LayoutNavBar = () => {
         </nav>
       </div>
 
-      {/* Right Side: Profile & Logout */}
+      {/* Right Side: Search, Profile & Logout */}
       <div className="flex items-center gap-4">
+        <UserSearch />
+
         <nav className="flex items-center gap-2">
           <NavItem to="/profile" icon={<User className="w-4 h-4" />} label="Perfil" />
         </nav>

@@ -7,7 +7,9 @@ import es.pixelchat.mappers.UserMapper;
 import es.pixelchat.requests.ProfileImageUploadRequest;
 import es.pixelchat.requests.UpdateProfileRequest;
 import es.pixelchat.responses.ProfileImageUploadResponse;
+import es.pixelchat.responses.PublicProfileDto;
 import es.pixelchat.responses.UserLoginDto;
+import es.pixelchat.responses.UserSearchResult;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -15,6 +17,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -22,6 +25,10 @@ import java.util.UUID;
 public class UsersService {
 
     private static final Logger LOG = Logger.getLogger(UsersService.class);
+    // Buscador: desde cuántas letras se busca y cuántos resultados como mucho
+    private static final int SEARCH_MIN_LENGTH = 2;
+    private static final int SEARCH_MAX_LENGTH = 50;
+    private static final int SEARCH_LIMIT = 10;
     private static final Duration IMAGE_UPLOAD_VALIDITY = Duration.ofMinutes(10);
     private static final Map<String, String> IMAGE_EXTENSIONS = Map.of(
             "image/jpeg", "jpg",
@@ -44,6 +51,38 @@ public class UsersService {
         }
 
         return userMapper.toLoginDto(user);
+    }
+
+    /** Perfil público de un usuario, por su nombre de usuario. */
+    public PublicProfileDto findPublicProfile(String username) {
+        User user = User.findByUsername(username)
+                .orElseThrow(() -> new ApiException(ApiError.USER_NOT_FOUND));
+        return PublicProfileDto.builder()
+                .id(user.id)
+                .username(user.username)
+                .displayName(user.displayName)
+                .avatarUrl(user.avatarUrl)
+                .headerUrl(user.headerUrl)
+                .motto(user.motto)
+                .look(user.look)
+                .createdAt(user.createdAt)
+                .build();
+    }
+
+    /** Busca usuarios por el principio de su nombre de usuario o de su nombre visible. */
+    public List<UserSearchResult> search(String query) {
+        String prefix = query == null ? "" : query.trim();
+        if (prefix.length() < SEARCH_MIN_LENGTH) return List.of();
+        if (prefix.length() > SEARCH_MAX_LENGTH) prefix = prefix.substring(0, SEARCH_MAX_LENGTH);
+
+        return User.searchByPrefix(prefix, SEARCH_LIMIT).stream()
+                .map(user -> UserSearchResult.builder()
+                        .id(user.id)
+                        .username(user.username)
+                        .displayName(user.displayName)
+                        .avatarUrl(user.avatarUrl)
+                        .build())
+                .toList();
     }
 
     @Transactional

@@ -9,6 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -100,6 +101,21 @@ public class User extends PanacheEntityBase {
 
     public static boolean existsByUsername(String username) {
         return count("LOWER(username) = LOWER(?1)", username) > 0;
+    }
+
+    // Usuarios cuyo nombre de usuario o nombre visible empieza por `prefix`, sin los demo.
+    // La tabla compara sin distinguir mayúsculas ni acentos, y como solo se busca por el principio
+    // del nombre, la base de datos puede usar los índices de username y display_name.
+    public static List<User> searchByPrefix(String prefix, int limit) {
+        String pattern = escapeLike(prefix) + "%";
+        return find("isDemo = false and (username like ?1 escape '!' or displayName like ?1 escape '!') order by username", pattern)
+                .page(0, limit)
+                .list();
+    }
+
+    // % y _ son comodines en LIKE: se escapan (con !) para buscarlos como texto normal
+    private static String escapeLike(String text) {
+        return text.replace("!", "!!").replace("%", "!%").replace("_", "!_");
     }
 
     public static long deleteExpiredDemoUsers(Instant olderThan) {
