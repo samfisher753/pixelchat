@@ -1,7 +1,7 @@
 import { ReactNode, useEffect, useRef, useState } from 'react';
-import { Settings, MapPin, Calendar, Link as LinkIcon, Camera, X, Check, Loader2, Shirt, Upload, Trash2 } from 'lucide-react';
+import { Settings, Camera, X, Check, Loader2, Shirt, Upload, Trash2 } from 'lucide-react';
 import LookEditor from '@/components/LookEditor';
-import AvatarFigure from '@/components/AvatarFigure';
+import ProfileCard from '@/components/ProfileCard';
 import ImageCropDialog from '@/components/ImageCropDialog';
 import { PROFILE_IMAGE_SIZE, ProfileImageType, removeProfileImage, uploadProfileImage } from '@/services/profileImageService';
 import { toast } from 'sonner';
@@ -14,19 +14,6 @@ import { useGame } from '@/contexts/GameContext';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatJoinDate(isoDate: string): string {
-  try {
-    const date = new Date(isoDate);
-    return date.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
-  } catch {
-    return '';
-  }
-}
-
-function normalizeWebsite(url: string): string {
-  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-}
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
@@ -88,7 +75,8 @@ interface ProfileForm {
 // Componente
 // ---------------------------------------------------------------------------
 
-export function ProfilePage() {
+// Tu propio perfil (/profile): la tarjeta con los botones y el formulario para editarlo
+export function MyProfilePage() {
   const auth = useAuth();
   const user = auth.user!;
   const game = useGame();
@@ -223,19 +211,13 @@ export function ProfilePage() {
     </div>
   );
 
-  const displayName = user.displayName || user.username;
-  const joinDate    = user.createdAt ? formatJoinDate(user.createdAt) : null;
+  const btn = 'flex items-center gap-2 py-2 text-white rounded-full font-bold transition-colors disabled:opacity-50';
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      {/* Header: cover + avatar + botones */}
-      <div className="bg-[#2C2C2C] rounded-3xl overflow-hidden shadow-lg border border-[#383838] relative">
-        <div className="relative w-full aspect-[4/1]">
-          {user.headerUrl ? (
-            <img src={user.headerUrl} alt="" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-[#1E1E1E] via-[#022F72] to-[#1E1E1E] opacity-90" />
-          )}
+      <ProfileCard
+        profile={user}
+        headerSlot={<>
           {uploading === 'header' && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <Loader2 className="w-8 h-8 text-white animate-spin" />
@@ -249,178 +231,85 @@ export function ProfilePage() {
               Cambiar cabecera
             </ImageMenu>
           </div>
-        </div>
-
-        <div className="relative z-10 px-8 pb-8">
-          <div className="flex justify-between items-end -mt-16 mb-4">
-            {/* Avatar */}
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full border-4 border-[#2C2C2C] bg-[#383838] overflow-hidden shadow-2xl flex items-center justify-center">
-                {user.avatarUrl ? (
-                  <img
-                    src={user.avatarUrl}
-                    alt="Avatar"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-4xl font-bold text-white select-none">
-                    {(user.displayName || user.username).charAt(0).toUpperCase()}
-                  </span>
-                )}
-                {uploading === 'avatar' && (
-                  <div className="absolute inset-0 m-1 rounded-full bg-black/50 flex items-center justify-center">
-                    <Loader2 className="w-7 h-7 text-white animate-spin" />
-                  </div>
-                )}
-              </div>
-              <div className="absolute bottom-1 right-1">
-                <ImageMenu label="Cambiar foto de perfil" hasImage={!!user.avatarUrl} align="left"
-                  onUpload={() => chooseImage('avatar')} onRemove={() => saveImage('avatar', null)}
-                  buttonClassName="bg-[#383838] text-white p-2 rounded-full hover:bg-[#022F72] border-2 border-[#2C2C2C] transition-colors shadow-md">
-                  <Camera className="w-4 h-4" />
-                </ImageMenu>
-              </div>
+        </>}
+        avatarSlot={<>
+          {uploading === 'avatar' && (
+            <div className="absolute inset-0 m-1 rounded-full bg-black/50 flex items-center justify-center">
+              <Loader2 className="w-7 h-7 text-white animate-spin" />
             </div>
-
-            {/* Botones edición */}
-            {!isEditing ? (
-              <div className="flex flex-wrap justify-end items-center gap-2">
-                <button
-                  onClick={() => setIsEditingLook(true)}
-                  className="flex items-center gap-2 px-6 py-2 bg-[#383838] hover:bg-[#444444] text-white rounded-full font-bold transition-colors border border-[#444444]"
-                >
-                  <Shirt className="w-4 h-4" />
-                  Cambiar aspecto
-                </button>
-                <button
-                  onClick={handleEdit}
-                  className="flex items-center gap-2 px-6 py-2 bg-[#383838] hover:bg-[#444444] text-white rounded-full font-bold transition-colors border border-[#444444]"
-                >
-                  <Settings className="w-4 h-4" />
-                  Editar Perfil
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleCancel}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-5 py-2 bg-[#383838] hover:bg-[#444444] text-white rounded-full font-bold transition-colors border border-[#444444] disabled:opacity-50"
-                >
-                  <X className="w-4 h-4" />
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-5 py-2 bg-[#022F72] hover:bg-blue-800 text-white rounded-full font-bold transition-colors disabled:opacity-50"
-                >
-                  {isSaving
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <Check className="w-4 h-4" />}
-                  Guardar
-                </button>
-              </div>
-            )}
+          )}
+          <div className="absolute bottom-1 right-1">
+            <ImageMenu label="Cambiar foto de perfil" hasImage={!!user.avatarUrl} align="left"
+              onUpload={() => chooseImage('avatar')} onRemove={() => saveImage('avatar', null)}
+              buttonClassName="bg-[#383838] text-white p-2 rounded-full hover:bg-[#022F72] border-2 border-[#2C2C2C] transition-colors shadow-md">
+              <Camera className="w-4 h-4" />
+            </ImageMenu>
           </div>
-
-          {/* Error general */}
+        </>}
+        actions={!isEditing ? (
+          <div className="flex flex-wrap justify-end items-center gap-2">
+            <button onClick={() => setIsEditingLook(true)} className={`${btn} px-6 bg-[#383838] hover:bg-[#444444] border border-[#444444]`}>
+              <Shirt className="w-4 h-4" />
+              Cambiar aspecto
+            </button>
+            <button onClick={handleEdit} className={`${btn} px-6 bg-[#383838] hover:bg-[#444444] border border-[#444444]`}>
+              <Settings className="w-4 h-4" />
+              Editar Perfil
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <button onClick={handleCancel} disabled={isSaving} className={`${btn} px-5 bg-[#383838] hover:bg-[#444444] border border-[#444444]`}>
+              <X className="w-4 h-4" />
+              Cancelar
+            </button>
+            <button onClick={handleSave} disabled={isSaving} className={`${btn} px-5 bg-[#022F72] hover:bg-blue-800`}>
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              Guardar
+            </button>
+          </div>
+        )}
+        // Al pulsar tu personaje se puede cambiar el aspecto
+        onFigureClick={() => setIsEditingLook(true)}
+        figureTitle="Cambiar aspecto"
+      >
+        {/* Mientras editas, el formulario sustituye a los datos del perfil */}
+        {isEditing ? (<>
           {errors.general && (
             <div className="mb-4 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
               {errors.general}
             </div>
           )}
-
-          {/* Datos del perfil */}
-          {!isEditing ? (
-            // --------------- Modo vista ---------------
-            <div className="flex gap-6">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-white">{displayName}</h1>
-              <p className="text-neutral-400 font-medium">@{user.username}</p>
-
-              {user.motto && (
-                <p className="mt-4 text-neutral-300 max-w-2xl text-[15px] leading-relaxed">
-                  {user.motto}
-                </p>
-              )}
-
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-4 text-sm text-neutral-400">
-                {user.location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 shrink-0" />
-                    <span>{user.location}</span>
-                  </div>
-                )}
-                {user.website && (
-                  <div className="flex items-center gap-1.5">
-                    <LinkIcon className="w-4 h-4 shrink-0" />
-                    <a
-                      href={normalizeWebsite(user.website)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[#4b8df8] hover:underline truncate max-w-[200px]"
-                    >
-                      {user.website}
-                    </a>
-                  </div>
-                )}
-                {joinDate && (
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-4 h-4 shrink-0" />
-                    <span>Se unió en {joinDate}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex gap-6 mt-6 pt-6 border-t border-[#383838]">
-                <div className="flex gap-2 cursor-pointer hover:opacity-80 transition-opacity">
-                  <span className="font-bold text-white">0</span>
-                  <span className="text-neutral-400">Amigos</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Personaje: así se le ve en las salas. Al pulsarlo se puede cambiar el aspecto */}
-            <button type="button" onClick={() => setIsEditingLook(true)} title="Cambiar aspecto"
-              className="shrink-0 self-start -mt-2 px-4 py-5 max-sm:px-2 max-sm:py-3 rounded-2xl bg-[#1E1E1E] border border-[#383838] hover:border-neutral-500 transition-colors">
-              {/* En pantallas estrechas, más pequeño para dejar sitio al nombre */}
-              <AvatarFigure look={user.look} className="max-sm:!text-[1px]" />
-            </button>
-            </div>
-          ) : (
-            // --------------- Modo edición ---------------
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1.5">Nombre de usuario</label>
-                  {field('username', 'usuario', { maxLength: 15 })}
-                </div>
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1.5">Nombre visible</label>
-                  {field('displayName', 'Tu nombre', { maxLength: 100 })}
-                </div>
-              </div>
-
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Misión</label>
-                {field('motto', 'Cuéntanos algo sobre ti…', { maxLength: 50 })}
+                <label className="block text-xs text-neutral-500 mb-1.5">Nombre de usuario</label>
+                {field('username', 'usuario', { maxLength: 15 })}
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1.5">Ubicación</label>
-                  {field('location', 'Ciudad, País', { maxLength: 100 })}
-                </div>
-                <div>
-                  <label className="block text-xs text-neutral-500 mb-1.5">Web</label>
-                  {field('website', 'https://tu-web.com', { maxLength: 255 })}
-                </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1.5">Nombre visible</label>
+                {field('displayName', 'Tu nombre', { maxLength: 100 })}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+
+            <div>
+              <label className="block text-xs text-neutral-500 mb-1.5">Misión</label>
+              {field('motto', 'Cuéntanos algo sobre ti…', { maxLength: 50 })}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1.5">Ubicación</label>
+                {field('location', 'Ciudad, País', { maxLength: 100 })}
+              </div>
+              <div>
+                <label className="block text-xs text-neutral-500 mb-1.5">Web</label>
+                {field('website', 'https://tu-web.com', { maxLength: 255 })}
+              </div>
+            </div>
+          </div>
+        </>) : null}
+      </ProfileCard>
 
       {/* Tabs */}
       <div className="mt-6 flex border-b border-[#383838]">
@@ -458,4 +347,4 @@ export function ProfilePage() {
   );
 }
 
-export default ProfilePage;
+export default MyProfilePage;

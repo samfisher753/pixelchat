@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import ChatPage from '@/pages/ChatPage';
 import FeedPage from '@/pages/FeedPage';
-import ProfilePage from '@/pages/ProfilePage';
+import MyProfilePage from '@/pages/MyProfilePage';
 import UserProfilePage from '@/pages/UserProfilePage';
 import { useEffect, useRef, useState } from 'react';
 import { gameEventEmitter } from '@/emitters/GameEventEmitter';
@@ -114,7 +114,7 @@ const MainLayout = () => {
             </div>
 
             <div ref={profileRef} className={pageClass('/profile')}>
-              <ProfilePage />
+              <MyProfilePage />
             </div>
 
             {viewedUsername && (

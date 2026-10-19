@@ -166,14 +166,16 @@ const LookEditor = ({ firstTime = false, onClose }: LookEditorProps) => {
           </p>
         </div>
 
-        <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)]">
+        {/* La fila ocupa solo el alto que queda (minmax(0,1fr)): si no cabe, cada columna hace scroll */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[240px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
           {/* Vista previa */}
-          <div className="flex flex-col items-center gap-4 p-6 bg-[#1E1E1E] md:border-r border-[#383838]">
+          <div className="min-h-0 overflow-y-auto flex flex-col items-center gap-4 p-6 bg-[#1E1E1E] md:border-r border-[#383838]">
             <canvas
               ref={canvasRef}
               width={64}
               height={112}
-              className="w-[192px] h-[336px] max-md:w-[128px] max-md:h-[224px]"
+              // En ventanas bajas se encoge con el alto de la ventana (el ancho sigue la proporción del sprite)
+              className="shrink-0 w-auto h-[min(336px,40vh)] max-md:h-[min(224px,30vh)]"
               style={{ imageRendering: 'pixelated' }}
               role="img"
               aria-label="Vista previa del avatar"
