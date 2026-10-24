@@ -118,7 +118,9 @@ const ResetPasswordPage = () => {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-[#1E1E1E] flex flex-col justify-center items-center p-4 font-sans">
+    <div className="h-screen overflow-y-auto bg-[#1E1E1E]">
+    {/* El body no tiene scroll (por el juego): esta capa lo pone, para pantallas bajas */}
+    <div className="min-h-full flex flex-col justify-center items-center p-4 font-sans">
       <div className="w-full max-w-md bg-[#2C2C2C] rounded-3xl shadow-2xl overflow-hidden border border-[#383838]">
         <div className="p-8">
 
@@ -269,6 +271,7 @@ const ResetPasswordPage = () => {
           </p>
         </div>
       </div>
+    </div>
     </div>
   );
 };
