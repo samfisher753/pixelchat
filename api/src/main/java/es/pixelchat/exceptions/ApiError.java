@@ -19,7 +19,23 @@ public enum ApiError {
     VERIFY_EMAIL_TOKEN_NOT_FOUND(Response.Status.BAD_REQUEST, "auth.verify_email_token_not_found", "El token de verificación no existe o ya fue usado"),
     VERIFY_EMAIL_TOKEN_EXPIRED(Response.Status.BAD_REQUEST, "auth.verify_email_token_expired", "El token de verificación ha expirado"),
     RESET_PASSWORD_TOKEN_NOT_FOUND(Response.Status.BAD_REQUEST, "auth.reset_password_token_not_found", "El código no es válido o ya fue usado"),
-    RESET_PASSWORD_TOKEN_EXPIRED(Response.Status.BAD_REQUEST, "auth.reset_password_token_expired", "El código ha expirado, solicita uno nuevo");
+    RESET_PASSWORD_TOKEN_EXPIRED(Response.Status.BAD_REQUEST, "auth.reset_password_token_expired", "El código ha expirado, solicita uno nuevo"),
+
+    // -------------------------------------------------------------------------
+    // Usuarios
+    // -------------------------------------------------------------------------
+    INVALID_IMAGE_URL(Response.Status.BAD_REQUEST, "users.invalid_image_url", "La imagen no es válida"),
+
+    // -------------------------------------------------------------------------
+    // Chat
+    // -------------------------------------------------------------------------
+    CHAT_FILE_TOO_LARGE(Response.Status.REQUEST_ENTITY_TOO_LARGE, "chat.file_too_large", "El archivo es demasiado grande"),
+    CHAT_FILE_NOT_ALLOWED(Response.Status.FORBIDDEN, "chat.file_not_allowed", "No se puede compartir ese archivo"),
+
+    // -------------------------------------------------------------------------
+    // Almacenamiento
+    // -------------------------------------------------------------------------
+    STORAGE_UNAVAILABLE(Response.Status.SERVICE_UNAVAILABLE, "storage.unavailable", "El almacenamiento de imágenes no está disponible");
 
     private final Response.Status status;
     private final String code;

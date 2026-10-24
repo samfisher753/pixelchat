@@ -18,6 +18,11 @@ export type Msg = {
     playerObject?: Player;
     // Ancho de la columna de la cara a la izquierda del bocadillo (el indicador no pasa de ahí)
     leftInset?: number;
+    // Identificador fijo del bocadillo flotante, para que React no mezcle mensajes al borrar los antiguos
+    overlayKey?: number;
+    // Tamaño real del vídeo, para que el bocadillo aparezca ya con su tamaño final
+    mediaWidth?: number;
+    mediaHeight?: number;
 };
 
 export type MsgPlayer = {

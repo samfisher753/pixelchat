@@ -8,11 +8,24 @@
 #   docker build --build-arg NATIVE_XMX=8g -t pixelchat-api:native .
 
 # ---------------------------------------------------------------------------
-# Stage 1: ejecutable nativo (Mandrel + JDK 21, alineado con Quarkus 3.34)
+# Stage 1: ejecutable nativo (Mandrel + JDK 25)
 # ---------------------------------------------------------------------------
-FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-21 AS build
+# JDK 25 y no 21: Mandrel 23.1 (JDK 21) está terminando su vida y las correcciones de seguridad
+# llegarán antes a la línea 25. La api también se compila para Java 25 (toolchain en build.gradle).
+# La etiqueta jdk-25 se mueve sola a la última versión 25.x al reconstruir.
+FROM quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-25 AS build
 
 ARG NATIVE_XMX=6g
+
+# CVE-2026-91403 (octubre 2026): las claves de varios certificados intermedios de eMudhra están
+# comprometidas. Mientras Mandrel no publique un JDK con la corrección, se quitan del almacén de
+# certificados (cacerts) los dos certificados raíz afectados, como indica https://openjdk.org/emudhra.
+# Importa porque un ejecutable nativo guarda dentro el cacerts del JDK con el que se compila, y la api
+# hace conexiones TLS salientes (OCI, correo). "|| true": si una versión futura ya no los trae, no falla.
+# Se puede quitar cuando la imagen jdk-25 traiga un JDK corregido (25.0.5.0.2 o posterior).
+USER root
+RUN keytool -delete -cacerts -storepass changeit -alias "emsigneccrootcag3 [jdk]" || true; \
+    keytool -delete -cacerts -storepass changeit -alias "comodoaaaca [jdk]" || true
 
 USER quarkus
 WORKDIR /build

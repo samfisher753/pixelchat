@@ -26,4 +26,11 @@ public class UpdateProfileRequest {
     @Size(max = 255, message = "El look no puede superar los 255 caracteres")
     @Pattern(regexp = LookFormat.REGEX_OR_EMPTY, message = "El aspecto no tiene un formato válido")
     public String look;
+
+    // URLs devueltas por POST /users/me/images; vacío → quitar la imagen
+    @Size(max = 255, message = "La URL de la imagen es demasiado larga")
+    public String avatarUrl;
+
+    @Size(max = 255, message = "La URL de la imagen es demasiado larga")
+    public String headerUrl;
 }

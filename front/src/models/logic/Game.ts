@@ -12,9 +12,36 @@ import { Msg } from '@/types/Msg'
 import { RoomListItem } from '@/types/RoomListItem'
 import { wavRecorder } from '@/models/others/WavRecorder'
 import { MAX_FILE_SIZE_BYTES } from '@/constants/constants'
-import { appendBeforeExtension, timeString } from '@/utils/Utils'
-import ociObjectStorageService from '@/services/ociObjectStorageService'
+import { uploadChatFile } from '@/services/chatFileService'
+import { ApiError } from '@/services/apiService'
+import { getErrorMessage } from '@/i18n/errorMessages'
 import { AuthUser } from '@/types/AuthUser'
+
+// Antes de mostrar una imagen o un vídeo se carga lo justo para saber su tamaño (la imagen entera,
+// del vídeo solo sus datos básicos). Así el bocadillo del chat se mide bien al aparecer.
+// Del vídeo se devuelve su tamaño: el <video> del bocadillo no lo sabe hasta cargar sus datos.
+// Si tarda demasiado o falla, el mensaje se muestra igualmente.
+type MediaSize = { width: number; height: number } | undefined;
+function preloadMedia(url: string, contentType: string): Promise<MediaSize> {
+    const kind = contentType.split('/')[0];
+    const loading = new Promise<MediaSize>(resolve => {
+        if (kind === 'image') {
+            const img = new Image();
+            img.onload = img.onerror = () => resolve(undefined);
+            img.src = url;
+        } else if (kind === 'video') {
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = () => resolve(video.videoWidth && video.videoHeight
+                ? { width: video.videoWidth, height: video.videoHeight } : undefined);
+            video.onerror = () => resolve(undefined);
+            video.src = url;
+        } else {
+            resolve(undefined);
+        }
+    });
+    return Promise.race([loading, new Promise<MediaSize>(resolve => setTimeout(() => resolve(undefined), 10000))]);
+}
 
 export default class Game {
 
@@ -41,7 +68,6 @@ export default class Game {
     xIni: number | undefined;
     defaultY?: number;
     allowedTypes: string[];
-    filesToUpload: Map<string, File>;
 
     constructor() {
         // Vars
@@ -71,8 +97,6 @@ export default class Game {
             'video',
             'audio',
         ];
-
-        this.filesToUpload = new Map();
 
         this.setDragEvents();
     }
@@ -132,8 +156,6 @@ export default class Game {
             'video',
             'audio',
         ];
-
-        this.filesToUpload = new Map();
     }
 
     logout(): void {
@@ -399,23 +421,17 @@ export default class Game {
             this.addMsg(msg);
         });
 
-        this.socket!.on('par upload', async (data: any) => {
-            const fileName: string = data.fileName;
-            const uploadUrl: string = data.url;
-            const file: File = this.filesToUpload.get(fileName)!;
-            await ociObjectStorageService.putFile(uploadUrl, file);
-            this.filesToUpload.delete(fileName);
-            this.socket!.emit('par download', fileName);
+        // world no ha podido repartir un archivo que hemos subido
+        this.socket!.on('file failed', () => {
+            toast.error('No se ha podido compartir el archivo en la sala.');
         });
 
-        this.socket!.on('par download', async (data: any) => {   
-            const fileName: string = data.fileName;
-            const downloadUrl: string = data.url;
-            const file: File = await ociObjectStorageService.getFile(downloadUrl, fileName);
-            const sender = data.player;
-            const dataUrl: string = await this.readFileAsDataUrl(file);
-            let msg: Msg = { type: file.type, data: dataUrl, filename: file.name };
-            msg.player = sender;
+        // Alguien de la sala ha compartido un archivo: se muestra directamente desde su URL
+        // (el vídeo y el audio se reproducen a trozos, sin cargarse enteros en memoria)
+        this.socket!.on('par download', async (data: { fileName: string; url: string; contentType: string; player: Msg['player'] }) => {
+            const size = await preloadMedia(data.url, data.contentType);
+            const msg: Msg = { type: data.contentType, data: data.url, filename: data.fileName, player: data.player,
+                mediaWidth: size?.width, mediaHeight: size?.height };
             this.addMsg(msg);
         })
 
@@ -502,8 +518,6 @@ export default class Game {
     }
 
     allowedFile(file: File): boolean {
-        if (file.size > MAX_FILE_SIZE_BYTES) return false;
-
         for (let i = 0; i < this.allowedTypes.length; ++i)
             if (file.type.split('/')[0] === this.allowedTypes[i])
                 return true;
@@ -512,25 +526,25 @@ export default class Game {
     }
 
     checkFileAndRequestParUpload(file: File) {
-        if (this.allowedFile(file))
-            this.requestParUpload(file);
+        if (!this.allowedFile(file)) {
+            toast.error('Solo se pueden enviar imágenes, audio y vídeo.');
+            return;
+        }
+        if (file.size > MAX_FILE_SIZE_BYTES) {
+            toast.error(`El archivo es demasiado grande (máximo ${MAX_FILE_SIZE_BYTES / 1024 / 1024} MB).`);
+            return;
+        }
+        this.requestParUpload(file);
     }
 
-    requestParUpload(file: File) {
-        const fileName: string = appendBeforeExtension(file.name, "-"+timeString());
-        this.filesToUpload.set(fileName, file);
-        this.socket!.emit('par upload', fileName);
-    }
-
-    readFileAsDataUrl(file: File): Promise<string> {
-        return new Promise((resolve) => {
-            let fr = new FileReader();
-            fr.onload = (e) => {
-                let data = e.target!.result as string;
-                resolve(data);
-            };
-            fr.readAsDataURL(file);
-        });
+    // Sube el archivo con la URL que da la api y avisa a world para que lo reparta a la sala
+    async requestParUpload(file: File) {
+        try {
+            const objectName: string = await uploadChatFile(file);
+            this.socket!.emit('file uploaded', { objectName, contentType: file.type });
+        } catch (error) {
+            toast.error(error instanceof ApiError ? getErrorMessage(error.code) : 'No se ha podido subir el archivo.');
+        }
     }
 
     addMsg(msg: Msg): void {

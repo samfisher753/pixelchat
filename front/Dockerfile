@@ -1,5 +1,6 @@
 # Stage 1: Build the app
-FROM node:18-alpine as build
+# Node 24 (LTS). Node 18 dejó de recibir parches de seguridad en abril de 2025
+FROM node:24-alpine AS build
 
 # Set working directory
 WORKDIR /app
@@ -7,8 +8,8 @@ WORKDIR /app
 # Copy package.json and package-lock.json if available
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies (npm ci: exactamente las versiones del package-lock)
+RUN npm ci
 
 # Copy the rest of the project files
 COPY . .

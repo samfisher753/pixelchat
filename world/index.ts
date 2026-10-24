@@ -25,7 +25,6 @@ app.use(cors({ origin: corsOrigins, methods: ['GET', 'POST'] }));
 // ---------------------------------------------------------------------------
 const httpServer = http.createServer(app);
 const io = new SocketIOServer(httpServer, {
-    maxHttpBufferSize: 300 * 1024 * 1024,
     cors: { origin: corsOrigins, methods: ['GET', 'POST'] }
 });
 

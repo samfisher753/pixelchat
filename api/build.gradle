@@ -24,10 +24,10 @@ dependencies {
     implementation 'io.quarkus:quarkus-scheduler'
     implementation 'org.mapstruct:mapstruct:1.6.3'
 
-    compileOnly 'org.projectlombok:lombok:1.18.36'
+    compileOnly 'org.projectlombok:lombok:1.18.48'
 
     // El binding garantiza que Lombok procesa primero y MapStruct ve los métodos generados
-    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    annotationProcessor 'org.projectlombok:lombok:1.18.48'
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
 
@@ -39,8 +39,8 @@ group = 'es.pixelchat'
 version = '1.0.0-SNAPSHOT'
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
 }
 
 compileJava {

@@ -15,14 +15,11 @@
     "dotenv": "^17.3.1",
     "express": "^4.17.1",
     "jsonwebtoken": "^9.0.3",
-    "oci-common": "^2.98.0",
-    "oci-objectstorage": "^2.98.0",
     "socket.io": "^4.8.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
-    "@types/socket.io": "^3.0.2",
     "typescript": "^5.6.3"
   }
 }

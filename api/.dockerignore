@@ -15,3 +15,5 @@ build
 src/main/resources/privateKey.pem
 src/main/resources/publicKey.pem
 .env
+src/main/resources/oci-config
+src/main/resources/oci-key.pem

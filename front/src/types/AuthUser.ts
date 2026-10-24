@@ -4,6 +4,7 @@ export interface AuthUser {
   displayName: string | null;
   look: string | null;
   avatarUrl: string | null;
+  headerUrl: string | null;
   motto: string | null;
   location: string | null;
   website: string | null;

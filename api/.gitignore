@@ -43,3 +43,7 @@ nb-configuration.xml
 # JWT keys (do not commit private keys)
 src/main/resources/privateKey.pem
 src/main/resources/publicKey.pem
+
+# OCI credentials
+src/main/resources/oci-config
+src/main/resources/oci-key.pem

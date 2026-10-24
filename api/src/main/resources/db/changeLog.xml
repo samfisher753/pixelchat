@@ -83,4 +83,11 @@
         </createIndex>
     </changeSet>
 
+    <!-- Buscador de usuarios: busca por el principio del nombre visible (username ya tiene índice por ser único) -->
+    <changeSet id="202610191900" author="jruiz">
+        <createIndex tableName="users" indexName="idx_users_display_name">
+            <column name="display_name"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>

@@ -1,7 +1,8 @@
 import { useLocation } from 'react-router-dom';
 import ChatPage from '@/pages/ChatPage';
 import FeedPage from '@/pages/FeedPage';
-import ProfilePage from '@/pages/ProfilePage';
+import MyProfilePage from '@/pages/MyProfilePage';
+import UserProfilePage from '@/pages/UserProfilePage';
 import { useEffect, useRef, useState } from 'react';
 import { gameEventEmitter } from '@/emitters/GameEventEmitter';
 import { GameEvent } from '@/enums/GameEvent';
@@ -85,6 +86,12 @@ const MainLayout = () => {
     }
   }, [location.pathname]);
 
+  // Perfil de otro usuario (/u/<usuario>). A diferencia de las otras páginas, no se queda montado:
+  // solo existe mientras se está viendo.
+  const viewedUsername: string | null = location.pathname.startsWith('/u/')
+    ? decodeURIComponent(location.pathname.slice(3))
+    : null;
+
   const pageClass = (path: string) =>
     `absolute inset-0 w-full h-full overflow-y-auto transition-opacity duration-300 ${
       location.pathname === path ? 'opacity-100 z-10' : 'opacity-0 z-0'
@@ -107,8 +114,14 @@ const MainLayout = () => {
             </div>
 
             <div ref={profileRef} className={pageClass('/profile')}>
-              <ProfilePage />
+              <MyProfilePage />
             </div>
+
+            {viewedUsername && (
+              <div className="absolute inset-0 w-full h-full overflow-y-auto z-10">
+                <UserProfilePage key={viewedUsername} username={viewedUsername} />
+              </div>
+            )}
           </main>
         </div>
       )}
