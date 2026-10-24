@@ -54,6 +54,14 @@ const ChatInput = () => {
     }
   };
 
+  // Al pulsar en la sala (u otra zona sin campos) el chat recupera el foco para seguir escribiendo.
+  // Pero si el foco se va a otro campo de texto (el buscador, un formulario…), se lo deja.
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const next = e.relatedTarget as HTMLElement | null;
+    const isTextField = !!next && (next.matches('input, textarea, select') || next.isContentEditable);
+    if (!isTextField) focusInput();
+  };
+
   const handleMsgChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMsg(e.target.value);
   };
@@ -90,7 +98,7 @@ const ChatInput = () => {
         placeholder="Escribe un mensaje…"
         aria-label="Mensaje"
         className="h-9 w-[500px] max-w-[calc(66vw-60px)] px-3 bg-[#1E1E1E] text-white text-sm placeholder-neutral-500 rounded-lg border border-[#383838] outline-none focus:border-pixelchatBlue focus:ring-1 focus:ring-pixelchatBlue transition-colors"
-        onBlur={focusInput}
+        onBlur={handleBlur}
         onKeyDown={handleSendMsg}
         ></input>
 
