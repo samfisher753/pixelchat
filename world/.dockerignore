@@ -1,3 +1,5 @@
 .env
 oci-config
 oci-key.pem
+# Las dependencias se instalan dentro de la imagen (npm ci), no se copian las del equipo
+node_modules
