@@ -4,6 +4,7 @@ import { Loader2, UserX } from 'lucide-react';
 import apiService, { ApiError } from '@/services/apiService';
 import { useAuth } from '@/providers/AuthProvider';
 import ProfileCard from '@/components/ProfileCard';
+import FriendButton, { Relationship } from '@/components/FriendButton';
 
 // Lo que devuelve GET /profiles/{username}: solo los datos públicos (ver PublicProfileDto en la api)
 type PublicProfile = {
@@ -15,6 +16,10 @@ type PublicProfile = {
   motto: string | null;
   look: string | null;
   createdAt: string;
+  // Solo llegan si sois amigos
+  location: string | null;
+  website: string | null;
+  relationship: Relationship;
 };
 
 // Perfil de otro usuario, de solo lectura (/u/<usuario>). Usa la misma tarjeta que el tuyo,
@@ -24,20 +29,29 @@ export function UserProfilePage({ username }: { username: string }) {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [status, setStatus] = useState<'loading' | 'ok' | 'not_found' | 'error'>('loading');
 
+  const load = (onLoaded: (found: PublicProfile) => void) =>
+    apiService.get<PublicProfile>(`/profiles/${encodeURIComponent(username)}`).then(onLoaded);
+
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
-    apiService.get<PublicProfile>(`/profiles/${encodeURIComponent(username)}`)
-      .then(found => {
-        if (cancelled) return;
-        setProfile(found);
-        setStatus('ok');
-      })
-      .catch(error => {
-        if (!cancelled) setStatus(error instanceof ApiError && error.code === 'auth.user_not_found' ? 'not_found' : 'error');
-      });
+    load(found => {
+      if (cancelled) return;
+      setProfile(found);
+      setStatus('ok');
+    }).catch(error => {
+      if (!cancelled) setStatus(error instanceof ApiError && error.code === 'auth.user_not_found' ? 'not_found' : 'error');
+    });
     return () => { cancelled = true; };
   }, [username]);
+
+  // Al cambiar la amistad se actualiza el botón; y si empezáis o dejáis de ser amigos, se vuelve a
+  // pedir el perfil, porque cambian los datos que se pueden ver (ubicación y web)
+  const onRelationshipChange = (relationship: Relationship) => {
+    const wasFriends = profile?.relationship.status === 'FRIENDS';
+    setProfile(current => current && { ...current, relationship });
+    if (wasFriends || relationship.status === 'FRIENDS') load(setProfile).catch(() => {});
+  };
 
   // Tu propio perfil se ve (y se edita) en /profile
   if (username.toLowerCase() === auth.user?.username.toLowerCase()) return <Navigate to="/profile" replace />;
@@ -63,7 +77,9 @@ export function UserProfilePage({ username }: { username: string }) {
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <ProfileCard profile={profile} />
+      <ProfileCard profile={profile}
+        actions={<FriendButton userId={profile.id} username={profile.username}
+          relationship={profile.relationship} onChange={onRelationshipChange} />} />
     </div>
   );
 }

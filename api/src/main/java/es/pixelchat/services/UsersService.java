@@ -1,6 +1,7 @@
 package es.pixelchat.services;
 
 import es.pixelchat.entities.User;
+import es.pixelchat.enums.Relationship;
 import es.pixelchat.exceptions.ApiError;
 import es.pixelchat.exceptions.ApiException;
 import es.pixelchat.mappers.UserMapper;
@@ -8,6 +9,7 @@ import es.pixelchat.requests.ProfileImageUploadRequest;
 import es.pixelchat.requests.UpdateProfileRequest;
 import es.pixelchat.responses.ProfileImageUploadResponse;
 import es.pixelchat.responses.PublicProfileDto;
+import es.pixelchat.responses.RelationshipDto;
 import es.pixelchat.responses.UserLoginDto;
 import es.pixelchat.responses.UserSearchResult;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +43,9 @@ public class UsersService {
     @Inject
     ObjectStorageService storage;
 
+    @Inject
+    FriendsService friendsService;
+
     @ConfigProperty(name = "oci.public-bucket")
     String publicBucket;
 
@@ -53,10 +58,12 @@ public class UsersService {
         return userMapper.toLoginDto(user);
     }
 
-    /** Perfil público de un usuario, por su nombre de usuario. */
-    public PublicProfileDto findPublicProfile(String username) {
+    /** Perfil de un usuario visto por `viewerId`: con los datos privados solo si son amigos. */
+    public PublicProfileDto findPublicProfile(UUID viewerId, String username) {
         User user = User.findByUsername(username)
                 .orElseThrow(() -> new ApiException(ApiError.USER_NOT_FOUND));
+        RelationshipDto relationship = friendsService.relationship(viewerId, user.id);
+        boolean friends = relationship.getStatus() == Relationship.FRIENDS;
         return PublicProfileDto.builder()
                 .id(user.id)
                 .username(user.username)
@@ -66,6 +73,9 @@ public class UsersService {
                 .motto(user.motto)
                 .look(user.look)
                 .createdAt(user.createdAt)
+                .location(friends ? user.location : null)
+                .website(friends ? user.website : null)
+                .relationship(relationship)
                 .build();
     }
 

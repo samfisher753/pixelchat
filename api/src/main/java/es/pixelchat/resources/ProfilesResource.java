@@ -9,6 +9,9 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.jwt.JsonWebToken;
+
+import java.util.UUID;
 
 /**
  * Perfiles públicos: GET /profiles/SamFisher92.
@@ -22,10 +25,13 @@ public class ProfilesResource {
     @Inject
     UsersService usersService;
 
+    @Inject
+    JsonWebToken jwt;
+
     @GET
     @Path("/{username}")
     @Authenticated
     public Response publicProfile(@PathParam("username") String username) {
-        return Response.ok(usersService.findPublicProfile(username)).build();
+        return Response.ok(usersService.findPublicProfile(UUID.fromString(jwt.getSubject()), username)).build();
     }
 }

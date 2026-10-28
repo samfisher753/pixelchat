@@ -90,4 +90,43 @@
         </createIndex>
     </changeSet>
 
+    <!--
+        Amistades. Una fila por pareja: mientras está PENDING es una solicitud (de requester a addressee)
+        y al aceptarla pasa a ACCEPTED. Rechazar, cancelar o dejar de ser amigos borra la fila.
+        Al borrar un usuario (por ejemplo, los demo) se borran sus amistades.
+    -->
+    <changeSet id="202610241900" author="jruiz">
+        <createTable tableName="friendships">
+            <column name="id" type="VARCHAR(36)">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="requester_id" type="VARCHAR(36)">
+                <constraints nullable="false"
+                             foreignKeyName="fk_friendships_requester_id"
+                             references="users(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="addressee_id" type="VARCHAR(36)">
+                <constraints nullable="false"
+                             foreignKeyName="fk_friendships_addressee_id"
+                             references="users(id)"
+                             deleteCascade="true"/>
+            </column>
+            <column name="status" type="ENUM('PENDING', 'ACCEPTED')">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="accepted_at" type="TIMESTAMP"/>
+        </createTable>
+        <!-- Una sola fila por sentido; que no existan a la vez A→B y B→A lo comprueba FriendsService -->
+        <addUniqueConstraint tableName="friendships" columnNames="requester_id, addressee_id"
+                             constraintName="uq_friendships_requester_addressee"/>
+        <!-- Para buscar las de un usuario como addressee (como requester ya sirve el índice único) -->
+        <createIndex tableName="friendships" indexName="idx_friendships_addressee_id">
+            <column name="addressee_id"/>
+        </createIndex>
+    </changeSet>
+
 </databaseChangeLog>
