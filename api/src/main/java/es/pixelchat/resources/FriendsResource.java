@@ -7,6 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -29,6 +30,19 @@ public class FriendsResource {
 
     @Inject
     JsonWebToken jwt;
+
+    /** Tus amigos, por orden alfabético. */
+    @GET
+    public Response friends() {
+        return Response.ok(friendsService.friends(me())).build();
+    }
+
+    /** Tus solicitudes pendientes: { "received": [...], "sent": [...] }. */
+    @GET
+    @Path("/requests")
+    public Response requests() {
+        return Response.ok(friendsService.requests(me())).build();
+    }
 
     /** Envía una solicitud de amistad: POST /friends/requests { "userId": "..." }. */
     @POST

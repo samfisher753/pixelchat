@@ -3,6 +3,8 @@ import { Check, Clock, Loader2, UserCheck, UserPlus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import apiService, { ApiError } from '@/services/apiService';
 import { getErrorMessage } from '@/i18n/errorMessages';
+import { gameEventEmitter } from '@/emitters/GameEventEmitter';
+import { GameEvent } from '@/enums/GameEvent';
 
 // Lo que devuelve la api (RelationshipDto): tu relación con el otro usuario
 export type Relationship = {
@@ -31,6 +33,7 @@ const FriendButton = ({ userId, username, relationship, onChange }: FriendButton
     setBusy(true);
     try {
       onChange(await request());
+      gameEventEmitter.emit(GameEvent.FriendsChanged);
     } catch (error) {
       toast.error(error instanceof ApiError ? getErrorMessage(error.code) : 'Error de conexión. Inténtalo de nuevo.');
     } finally {

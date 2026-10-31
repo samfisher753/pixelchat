@@ -7,6 +7,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -55,5 +56,16 @@ public class Friendship extends PanacheEntityBase {
     public static Optional<Friendship> findBetween(UUID a, UUID b) {
         return find("(requesterId = ?1 and addresseeId = ?2) or (requesterId = ?2 and addresseeId = ?1)", a, b)
                 .firstResultOptional();
+    }
+
+    /** Las relaciones de un usuario con ese estado, tanto las que envió como las que recibió. */
+    public static List<Friendship> findOf(UUID userId, FriendshipStatus status) {
+        return find("status = ?1 and (requesterId = ?2 or addresseeId = ?2) order by createdAt desc", status, userId)
+                .list();
+    }
+
+    /** El otro usuario de la relación, visto desde `userId`. */
+    public UUID otherThan(UUID userId) {
+        return requesterId.equals(userId) ? addresseeId : requesterId;
     }
 }

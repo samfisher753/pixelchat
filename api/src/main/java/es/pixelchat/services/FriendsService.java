@@ -6,13 +6,21 @@ import es.pixelchat.enums.FriendshipStatus;
 import es.pixelchat.enums.Relationship;
 import es.pixelchat.exceptions.ApiError;
 import es.pixelchat.exceptions.ApiException;
+import es.pixelchat.responses.FriendDto;
+import es.pixelchat.responses.FriendRequestDto;
+import es.pixelchat.responses.FriendRequestsDto;
 import es.pixelchat.responses.RelationshipDto;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 
 import java.time.Instant;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Solicitudes de amistad y amistades. Todo vive en la tabla friendships: una fila PENDING es una
@@ -25,6 +33,38 @@ public class FriendsService {
     /** Cómo se relaciona `viewerId` con `otherId`. */
     public RelationshipDto relationship(UUID viewerId, UUID otherId) {
         return toDto(viewerId, Friendship.findBetween(viewerId, otherId));
+    }
+
+    /** Los amigos de `userId`, por orden alfabético. */
+    public List<FriendDto> friends(UUID userId) {
+        List<Friendship> friendships = Friendship.findOf(userId, FriendshipStatus.ACCEPTED);
+        Map<UUID, User> users = usersById(friendships, userId);
+        return friendships.stream()
+                .map(f -> {
+                    User friend = users.get(f.otherThan(userId));
+                    return FriendDto.builder()
+                            .id(friend.id)
+                            .username(friend.username)
+                            .displayName(friend.displayName)
+                            .avatarUrl(friend.avatarUrl)
+                            .since(f.acceptedAt)
+                            .build();
+                })
+                .sorted(Comparator.comparing(FriendDto::getUsername, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    /** Las solicitudes pendientes de `userId`: las que ha recibido y las que ha enviado. */
+    public FriendRequestsDto requests(UUID userId) {
+        List<Friendship> pending = Friendship.findOf(userId, FriendshipStatus.PENDING);
+        Map<UUID, User> users = usersById(pending, userId);
+        Map<Boolean, List<FriendRequestDto>> bySent = pending.stream()
+                .collect(Collectors.partitioningBy(f -> f.requesterId.equals(userId),
+                        Collectors.mapping(f -> toRequestDto(f, users.get(f.otherThan(userId))), Collectors.toList())));
+        return FriendRequestsDto.builder()
+                .received(bySent.get(false))
+                .sent(bySent.get(true))
+                .build();
     }
 
     /**
@@ -95,6 +135,25 @@ public class FriendsService {
             throw new ApiException(ApiError.FRIEND_REQUEST_NOT_FOUND);
         }
         return friendship;
+    }
+
+    // Los otros usuarios de esas relaciones, con una sola consulta
+    private Map<UUID, User> usersById(List<Friendship> friendships, UUID userId) {
+        if (friendships.isEmpty()) return Map.of();
+        List<UUID> ids = friendships.stream().map(f -> f.otherThan(userId)).toList();
+        return User.<User>list("id in ?1", ids).stream()
+                .collect(Collectors.toMap(user -> user.id, Function.identity()));
+    }
+
+    private FriendRequestDto toRequestDto(Friendship friendship, User other) {
+        return FriendRequestDto.builder()
+                .requestId(friendship.id)
+                .userId(other.id)
+                .username(other.username)
+                .displayName(other.displayName)
+                .avatarUrl(other.avatarUrl)
+                .createdAt(friendship.createdAt)
+                .build();
     }
 
     private void accept(Friendship friendship) {

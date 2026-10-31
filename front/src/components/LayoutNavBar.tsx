@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, MessageSquare, User, LogOut } from "lucide-react";
+import { Home, MessageSquare, User, Users, LogOut } from "lucide-react";
 import logo from "@/assets/logo-pixelchat.svg";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNavigate } from "react-router-dom";
@@ -38,6 +38,7 @@ const LayoutNavBar = () => {
         <UserSearch />
 
         <nav className="flex items-center gap-2">
+          <NavItem to="/friends" icon={<Users className="w-4 h-4" />} label="Amigos" />
           <NavItem to="/profile" icon={<User className="w-4 h-4" />} label="Perfil" />
         </nav>
 

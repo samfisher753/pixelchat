@@ -3,6 +3,7 @@ import ChatPage from '@/pages/ChatPage';
 import FeedPage from '@/pages/FeedPage';
 import MyProfilePage from '@/pages/MyProfilePage';
 import UserProfilePage from '@/pages/UserProfilePage';
+import FriendsPage from '@/pages/FriendsPage';
 import { useEffect, useRef, useState } from 'react';
 import { gameEventEmitter } from '@/emitters/GameEventEmitter';
 import { GameEvent } from '@/enums/GameEvent';
@@ -116,6 +117,12 @@ const MainLayout = () => {
             <div ref={profileRef} className={pageClass('/profile')}>
               <MyProfilePage />
             </div>
+
+            {location.pathname === '/friends' && (
+              <div className="absolute inset-0 w-full h-full overflow-y-auto z-10">
+                <FriendsPage />
+              </div>
+            )}
 
             {viewedUsername && (
               <div className="absolute inset-0 w-full h-full overflow-y-auto z-10">

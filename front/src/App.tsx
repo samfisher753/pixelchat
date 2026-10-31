@@ -21,6 +21,7 @@ function App() {
           <Route path="/feed" element={null} />
           <Route path="/chat" element={null} />
           <Route path="/profile" element={null} />
+          <Route path="/friends" element={null} />
           <Route path="/u/:username" element={null} />
         </Route>
 

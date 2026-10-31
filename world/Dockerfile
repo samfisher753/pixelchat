@@ -10,7 +10,5 @@ COPY . /app
 # Install project dependencies (npm ci: exactamente las versiones del package-lock, con sus parches)
 RUN npm ci
 
-RUN npm run build
-
 # Run the JavaScript file
 CMD ["npm", "start"]
