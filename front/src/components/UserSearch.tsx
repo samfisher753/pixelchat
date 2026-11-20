@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Loader2, Search } from 'lucide-react';
 import apiService from '@/services/apiService';
 import { useAuth } from '@/providers/AuthProvider';
+import UserAvatar from '@/components/UserAvatar';
 
 type UserSearchResult = {
   id: string;
@@ -99,11 +100,7 @@ const UserSearch = () => {
                   <li key={user.id}>
                     <button type="button" onClick={() => choose(user)}
                       className="w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#383838] transition-colors">
-                      <div className="w-9 h-9 shrink-0 rounded-full bg-[#383838] overflow-hidden flex items-center justify-center">
-                        {user.avatarUrl
-                          ? <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
-                          : <span className="text-sm font-bold text-white">{(user.displayName || user.username).charAt(0).toUpperCase()}</span>}
-                      </div>
+                      <UserAvatar {...user} />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-white truncate">{user.displayName || user.username}</p>
                         <p className="text-xs text-neutral-400 truncate">@{user.username}</p>

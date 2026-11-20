@@ -2,12 +2,13 @@ import NavBarItem from "@/components/NavBarItem";
 import { useGame } from "@/contexts/GameContext";
 import Game from "@/models/logic/Game";
 import ChatInput from "@/components/ChatInput";
-import { DoorOpen, Building2 } from "lucide-react";
+import { DoorOpen, Building2, Users } from "lucide-react";
 
-const ChatNavBar = ({ roomJoined, onToggleRoomsList } : 
+const ChatNavBar = ({ roomJoined, onToggleRoomsList, onToggleFriends } : 
   {
     roomJoined: boolean,
-    onToggleRoomsList: () => void
+    onToggleRoomsList: () => void,
+    onToggleFriends: () => void
   }
 ) => {
 
@@ -23,6 +24,7 @@ const ChatNavBar = ({ roomJoined, onToggleRoomsList } :
         <NavBarItem onClick={leaveRoom} icon={<DoorOpen className="w-4 h-4" />} label="Salir de la sala" />
       }
       <NavBarItem onClick={onToggleRoomsList} icon={<Building2 className="w-4 h-4" />} label="Salas" />
+      <NavBarItem onClick={onToggleFriends} icon={<Users className="w-4 h-4" />} label="Amigos" />
       { roomJoined &&
         <ChatInput />
       }

@@ -27,6 +27,14 @@ public enum ApiError {
     INVALID_IMAGE_URL(Response.Status.BAD_REQUEST, "users.invalid_image_url", "La imagen no es válida"),
 
     // -------------------------------------------------------------------------
+    // Amigos
+    // -------------------------------------------------------------------------
+    FRIEND_REQUEST_TO_SELF(Response.Status.BAD_REQUEST, "friends.request_to_self", "No puedes enviarte una solicitud de amistad a ti mismo"),
+    FRIENDSHIP_ALREADY_EXISTS(Response.Status.CONFLICT, "friends.already_exists", "Ya sois amigos o hay una solicitud pendiente"),
+    FRIEND_REQUEST_NOT_FOUND(Response.Status.NOT_FOUND, "friends.request_not_found", "La solicitud de amistad no existe"),
+    FRIENDSHIP_NOT_FOUND(Response.Status.NOT_FOUND, "friends.not_found", "No sois amigos"),
+
+    // -------------------------------------------------------------------------
     // Chat
     // -------------------------------------------------------------------------
     CHAT_FILE_TOO_LARGE(Response.Status.REQUEST_ENTITY_TOO_LARGE, "chat.file_too_large", "El archivo es demasiado grande"),

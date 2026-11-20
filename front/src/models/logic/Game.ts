@@ -16,6 +16,8 @@ import { uploadChatFile } from '@/services/chatFileService'
 import { ApiError } from '@/services/apiService'
 import { getErrorMessage } from '@/i18n/errorMessages'
 import { AuthUser } from '@/types/AuthUser'
+import { FriendPresence } from '@/types/FriendPresence'
+import { FriendshipChanged } from '@/types/FriendshipChanged'
 
 // Antes de mostrar una imagen o un vídeo se carga lo justo para saber su tamaño (la imagen entera,
 // del vídeo solo sus datos básicos). Así el bocadillo del chat se mide bien al aparecer.
@@ -55,6 +57,8 @@ export default class Game {
     frame: number | null;
 
     socket: Socket | null;
+    // Tus amigos conectados y en qué sala están, por id (los desconectados no están)
+    friendsPresence: Map<string, FriendPresence>;
     canvasCtx: CanvasRenderingContext2D | null;
     maskCanvasCtx: CanvasRenderingContext2D | null;
     d: Pos;
@@ -83,6 +87,7 @@ export default class Game {
 
         // Misc
         this.socket = null;
+        this.friendsPresence = new Map();
         this.canvasCtx = null;
         this.maskCanvasCtx = null;
         this.d = { x: 0, y: 0 };
@@ -160,6 +165,7 @@ export default class Game {
 
     logout(): void {
         this.socket!.disconnect();
+        this.friendsPresence.clear();
         this.reset();
     }
 
@@ -190,7 +196,8 @@ export default class Game {
     }
 
     joinRoom(room: Room): void {
-        gameEventEmitter.emit(GameEvent.RoomJoined);
+        // Con el nombre: aquí this.room aún es la sala anterior
+        gameEventEmitter.emit(GameEvent.RoomJoined, room.name);
 
         if (this.room === null) {
             this.createCanvas();
@@ -414,6 +421,28 @@ export default class Game {
             gameEventEmitter.emit(GameEvent.Loading, false);
             assets.loadAvatarImages(this.player.look, this.player);
             gameEventEmitter.emit(GameEvent.SocketReady);
+        });
+
+        // Amigos: al conectarte llegan los que están conectados, y luego cada cambio
+        this.socket!.on('friends online', (friends: FriendPresence[]) => {
+            this.friendsPresence = new Map(friends.map(f => [f.id, f]));
+            gameEventEmitter.emit(GameEvent.FriendsPresenceChanged);
+        });
+
+        this.socket!.on('friend presence', (presence: FriendPresence) => {
+            if (presence.online) this.friendsPresence.set(presence.id, presence);
+            else this.friendsPresence.delete(presence.id);
+            gameEventEmitter.emit(GameEvent.FriendsPresenceChanged);
+        });
+
+        // Ha cambiado una amistad tuya. Si lo has hecho tú, las listas ya se han actualizado al
+        // hacerlo (ver FriendButton y FriendsList); si ha sido el otro, se avisa y se recargan
+        this.socket!.on('friends changed', (event: FriendshipChanged) => {
+            if (event.fromId === this.player?.id) return;
+            if (event.type === 'REQUEST_SENT') toast(`@${event.fromUsername} te ha enviado una solicitud de amistad`);
+            if (event.type === 'REQUEST_ACCEPTED') toast(`@${event.fromUsername} ha aceptado tu solicitud de amistad`);
+            // Con el aviso, para que el perfil de esa persona, si está abierto, sepa que es suyo
+            gameEventEmitter.emit(GameEvent.FriendsChanged, event);
         });
 
         // Event: Receive chat message
