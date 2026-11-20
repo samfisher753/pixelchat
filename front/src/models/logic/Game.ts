@@ -196,7 +196,8 @@ export default class Game {
     }
 
     joinRoom(room: Room): void {
-        gameEventEmitter.emit(GameEvent.RoomJoined);
+        // Con el nombre: aquí this.room aún es la sala anterior
+        gameEventEmitter.emit(GameEvent.RoomJoined, room.name);
 
         if (this.room === null) {
             this.createCanvas();

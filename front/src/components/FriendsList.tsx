@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
-import { Check, Loader2, Users, X } from 'lucide-react';
+import { Check, Loader2, LogIn, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 import apiService, { ApiError } from '@/services/apiService';
 import { getErrorMessage } from '@/i18n/errorMessages';
@@ -71,6 +71,29 @@ const FriendsList = ({ compact = false }: { compact?: boolean }) => {
     gameEventEmitter.on(GameEvent.FriendsPresenceChanged, onPresenceChanged);
     return () => gameEventEmitter.off(GameEvent.FriendsPresenceChanged, onPresenceChanged);
   }, [game]);
+
+  // Tu sala, para no ofrecer ir a la sala de un amigo si ya estás en ella
+  const [myRoom, setMyRoom] = useState<string | null>(game?.room?.name ?? null);
+
+  useEffect(() => {
+    const onRoomJoined = (roomName: string) => setMyRoom(roomName);
+    const onRoomLeft = () => setMyRoom(null);
+    gameEventEmitter.on(GameEvent.RoomJoined, onRoomJoined);
+    gameEventEmitter.on(GameEvent.RoomLeft, onRoomLeft);
+    return () => {
+      gameEventEmitter.off(GameEvent.RoomJoined, onRoomJoined);
+      gameEventEmitter.off(GameEvent.RoomLeft, onRoomLeft);
+    };
+  }, []);
+
+  // Seguir a un amigo a su sala. Desde /friends primero se pasa al chat, que está siempre montado
+  // (ver MainLayout), así que la sala se carga igual aunque se pida antes de verlo
+  const navigate = useNavigate();
+  const location = useLocation();
+  const goToRoom = (roomName: string) => {
+    if (location.pathname !== '/chat') navigate('/chat');
+    game?.sendJoinRoom(roomName);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -155,7 +178,20 @@ const FriendsList = ({ compact = false }: { compact?: boolean }) => {
             {!compact && <Users className="w-8 h-8 mx-auto mb-3" />}
             <p>Todavía no tienes amigos. Busca a alguien arriba y envíale una solicitud desde su perfil.</p>
           </div>
-        ) : sortedFriends.map(f => <UserRow key={f.id} compact={compact} user={f} presence={presence.get(f.id)} />)}
+        ) : sortedFriends.map(f => {
+          const room = presence.get(f.id)?.room;
+          return (
+            <UserRow key={f.id} compact={compact} user={f} presence={presence.get(f.id)}>
+              {room && room !== myRoom && (
+                <button onClick={() => goToRoom(room)} title={`Ir a ${room}`}
+                  className={clsx(secondary, compact ? 'p-1.5' : 'px-3 py-1.5')}>
+                  <LogIn className="w-4 h-4" />
+                  {!compact && 'Ir a su sala'}
+                </button>
+              )}
+            </UserRow>
+          );
+        })}
       </Section>
 
       {requests.sent.length > 0 && (
