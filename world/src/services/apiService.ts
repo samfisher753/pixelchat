@@ -1,5 +1,6 @@
 const BASE_URL       = process.env.API_URL        ?? 'http://localhost:8080';
-const INTERNAL_SECRET = process.env.INTERNAL_SECRET ?? 'dev-internal-secret';
+// Secreto compartido con la api: world lo envía al llamarla y lo comprueba cuando la api le avisa
+export const INTERNAL_SECRET = process.env.INTERNAL_SECRET ?? 'dev-internal-secret';
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await fetch(`${BASE_URL}${path}`, {

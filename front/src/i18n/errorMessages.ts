@@ -85,6 +85,18 @@ const messages: Record<string, string> = {
     'No se ha podido subir el archivo. Inténtalo de nuevo',
 
   // -------------------------------------------------------------------------
+  // Amigos (friends.*)
+  // -------------------------------------------------------------------------
+  'friends.request_to_self':
+    'No puedes enviarte una solicitud de amistad a ti mismo',
+  'friends.already_exists':
+    'Ya sois amigos o hay una solicitud pendiente',
+  'friends.request_not_found':
+    'Esa solicitud de amistad ya no existe',
+  'friends.not_found':
+    'Ya no sois amigos',
+
+  // -------------------------------------------------------------------------
   // Archivos del chat (chat.*)
   // -------------------------------------------------------------------------
   'chat.file_too_large':

@@ -11,5 +11,9 @@ export enum GameEvent {
     ShowPlayerInfo = "show_player_info",
     HidePlayerInfo = "hide_player_info",
     TokenExpired = "token_expired",
-    SocketReady = "socket_ready"
+    SocketReady = "socket_ready",
+    // Ha cambiado alguna amistad o solicitud: las listas de amigos montadas se vuelven a pedir
+    FriendsChanged = "friends_changed",
+    // Algún amigo se ha conectado, desconectado o cambiado de sala (ver Game.friendsPresence)
+    FriendsPresenceChanged = "friends_presence_changed"
 }
