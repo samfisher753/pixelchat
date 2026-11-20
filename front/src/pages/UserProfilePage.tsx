@@ -5,6 +5,9 @@ import apiService, { ApiError } from '@/services/apiService';
 import { useAuth } from '@/providers/AuthProvider';
 import ProfileCard from '@/components/ProfileCard';
 import FriendButton, { Relationship } from '@/components/FriendButton';
+import { gameEventEmitter } from '@/emitters/GameEventEmitter';
+import { GameEvent } from '@/enums/GameEvent';
+import { FriendshipChanged } from '@/types/FriendshipChanged';
 
 // Lo que devuelve GET /profiles/{username}: solo los datos públicos (ver PublicProfileDto en la api)
 type PublicProfile = {
@@ -44,6 +47,18 @@ export function UserProfilePage({ username }: { username: string }) {
     });
     return () => { cancelled = true; };
   }, [username]);
+
+  // Si esta persona te envía, acepta o cancela una solicitud (o te quita de amigos) mientras ves su
+  // perfil, world avisa y se vuelve a pedir, para que el botón y los datos privados estén al día
+  const profileId = profile?.id;
+  useEffect(() => {
+    if (!profileId) return;
+    const onFriendsChanged = (event?: FriendshipChanged) => {
+      if (event?.fromId === profileId) load(setProfile).catch(() => {});
+    };
+    gameEventEmitter.on(GameEvent.FriendsChanged, onFriendsChanged);
+    return () => gameEventEmitter.off(GameEvent.FriendsChanged, onFriendsChanged);
+  }, [profileId]);
 
   // Al cambiar la amistad se actualiza el botón; y si empezáis o dejáis de ser amigos, se vuelve a
   // pedir el perfil, porque cambian los datos que se pueden ver (ubicación y web)

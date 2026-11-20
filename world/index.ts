@@ -7,8 +7,9 @@ import cors from 'cors';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
-import { apiService } from './src/services/apiService';
+import { apiService, INTERNAL_SECRET } from './src/services/apiService';
 import { UserInfo } from './src/types/UserInfo';
+import { FriendshipChanged } from './src/types/FriendshipChanged';
 
 // ---------------------------------------------------------------------------
 // CORS
@@ -68,16 +69,37 @@ io.use(async (socket, next) => {
     try {
         const user = await apiService.get<UserInfo>(`/internal/users/${payload.sub}`);
         socket.data.user = user;
-        next();
     } catch {
-        next(new Error('auth.user_fetch_failed'));
+        return next(new Error('auth.user_fetch_failed'));
     }
+
+    // Y los ids de sus amigos. Sin ellos se puede chatear igual: solo no habrá avisos de amigos
+    try {
+        socket.data.friends = await apiService.get<string[]>(`/internal/friends/${payload.sub}`);
+    } catch (err) {
+        console.error('Could not load the friends of ' + payload.sub + ':', err);
+        socket.data.friends = [];
+    }
+    next();
 });
 
 // ---------------------------------------------------------------------------
 // Inicializar servidor de juego
 // ---------------------------------------------------------------------------
 const server = new Server(io);
+
+// ---------------------------------------------------------------------------
+// Avisos de la api (con el mismo secreto que usa world para llamarla a ella)
+// ---------------------------------------------------------------------------
+
+app.post('/internal/friends/events', express.json(), (req, res) => {
+    if (req.get('X-Internal-Secret') !== INTERNAL_SECRET) {
+        res.sendStatus(403);
+        return;
+    }
+    server.onFriendshipChanged(req.body as FriendshipChanged);
+    res.sendStatus(204);
+});
 
 const port: number = Number(process.env.PORT) || 3000;
 httpServer.listen(port, () => {

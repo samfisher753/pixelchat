@@ -2,6 +2,7 @@ import Player from "./models/Player";
 import Room from "./models/Room";
 import { apiService } from './services/apiService';
 import { Server as SocketIOServer } from 'socket.io';
+import { FriendshipChanged } from './types/FriendshipChanged';
 
 // Nombre de un archivo del chat en el bucket: chat-<id del usuario>-<id aleatorio>-<nombre original>
 const CHAT_FILE_PREFIX = /^chat-[0-9a-f-]{36}-[0-9a-f-]{36}-/;
@@ -13,6 +14,9 @@ export default class Server {
     rooms: any;
     players: any;
     sockets: any;
+    // Ids de los amigos de cada jugador conectado (todos, conectados o no). Se carga de la api al
+    // conectarse y se mantiene al día con los avisos de la api (onFriendshipChanged)
+    friends: Map<string, Set<string>>;
 
     engineFps: number;
     engineTimestep: number;
@@ -28,6 +32,7 @@ export default class Server {
         this.rooms = {};
         this.players = {};
         this.sockets = {};
+        this.friends = new Map();
 
         // Game Loop
         this.engineFps = 60;
@@ -176,6 +181,7 @@ export default class Server {
             
             this.players[player.id] = player;
             this.sockets[player.id] = socket;
+            this.friends.set(player.id, new Set(socket.data.friends));
 
             // Server side terminal msgs
             console.log(player.username + ' joined.');
@@ -185,6 +191,10 @@ export default class Server {
             this.sendOnlinePlayers();
 
             socket.emit('connected', player);
+
+            // Cuáles de tus amigos están conectados, y a ellos, que te acabas de conectar
+            socket.emit('friends online', this.onlineFriends(player.id).map(id => this.presenceOf(id)));
+            this.sendPresenceToFriends(player.id);
 
             socket.on('update player', (updated: Player) => {
                 player.username = updated.username;
@@ -262,6 +272,7 @@ export default class Server {
                 // Join room
                 this.rooms[roomName].join(this.players[player.id]);
                 room = this.rooms[roomName];
+                this.sendPresenceToFriends(player.id);
 
                 // Notify room players
                 for (let p in room.players) {
@@ -275,6 +286,7 @@ export default class Server {
                 if (room !== null) {
                     this.leave(room, player);
                     room = null;
+                    this.sendPresenceToFriends(player.id);
                 }
                 socket.emit('left room');
             });
@@ -293,6 +305,8 @@ export default class Server {
             }
             delete this.players[player.id];
             delete this.sockets[player.id]
+            this.sendPresenceToFriends(player.id);
+            this.friends.delete(player.id);
 
             // Server side terminal msgs
             console.log(player.username + ' left.');
@@ -300,6 +314,51 @@ export default class Server {
 
             // Send online players
             this.sendOnlinePlayers();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Amigos
+    // -------------------------------------------------------------------------
+
+    // Los amigos de un jugador que están conectados ahora mismo
+    onlineFriends(playerId: string): string[] {
+        return [...this.friends.get(playerId) ?? []].filter(id => this.players[id]);
+    }
+
+    // Si un usuario está conectado y en qué sala (sus amigos la pueden ver siempre)
+    presenceOf(id: string) {
+        const player: Player | undefined = this.players[id];
+        return { id, online: !!player, room: player?.room ?? null };
+    }
+
+    // Cuenta a los amigos conectados de un jugador cómo está ahora (conectado o no, y su sala)
+    sendPresenceToFriends(playerId: string) {
+        const presence = this.presenceOf(playerId);
+        for (const id of this.onlineFriends(playerId)) {
+            this.sockets[id]?.emit('friend presence', presence);
+        }
+    }
+
+    // La api avisa de que ha cambiado una amistad: se actualizan las listas de los dos (si están
+    // conectados) y se les avisa para que el navegador recargue sus listas de amigos
+    onFriendshipChanged(event: FriendshipChanged) {
+        const { type, fromId, toId } = event;
+        if (type === 'REQUEST_ACCEPTED') {
+            this.friends.get(fromId)?.add(toId);
+            this.friends.get(toId)?.add(fromId);
+        } else if (type === 'FRIEND_REMOVED') {
+            this.friends.get(fromId)?.delete(toId);
+            this.friends.get(toId)?.delete(fromId);
+        }
+
+        for (const [me, other] of [[fromId, toId], [toId, fromId]]) {
+            const socket = this.sockets[me];
+            if (!socket) continue;
+            socket.emit('friends changed', event);
+            // Al haceros amigos, cada uno ve si el otro está conectado; al dejar de serlo, deja de verlo
+            if (type === 'REQUEST_ACCEPTED') socket.emit('friend presence', this.presenceOf(other));
+            if (type === 'FRIEND_REMOVED') socket.emit('friend presence', { id: other, online: false, room: null });
         }
     }
 

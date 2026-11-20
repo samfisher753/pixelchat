@@ -8,6 +8,8 @@ import { getErrorMessage } from '@/i18n/errorMessages';
 import UserAvatar from '@/components/UserAvatar';
 import { gameEventEmitter } from '@/emitters/GameEventEmitter';
 import { GameEvent } from '@/enums/GameEvent';
+import { useGame } from '@/contexts/GameContext';
+import { FriendPresence } from '@/types/FriendPresence';
 
 // Lo que devuelve GET /friends (ver FriendDto en la api)
 type Friend = {
@@ -58,6 +60,17 @@ const FriendsList = ({ compact = false }: { compact?: boolean }) => {
 
   // Para no recargar dos veces por los cambios hechos desde esta misma lista
   const self = useRef(Symbol());
+
+  // Quién está conectado y dónde lo sabe world (Game); aquí se copia para volver a pintar al cambiar
+  const game = useGame();
+  const [presence, setPresence] = useState<Map<string, FriendPresence>>(() => new Map(game?.friendsPresence));
+
+  useEffect(() => {
+    const onPresenceChanged = () => setPresence(new Map(game?.friendsPresence));
+    onPresenceChanged();
+    gameEventEmitter.on(GameEvent.FriendsPresenceChanged, onPresenceChanged);
+    return () => gameEventEmitter.off(GameEvent.FriendsPresenceChanged, onPresenceChanged);
+  }, [game]);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +124,9 @@ const FriendsList = ({ compact = false }: { compact?: boolean }) => {
     );
   }
 
+  // Los conectados primero (la api ya los da por orden alfabético y sort mantiene ese orden)
+  const sortedFriends = [...friends].sort((a, b) => Number(presence.has(b.id)) - Number(presence.has(a.id)));
+
   // En la ventana los botones son solo un icono (con el texto de ayuda al pasar por encima)
   const action = (r: FriendRequest, label: string, Icon: typeof Check, style: string, onClick: () => void) => (
     <button onClick={onClick} disabled={busyId !== null} title={label}
@@ -139,7 +155,7 @@ const FriendsList = ({ compact = false }: { compact?: boolean }) => {
             {!compact && <Users className="w-8 h-8 mx-auto mb-3" />}
             <p>Todavía no tienes amigos. Busca a alguien arriba y envíale una solicitud desde su perfil.</p>
           </div>
-        ) : friends.map(f => <UserRow key={f.id} compact={compact} user={f} />)}
+        ) : sortedFriends.map(f => <UserRow key={f.id} compact={compact} user={f} presence={presence.get(f.id)} />)}
       </Section>
 
       {requests.sent.length > 0 && (
@@ -167,18 +183,27 @@ function Section({ compact, title, children }: { compact: boolean; title: string
 }
 
 // Una persona de la lista: su avatar y nombre llevan a su perfil; a la derecha, las acciones
-function UserRow({ compact, user, children }: {
+// Si es un amigo, `presence` dice si está conectado (punto verde) y en qué sala
+function UserRow({ compact, user, presence, children }: {
   compact: boolean;
   user: { id: string; username: string; displayName: string | null; avatarUrl: string | null };
+  presence?: FriendPresence;
   children?: React.ReactNode;
 }) {
+  const status = presence && (presence.room ? `En ${presence.room}` : 'Conectado');
   return (
     <li className={clsx('flex items-center gap-3', compact ? 'px-3 py-1.5' : 'px-4 py-3')}>
       <Link to={`/u/${encodeURIComponent(user.username)}`} className="flex items-center gap-3 min-w-0 flex-1 group">
-        <UserAvatar {...user} className={compact ? 'w-8 h-8' : 'w-10 h-10'} />
+        <div className="relative shrink-0">
+          <UserAvatar {...user} className={compact ? 'w-8 h-8' : 'w-10 h-10'} />
+          {presence && <span title="Conectado" className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-[#2C2C2C]" />}
+        </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-white truncate group-hover:underline">{user.displayName || user.username}</p>
-          <p className="text-xs text-neutral-400 truncate">@{user.username}</p>
+          <p className="text-xs text-neutral-400 truncate">
+            @{user.username}
+            {status && <span className="text-green-400"> · {status}</span>}
+          </p>
         </div>
       </Link>
       {children && <div className="flex items-center gap-2 shrink-0">{children}</div>}

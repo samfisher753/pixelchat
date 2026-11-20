@@ -2,7 +2,9 @@ package es.pixelchat.services;
 
 import es.pixelchat.entities.Friendship;
 import es.pixelchat.entities.User;
+import es.pixelchat.enums.FriendshipEvent;
 import es.pixelchat.enums.FriendshipStatus;
+import es.pixelchat.events.FriendshipChanged;
 import es.pixelchat.enums.Relationship;
 import es.pixelchat.exceptions.ApiError;
 import es.pixelchat.exceptions.ApiException;
@@ -11,6 +13,8 @@ import es.pixelchat.responses.FriendRequestDto;
 import es.pixelchat.responses.FriendRequestsDto;
 import es.pixelchat.responses.RelationshipDto;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Event;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.time.Instant;
@@ -30,9 +34,20 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class FriendsService {
 
+    // Cada cambio se le cuenta a world (ver WorldNotifier) para avisar a los dos en tiempo real
+    @Inject
+    Event<FriendshipChanged> friendshipChanged;
+
     /** Cómo se relaciona `viewerId` con `otherId`. */
     public RelationshipDto relationship(UUID viewerId, UUID otherId) {
         return toDto(viewerId, Friendship.findBetween(viewerId, otherId));
+    }
+
+    /** Solo los ids de los amigos de `userId` (para world). */
+    public List<UUID> friendIds(UUID userId) {
+        return Friendship.findOf(userId, FriendshipStatus.ACCEPTED).stream()
+                .map(f -> f.otherThan(userId))
+                .toList();
     }
 
     /** Los amigos de `userId`, por orden alfabético. */
@@ -85,6 +100,7 @@ public class FriendsService {
             boolean theyAskedMe = friendship.status == FriendshipStatus.PENDING && friendship.requesterId.equals(addressee.id);
             if (!theyAskedMe) throw new ApiException(ApiError.FRIENDSHIP_ALREADY_EXISTS);
             accept(friendship);
+            publish(FriendshipEvent.REQUEST_ACCEPTED, requesterId, addressee.id);
             return toDto(requesterId, existing);
         }
 
@@ -93,6 +109,7 @@ public class FriendsService {
         friendship.addresseeId = addressee.id;
         friendship.status = FriendshipStatus.PENDING;
         friendship.persist();
+        publish(FriendshipEvent.REQUEST_SENT, requesterId, addressee.id);
         return toDto(requesterId, Optional.of(friendship));
     }
 
@@ -102,6 +119,7 @@ public class FriendsService {
         Friendship friendship = findPendingRequest(requestId);
         if (!friendship.addresseeId.equals(userId)) throw new ApiException(ApiError.FRIEND_REQUEST_NOT_FOUND);
         accept(friendship);
+        publish(FriendshipEvent.REQUEST_ACCEPTED, userId, friendship.requesterId);
         return toDto(userId, Optional.of(friendship));
     }
 
@@ -113,6 +131,7 @@ public class FriendsService {
             throw new ApiException(ApiError.FRIEND_REQUEST_NOT_FOUND);
         }
         friendship.delete();
+        publish(FriendshipEvent.REQUEST_DELETED, userId, friendship.otherThan(userId));
         return toDto(userId, Optional.empty());
     }
 
@@ -123,6 +142,7 @@ public class FriendsService {
                 .filter(f -> f.status == FriendshipStatus.ACCEPTED)
                 .orElseThrow(() -> new ApiException(ApiError.FRIENDSHIP_NOT_FOUND));
         friendship.delete();
+        publish(FriendshipEvent.FRIEND_REMOVED, userId, friendship.otherThan(userId));
         return toDto(userId, Optional.empty());
     }
 
@@ -154,6 +174,12 @@ public class FriendsService {
                 .avatarUrl(other.avatarUrl)
                 .createdAt(friendship.createdAt)
                 .build();
+    }
+
+    // Se envía a world cuando se guarde la transacción; si al final falla, no se envía
+    private void publish(FriendshipEvent type, UUID fromId, UUID toId) {
+        User from = User.findById(fromId);
+        friendshipChanged.fire(new FriendshipChanged(type, fromId, from.username, toId));
     }
 
     private void accept(Friendship friendship) {
